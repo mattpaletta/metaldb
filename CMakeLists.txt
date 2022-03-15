@@ -1,0 +1,22 @@
+cmake_minimum_required (VERSION 3.16)
+project(metaldb LANGUAGES CXX)
+
+set(CMAKE_CXX_STANDARD 20)
+set(CMAKE_CXX_STANDARD_REQUIRED ON)
+
+include(cmake/fetch_extern.cmake)
+if (NOT TARGET gpgpu)
+	fetch_extern(gpgpu https://github.com/mattpaletta/gpgpu master)
+endif()
+if (NOT TARGET cppnotstdlib)
+	fetch_extern(cppnotstdlib https://github.com/mattpaletta/cppnotstdlib main)
+endif()
+
+add_subdirectory(libs)
+
+file(GLOB_RECURSE INC_FILES include/*.hpp include/*.h)
+file(GLOB_RECURSE SRC_FILES src/*.cpp src/*.c)
+add_executable(metaldb ${SRC_FILES} ${INC_FILES})
+target_include_directories(metaldb PUBLIC include)
+add_subdirectory(src)
+target_link_libraries(metaldb metaldb_reader metaldb_engine)
