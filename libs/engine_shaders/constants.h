@@ -3,6 +3,8 @@
 #ifdef __METAL_VERSION__
 #include <metal_stdlib>
 
+#define __METAL__
+
 #define METAL_CONSTANT constant
 #define METAL_DEVICE device
 #define METAL_THREAD thread

@@ -41,7 +41,7 @@ namespace metaldb::engine {
 
     namespace detail {
         template<typename T>
-        void serializeVector(instruction_serialized_type* output, const T& input) {
+        void serializeVector(instruction_serialized_type* output, const std::vector<T>& input) {
             output->emplace_back((instruction_serialized_value_type) input.size());
             for (const auto& c : input) {
                 output->emplace_back((instruction_serialized_value_type) c);

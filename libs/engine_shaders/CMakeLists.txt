@@ -1,7 +1,8 @@
 file(GLOB_RECURSE METAL_FILES *.metal)
 file(GLOB_RECURSE INC_FILES *.h *.hpp *.metalh)
 
-add_custom_target(metaldb_engine_shaders)
+add_library(metaldb_engine_shaders INTERFACE ${INC_FILES})
+target_include_directories(metaldb_engine_shaders INTERFACE ${CMAKE_CURRENT_SOURCE_DIR})
 set(metaldb_engine_shaders_DEPENDS "")
 foreach(shader IN LISTS METAL_FILES)
 	message("Found File: ${shader}")
