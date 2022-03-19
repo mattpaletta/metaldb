@@ -8,4 +8,4 @@ target_link_libraries(metaldb_engine PUBLIC gpgpu)
 add_dependencies(metaldb_engine metaldb_engine_shaders_lib)
 
 # temporarily for debugging
-target_link_libraries(metaldb_engine PRIVATE metaldb_engine_shaders)
+target_link_libraries(metaldb_engine PUBLIC metaldb_engine_shaders)

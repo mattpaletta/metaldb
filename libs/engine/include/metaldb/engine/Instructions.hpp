@@ -7,26 +7,13 @@
 
 #pragma once
 
+#include "engine.h"
+
 #include <sstream>
 #include <string>
 
 namespace metaldb::engine {
-    using instruction_serialized_value_type = std::int8_t;
     using instruction_serialized_type = std::vector<instruction_serialized_value_type>;
-
-    enum InstructionType : instruction_serialized_value_type {
-        ParseRow,
-        Projection,
-        Predicate,
-        Group,
-        Aggregate
-    };
-
-    enum ColumnType : instruction_serialized_value_type {
-        String,
-        Float,
-        Integer
-    };
 
     static std::string columnTypeToString(ColumnType type) {
         switch (type) {
@@ -67,10 +54,6 @@ namespace metaldb::engine {
 
     class ParseRow final {
     public:
-        enum Method {
-            CSV
-        };
-
         ParseRow(Method method, const std::vector<ColumnType>& columnTypes) : _method(method), _columnTypes(columnTypes) {}
 
         std::size_t numColumns() const {
@@ -171,11 +154,11 @@ namespace metaldb::engine {
         Encoder() : _data({0}) {}
 
         Encoder& encode(const class ParseRow& parseRow) {
-            return this->encodeImpl(parseRow, ParseRow);
+            return this->encodeImpl(parseRow, PARSEROW);
         }
 
         Encoder& encode(const class Projection& projection) {
-            return this->encodeImpl(projection, Projection);
+            return this->encodeImpl(projection, PROJECTION);
         }
 
         instruction_serialized_type data() const {

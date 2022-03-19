@@ -24,22 +24,16 @@ void decode(metaldb::engine::instruction_serialized_type& encoded) {
     for (instruction_serialized_value_type i = 0; i < numInstructions; ++i) {
         const auto instructionType = decoder.decodeType();
         switch(instructionType) {
-        case metaldb::engine::ParseRow: {
+        case PARSEROW: {
             auto val = decoder.decode<class ParseRow>();
             std::cout << val.description() << std::endl;
             break;
         }
-        case metaldb::engine::Projection: {
+        case PROJECTION: {
             auto val = decoder.decode<class Projection>();
             std::cout << val.description() << std::endl;
             break;
         }
-        case metaldb::engine::Predicate:
-            break;
-        case metaldb::engine::Group:
-            break;
-        case metaldb::engine::Aggregate:
-            break;
         }
     }
 }
@@ -51,11 +45,11 @@ int testEncode() {
 
     Encoder encoder;
     {
-        class ParseRow parseRow(ParseRow::Method::CSV, {ColumnType::Float, ColumnType::Float, ColumnType::Integer});
+        ParseRow parseRow(Method::CSV, {ColumnType::Float, ColumnType::Float, ColumnType::Integer});
         encoder.encode(parseRow);
     }
     {
-        class Projection projection({0, 1});
+        Projection projection({0, 1});
         encoder.encode(projection);
     }
 
@@ -89,7 +83,7 @@ int main() {
     engine::Engine engine;
     {
         using namespace engine;
-        class ParseRow parseRow(ParseRow::Method::CSV, {ColumnType::Float, ColumnType::Float, ColumnType::Integer});
+        class ParseRow parseRow(Method::CSV, {ColumnType::Float, ColumnType::Float, ColumnType::Integer});
         class Projection projection({0, 1});
         engine.run(rawTable, parseRow, projection);
     }
