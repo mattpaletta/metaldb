@@ -81,12 +81,10 @@ int main() {
 
 
     engine::Engine engine;
-    {
-        using namespace engine;
-        class ParseRow parseRow(Method::CSV, {ColumnType::Float, ColumnType::Float, ColumnType::Integer});
-        class Projection projection({0, 1});
-        engine.run(rawTable, parseRow, projection);
-    }
+    using namespace engine;
+    class ParseRow parseRow(Method::CSV, {ColumnType::Float, ColumnType::Float, ColumnType::Integer});
+    class Projection projection({0, 1});
+    engine.run(rawTable, parseRow, projection);
 
 	return 0;
 }

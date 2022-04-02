@@ -6,6 +6,7 @@
 
 #include <memory>
 #include <iostream>
+#include <array>
 
 namespace {
     class MetalManager {
@@ -126,7 +127,11 @@ auto metaldb::engine::Engine::runImpl(const reader::RawTable& rawTable, instruct
 //    auto manager = MetalManager::Create();
 //    assert(manager);
     auto rawDataSerialized = SerializeRawTable(rawTable);
+    std::array<char, 1'000'000> outputBuffer;
     for (uint i = 0; i < 1000; ++i) {
-        runQueryKernelImpl(rawDataSerialized.data(), instructions.data(), i);
+        runQueryKernelImpl(rawDataSerialized.data(), instructions.data(), outputBuffer.data(), i);
     }
+
+    // Read output buffer to Dataframe.
+    return Dataframe();
 }

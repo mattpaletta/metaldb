@@ -1,172 +1,133 @@
 #pragma once
 
 #include "constants.h"
-#include "strings.h"
+#include "raw_table.h"
+#include "instruction_type.h"
+#include "parse_row_instruction.h"
+#include "projection_instruction.h"
+#include "method.h"
+#include "vm.h"
 
 #ifndef __METAL__
 #include <cstdint>
 #endif
 
-#define MAX_VM_STACK_SIZE 100
-
 namespace metaldb {
-    class RawTable {
+    class DbConstants final {
     public:
-        RawTable(METAL_DEVICE char* rawData) : _rawData(rawData) {}
+        DbConstants(metaldb::RawTable METAL_THREAD & rawTable_, uint8_t thread_position_in_grid_) : rawTable(rawTable_), thread_position_in_grid(thread_position_in_grid_) {}
 
-        METAL_CONSTANT static constexpr int8_t RAW_DATA_NUM_ROWS_INDEX = 2;
-
-        int8_t GetSizeOfHeader() {
-            return (int8_t) _rawData[0];
-        }
-
-        int8_t GetSizeOfData() {
-            return (int8_t) _rawData[1];
-        }
-
-        int8_t GetNumRows() {
-            return (int8_t) _rawData[RAW_DATA_NUM_ROWS_INDEX];
-        }
-
-        int8_t GetRowIndex(int8_t index) {
-            return (int8_t) _rawData[RAW_DATA_NUM_ROWS_INDEX + 1 + index];
-        }
-
-        int8_t GetStartOfData() {
-            return GetSizeOfHeader() + 1;
-        }
-
-        METAL_DEVICE char* data(uint8_t index = 0) {
-            return &this->_rawData[index];
-        }
-
-    private:
-        METAL_DEVICE char* _rawData;
+        metaldb::RawTable METAL_THREAD & rawTable;
+        uint8_t thread_position_in_grid;
     };
 
-    using instruction_serialized_value_type = int8_t;
-    enum InstructionType : instruction_serialized_value_type {
-        PARSEROW,
-        PROJECTION,
-    };
+    static InstructionType decodeType(METAL_DEVICE int8_t* instruction) {
+        return (InstructionType) *instruction;
+    }
 
-    enum ColumnType : instruction_serialized_value_type {
-        String,
-        Float,
-        Integer
-    };
-
-    enum Method {
-        CSV
-    };
-
-    class StringSection final {
-    public:
-        StringSection(METAL_DEVICE char* str, uint8_t size) : _size(size), _str(str) {}
-
-        uint8_t size() const {
-            return this->_size;
+    // Build up a stack of decoded instructions in the call stack
+    using InstructionPtr = uint64_t;
+    static void runExpression(InstructionPtr METAL_THREAD * decodedInstructions, size_t numDecodedInstructions, DbConstants METAL_THREAD & constants) {
+        // Start at the end, use the call stack as the VM stack, but backwards.
+        if (numDecodedInstructions == 0) {
+            // This is just safety
+            return;
         }
 
-        METAL_DEVICE char* str() const {
-            return this->_str;
+
+        // TODO: how to handle sorting & aggregations? - same way, sync after creating each group/sorted.
+        // Start by lazily processing each row.
+        switch ((InstructionPtr) decodedInstructions[0]) {
+        case metaldb::PARSEROW: {
+            auto parseRow = (ParseRowInstruction METAL_THREAD *) decodedInstructions[1];
+            
+            break;
+        }
+        case metaldb::OUTPUT: {
+            // TODO: Write the output and lazily grab the prev instruction.
+            break;
+        }
         }
 
-    private:
-        uint8_t _size;
-        METAL_DEVICE char* _str;
-    };
+        if (numDecodedInstructions == 1) {
+            // This is the last one, sort prefix sum, write into output buffer.
+        }
+    }
 
-    class ParseRowInstruction final {
-    public:
-        // Pointer points to beginning of ParseRow instruction.
-        ParseRowInstruction(METAL_DEVICE int8_t* instructions) : _instructions(instructions) {}
 
-        Method getMethod() const {
-            return (Method) this->_instructions[0];
+    // Push each instruction onto the call stack, stored in `decodedInstructions`
+    // Each instruction upon decoding has an 'end' method that returns the address of 1 past the end of the decoded instruction in the buffer.
+    // When all instructions are decoded, can evaluate the expression using a VM based on the Metal stack.
+    static void decodeInstruction(InstructionPtr METAL_THREAD * decodedInstructions, size_t numDecodedInstructions, int8_t numInstructions, METAL_DEVICE int8_t* instructions, DbConstants METAL_THREAD & constants) {
+        if (numInstructions == 0) {
+            // When no more instructions to decode
+            // Run the instructions
+            // Need to keep calling into the stack otherwise we'll loose the decoded instructions on the call stack.
+            runExpression(decodedInstructions, numDecodedInstructions, constants);
+            return;
         }
 
-        int8_t numColumns() const {
-            return (int8_t) this->_instructions[1];
+        switch (metaldb::decodeType(instructions)) {
+        case metaldb::PARSEROW: {
+            auto parseRowExpression = metaldb::ParseRowInstruction(&instructions[1]);
+            decodedInstructions[(numDecodedInstructions*2)+0] = (InstructionPtr) metaldb::PARSEROW;
+            decodedInstructions[(numDecodedInstructions*2)+1] = (InstructionPtr) &parseRowExpression;
+
+            return decodeInstruction(decodedInstructions, numDecodedInstructions+1, numInstructions - 1, parseRowExpression.end(), constants);
         }
+        case metaldb::PROJECTION: {
+            auto projectionInstruction = metaldb::ProjectionInstruction(&instructions[1]);
+            decodedInstructions[(numDecodedInstructions*2)+0] = (InstructionPtr) metaldb::PROJECTION;
+            decodedInstructions[(numDecodedInstructions*2)+1] = (InstructionPtr) &projectionInstruction;
 
-        ColumnType getColumnType(int8_t index) const {
-            // +2 because of the other two functions that are first in the serialization.
-            return (ColumnType) this->_instructions[index + 2];
+            return decodeInstruction(decodedInstructions, numDecodedInstructions+1, numInstructions-1, projectionInstruction.end(), constants);
         }
-
-        StringSection readCSVColumn(RawTable METAL_THREAD & rawTable, uint8_t row, uint8_t column) const {
-            auto rowIndex = rawTable.GetRowIndex(row);
-
-            // Get the column by scanning
-            METAL_DEVICE char* startOfColumn = rawTable.data(rowIndex);
-            for (uint8_t i = 0; i < column && startOfColumn; ++i) {
-                startOfColumn = metal::strings::strchr(startOfColumn, ',');
-            }
-
-            if (!startOfColumn) {
-                return StringSection(startOfColumn, 0);
-            }
-
-            METAL_DEVICE char* endOfColumn = metal::strings::strchr(startOfColumn, ',');
-
-            return StringSection(startOfColumn, endOfColumn - startOfColumn);
         }
+    }
 
-    private:
-        METAL_DEVICE int8_t* _instructions;
-    };
+    template<size_t MaxNumInstructions = MAX_VM_STACK_SIZE / 2>
+    static void decodeInstructionRoot(int8_t numInstructions, METAL_DEVICE int8_t* instructions, DbConstants METAL_THREAD & constants) {
+        // This should only be called once
 
-    class VM {
-    public:
-        VM() = default;
-        ~VM() = default;
+        InstructionPtr decodedInstructions[MaxNumInstructions * 2];
+        size_t numDecodedInstructions = 0;
 
-        void run(METAL_DEVICE int8_t* instructions) {
-            const auto numInstructions = instructions[0];
-
-            uint8_t index = 1;
-            for (uint8_t i = 0; i < numInstructions; ++i) {
-                switch (VM::decodeType(instructions, index)) {
-                case PARSEROW: {
-                    this->runParseRowInstruction(&instructions[index]);
-                    break;
-                }
-                case PROJECTION: {
-                    this->runProjectionInstruction(&instructions[index]);
-                    break;
-                }
-                }
-            }
-        }
-
-    private:
-        static void runParseRowInstruction(METAL_DEVICE int8_t* instructions) {
-
-        }
-
-        static void runProjectionInstruction(METAL_DEVICE int8_t* instructions) {
-
-        }
-
-        static InstructionType decodeType(METAL_DEVICE int8_t* instructions, uint8_t METAL_THREAD& index) {
-            return (InstructionType) instructions[index++];
-        }
-
-        uint8_t stack[MAX_VM_STACK_SIZE];
-    };
+        decodeInstruction(decodedInstructions, numDecodedInstructions, numInstructions, instructions, constants);
+    }
 }
 
-inline void runQueryKernelImpl(METAL_DEVICE char* rawData, METAL_DEVICE int8_t* instructions, uint8_t thread_position_in_grid) {
-    metaldb::RawTable rawTable(rawData);
 
-    // TODO: Build out VM & run it through the rows.
+inline void runQueryKernelImpl(METAL_DEVICE char* rawData, METAL_DEVICE int8_t* instructions, METAL_DEVICE char* outputBuffer, uint8_t thread_position_in_grid) {
+    using namespace metaldb;
+    RawTable rawTable(rawData);
 
+    // Decode instructions + dispatch
+    const auto numInstructions = instructions[0];
+    DbConstants constants{rawTable, thread_position_in_grid};
+
+    // Dynamically scale the parameter
+    if (numInstructions == 1) {
+        decodeInstructionRoot<1>(numInstructions, &instructions[1], constants);
+    } else if (numInstructions <= 2) {
+        decodeInstructionRoot<2>(numInstructions, &instructions[1], constants);
+    } else if (numInstructions <= 4) {
+        decodeInstructionRoot<4>(numInstructions, &instructions[1], constants);
+    } else if (numInstructions <= 8) {
+        decodeInstructionRoot<8>(numInstructions, &instructions[1], constants);
+    } else if (numInstructions <= 16) {
+        decodeInstructionRoot<16>(numInstructions, &instructions[1], constants);
+    } else if (numInstructions <= 32) {
+        decodeInstructionRoot<32>(numInstructions, &instructions[1], constants);
+    } else if (numInstructions <= 64) {
+        decodeInstructionRoot<64>(numInstructions, &instructions[1], constants);
+    } else {
+        decodeInstructionRoot(numInstructions, &instructions[1], constants);
+    }
 }
 
 #ifdef __METAL__
-kernel void runQueryKernel(device char* rawData [[ buffer(0) ]], device int8_t* instructions [[ buffer(1) ]], uint id [[ thread_position_in_grid ]]) {
-    runQueryKernelImpl(rawData, instructions, id);
+kernel void runQueryKernel(device char* rawData [[ buffer(0) ]], device int8_t* instructions [[ buffer(1) ]], device char* outputBuffer [[ buffer(2) ]], uint id [[ thread_position_in_grid ]]) {
+    runQueryKernelImpl(rawData, instructions, outputBuffer, id);
 }
 #endif
 

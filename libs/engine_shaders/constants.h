@@ -17,3 +17,5 @@
 #define METAL_THREADGROUP
 #define CPP_RESTRICT restrict
 #endif
+
+#define MAX_VM_STACK_SIZE 100
