@@ -49,7 +49,7 @@ int testEncode() {
 
     Encoder encoder;
     {
-        ParseRow parseRow(Method::CSV, {ColumnType::Float, ColumnType::Float, ColumnType::Integer});
+        ParseRow parseRow(Method::CSV, {ColumnType::Float, ColumnType::Float, ColumnType::Integer}, true);
         encoder.encode(parseRow);
     }
     {
@@ -82,13 +82,12 @@ int main() {
 
     std::cout << rawTable.debugStr() << std::endl;
 
-
-
     engine::Engine engine;
     using namespace engine;
-    class ParseRow parseRow(Method::CSV, {ColumnType::Float, ColumnType::Float, ColumnType::Integer});
-    class Projection projection({0, 1});
-    engine.run(rawTable, parseRow, projection);
+    ParseRow parseRow(Method::CSV, {ColumnType::Float, ColumnType::Float, ColumnType::Float, ColumnType::Float, ColumnType::String}, /* skipHeader */ false);
+    Projection projection({0, 1});
+    Output output;
+    engine.run(rawTable, parseRow, projection, output);
 
 	return 0;
 }

@@ -8,13 +8,8 @@
 namespace metaldb::engine {
     class Engine final {
     public:
-        Engine() {
-            std::cout << "Creating engine" << std::endl;
-        }
-
-        ~Engine() {
-            std::cout << "Destreoying engine" << std::endl;
-        }
+        Engine() = default;
+        ~Engine() = default;
 
 
         template<typename... Args>

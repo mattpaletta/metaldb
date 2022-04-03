@@ -11,6 +11,7 @@
 #include "column_type.h"
 #include "raw_table.h"
 #include "db_constants.h"
+#include "temp_row.h"
 
 namespace metaldb {
     class ProjectionInstruction final {
@@ -36,9 +37,7 @@ namespace metaldb {
             return &this->_instructions[offset];
         }
 
-        void GetRow(DbConstants METAL_THREAD & constants) {
-
-        }
+        TempRow GetRow(InstructionPtr METAL_THREAD * decodedInstructions, size_t numDecodedInstructions, DbConstants METAL_THREAD & constants);
 
     private:
         METAL_DEVICE int8_t* _instructions;

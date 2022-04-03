@@ -114,7 +114,7 @@ namespace {
             for (const auto& index : rawTable.rowIndexes) {
                 rawDataSerialized.push_back(index);
             }
-            rawDataSerialized.at(0) += rawTable.rowIndexes.size();
+            rawDataSerialized.at(0) += rawTable.numRows();
         }
 
         std::copy(rawTable.data.begin(), rawTable.data.end(), std::back_inserter(rawDataSerialized));

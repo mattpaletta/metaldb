@@ -9,6 +9,10 @@
 
 #include "constants.h"
 
+#ifndef __METAL__
+#include <iostream>
+#endif
+
 namespace metaldb {
     template<typename T>
     class GenericStringSection final {
@@ -22,6 +26,15 @@ namespace metaldb {
         METAL_DEVICE char* str() const {
             return this->_str;
         }
+
+#ifndef __METAL__
+        void print() const {
+            for (int i = 0; i < this->size(); ++i) {
+                std::cout << this->str()[i];
+            }
+            std::cout << std::endl;
+        }
+#endif
 
     private:
         uint8_t _size;

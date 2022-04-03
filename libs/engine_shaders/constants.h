@@ -28,3 +28,5 @@
 // TODO: Make this a function constant in Metal so we can change it.
 // 1 kilobyte
 #define MAX_OUTPUT_ROW_LENGTH 1024
+
+using InstructionPtr = uint64_t;

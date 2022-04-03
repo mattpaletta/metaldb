@@ -80,17 +80,19 @@ namespace metaldb {
 
         void append(METAL_THREAD char* str, size_t len) {
             metal::strings::strncpy(this->end(), str, len);
+            this->_size += len;
         }
 
 #ifdef __METAL__
         // Supports copying from device to local storage
         void append(METAL_DEVICE char* str, size_t len) {
             metal::strings::strncpy(this->end(), str, len);
+            this->_size += len;
         }
 #endif
 
     private:
         METAL_THREAD value_type _data[MAX_OUTPUT_ROW_LENGTH];
-        uint8_t _size = 0;
+        size_t _size = 0;
     };
 }

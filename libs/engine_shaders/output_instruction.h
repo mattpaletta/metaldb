@@ -22,9 +22,7 @@ namespace metaldb {
             return &this->_instructions[offset];
         }
 
-        void WriteRow(DbConstants METAL_THREAD & constants) {
-
-        }
+        void WriteRow(InstructionPtr METAL_THREAD * decodedInstructions, size_t numDecodedInstructions, DbConstants METAL_THREAD & constants);
 
     private:
         METAL_DEVICE int8_t* _instructions;

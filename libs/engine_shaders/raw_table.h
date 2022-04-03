@@ -16,28 +16,29 @@ namespace metaldb {
 
         METAL_CONSTANT static constexpr int8_t RAW_DATA_NUM_ROWS_INDEX = 2;
 
-        int8_t GetSizeOfHeader() {
-            return (int8_t) _rawData[0];
+        uint8_t GetSizeOfHeader() {
+            return (uint8_t) _rawData[0];
         }
 
-        int8_t GetSizeOfData() {
-            return (int8_t) _rawData[1];
+        uint8_t GetSizeOfData() {
+            return (uint8_t) _rawData[1];
         }
 
-        int8_t GetNumRows() {
-            return (int8_t) _rawData[RAW_DATA_NUM_ROWS_INDEX];
+        uint8_t GetNumRows() {
+            return (uint8_t) _rawData[RAW_DATA_NUM_ROWS_INDEX];
         }
 
-        int8_t GetRowIndex(int8_t index) {
-            return (int8_t) _rawData[RAW_DATA_NUM_ROWS_INDEX + 1 + index];
+        uint8_t GetRowIndex(uint8_t index) {
+            return (uint8_t) _rawData[RAW_DATA_NUM_ROWS_INDEX + 1 + index];
         }
 
-        int8_t GetStartOfData() {
+        uint8_t GetStartOfData() {
             return GetSizeOfHeader() + 1;
         }
 
         METAL_DEVICE char* data(uint8_t index = 0) {
-            return &this->_rawData[index];
+            const auto headerSize = this->GetSizeOfHeader();
+            return &this->_rawData[headerSize + index];
         }
 
     private:

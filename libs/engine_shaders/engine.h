@@ -11,13 +11,54 @@
 #include "db_constants.h"
 #include "vm.h"
 
+#ifndef __METAL__
+#include <iostream>
+#endif
+
 namespace metaldb {
+    // Declare functions for procesing row here to get all the imports
+    inline void OutputInstruction::WriteRow(InstructionPtr METAL_THREAD * decodedInstructions, size_t numDecodedInstructions, DbConstants METAL_THREAD & constants) {
+        // Get prev
+        const auto indexLastInstruction = 2*(numDecodedInstructions-1);
+        const auto lastInstructionType = (InstructionPtr) decodedInstructions[indexLastInstruction];
+
+        TempRow row;
+        if (lastInstructionType == PARSEROW) {
+            auto parseRowInstruction = ((ParseRowInstruction METAL_THREAD *) decodedInstructions[indexLastInstruction+1]);
+            row = parseRowInstruction->GetRow(constants);
+        } else if (lastInstructionType == PROJECTION) {
+            auto projectionInstruction = ((ProjectionInstruction METAL_THREAD *) decodedInstructions[indexLastInstruction+1]);
+            row = projectionInstruction->GetRow(decodedInstructions, numDecodedInstructions - 1, constants);
+        }
+
+        // Write row into output.
+    }
+
+    inline TempRow ProjectionInstruction::GetRow(InstructionPtr METAL_THREAD * decodedInstructions, size_t numDecodedInstructions, DbConstants METAL_THREAD & constants) {
+        // Get prev
+        const auto indexLastInstruction = 2*(numDecodedInstructions-1);
+        const auto lastInstructionType = (InstructionPtr) decodedInstructions[indexLastInstruction];
+
+        TempRow row;
+        if (lastInstructionType == PARSEROW) {
+            auto parseRowInstruction = ((ParseRowInstruction METAL_THREAD *) decodedInstructions[indexLastInstruction+1]);
+            row = parseRowInstruction->GetRow(constants);
+        } else if (lastInstructionType == PROJECTION) {
+            auto projectionInstruction = ((ProjectionInstruction METAL_THREAD *) decodedInstructions[indexLastInstruction+1]);
+            row = projectionInstruction->GetRow(decodedInstructions, numDecodedInstructions - 1, constants);
+        }
+
+        // Do the projection
+        
+
+        return row;
+    }
+
     static InstructionType decodeType(METAL_DEVICE int8_t* instruction) {
         return (InstructionType) *instruction;
     }
 
     // Build up a stack of decoded instructions in the call stack
-    using InstructionPtr = uint64_t;
     static void runExpression(InstructionPtr METAL_THREAD * decodedInstructions, size_t numDecodedInstructions, DbConstants METAL_THREAD & constants) {
         // Start at the end, use the call stack as the VM stack, but backwards.
         if (numDecodedInstructions == 0) {
@@ -28,12 +69,12 @@ namespace metaldb {
         // TODO: how to handle sorting & aggregations? - same way, sync after creating each group/sorted.
         // Start by lazily processing each row.
         const auto indexLastInstruction = 2*(numDecodedInstructions-1);
-#ifdef __METAL
-        assert((InstructionPtr) decodedInstructions[indexLastInstruction] == metaldb::OUTPUT, "Final instruction must be output.")
+#ifndef __METAL__
+        assert((InstructionPtr) decodedInstructions[indexLastInstruction] == metaldb::OUTPUT);
 #endif
         {
             auto outputInstruction = ((metaldb::OutputInstruction METAL_THREAD *) decodedInstructions[indexLastInstruction+1]);
-            outputInstruction->WriteRow(constants);
+            outputInstruction->WriteRow(decodedInstructions, numDecodedInstructions - 1, constants);
         }
 
         if (numDecodedInstructions == 1) {

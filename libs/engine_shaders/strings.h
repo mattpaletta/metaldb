@@ -173,20 +173,23 @@ namespace metal {
                 // Found a '.'
                 auto fractionPoint = wholePart;
                 // Check if the decimal was at the end.
-                if (fractionPoint - str == length - 1) {
+                if (fractionPoint - str == length - 1UL) {
                     // It's at the end
                     return stoi(str, length - 1);
                 } else {
                     // It's in the middle
                     auto wholePartConv = stoi(str, wholePart - str);
                     auto lengthOfDecimal = length - (wholePart - str) - 1;
+
+                    // Decimal part starts after the '.'
                     auto decimalConv = stoi(fractionPoint + 1, lengthOfDecimal);
 
                     int multiplier =  1;
-                    for (int i = 0; i < lengthOfDecimal; ++i) {
+                    for (size_t i = 0; i < lengthOfDecimal; ++i) {
                         multiplier = (multiplier << 3) + (multiplier << 1);
                     }
-                    return wholePartConv + (decimalConv * 1/multiplier);
+                    auto result = wholePartConv + (decimalConv * 1.f/multiplier);
+                    return result;
                 }
             } else {
                 // No decimal part, just cast to float

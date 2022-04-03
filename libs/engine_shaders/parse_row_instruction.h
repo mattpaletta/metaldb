@@ -26,13 +26,17 @@ namespace metaldb {
             return (Method) this->_instructions[0];
         }
 
+        bool skipHeader() const {
+            return (bool) this->_instructions[1];
+        }
+
         int8_t numColumns() const {
-            return (int8_t) this->_instructions[1];
+            return (int8_t) this->_instructions[2];
         }
 
         ColumnType getColumnType(int8_t index) const {
-            // +2 because of the other two functions that are first in the serialization.
-            return (ColumnType) this->_instructions[index + 2];
+            // +3 because of the other two functions that are first in the serialization.
+            return (ColumnType) this->_instructions[index + 3];
         }
 
         METAL_DEVICE int8_t* end() const {
@@ -40,17 +44,18 @@ namespace metaldb {
             const int8_t methodOffset = 1;
             const int8_t numColumnsOffset = 1;
             const int8_t columnsOffset = this->numColumns();
-            const int8_t offset = methodOffset + numColumnsOffset + columnsOffset;
+            const int8_t skipRow = 1;
+            const int8_t offset = methodOffset + numColumnsOffset + columnsOffset + skipRow;
             return &this->_instructions[offset];
         }
 
         StringSection readCSVColumn(RawTable METAL_THREAD & rawTable, uint8_t row, uint8_t column) const {
-            auto rowIndex = rawTable.GetRowIndex(row);
+            auto rowIndex = rawTable.GetRowIndex(this->skipHeader() ? row+1 : row);
 
             // Get the column by scanning
             METAL_DEVICE char* startOfColumn = rawTable.data(rowIndex);
             for (uint8_t i = 0; i < column && startOfColumn; ++i) {
-                startOfColumn = metal::strings::strchr(startOfColumn, ',');
+                startOfColumn = metal::strings::strchr(startOfColumn, ',') + 1;
             }
 
             if (!startOfColumn) {
@@ -59,11 +64,20 @@ namespace metaldb {
 
             METAL_DEVICE char* endOfColumn = metal::strings::strchr(startOfColumn, ',');
 
+            if (row < rawTable.GetNumRows()) {
+                auto startOfNextRowInd = rawTable.GetRowIndex(this->skipHeader() ? row+2 : row+1);
+                METAL_DEVICE char* startOfNextRow = rawTable.data(startOfNextRowInd);
+                auto lengthOfThisColumn = endOfColumn - startOfColumn;
+                auto lengthToNextRow = startOfNextRow - startOfColumn;
+                return StringSection(startOfColumn, lengthOfThisColumn > lengthToNextRow ? lengthToNextRow : lengthOfThisColumn);
+
+            }
+
             return StringSection(startOfColumn, endOfColumn - startOfColumn);
         }
 
         int8_t readCSVColumnLength(RawTable METAL_THREAD & rawTable, uint8_t row, uint8_t column) const {
-            auto rowIndex = rawTable.GetRowIndex(row);
+            auto rowIndex = rawTable.GetRowIndex(this->skipHeader() ? row+1 : row);
 
             // Get the column by scanning
             METAL_DEVICE char* startOfColumn = rawTable.data(rowIndex);

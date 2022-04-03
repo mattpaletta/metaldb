@@ -43,7 +43,7 @@ auto metaldb::reader::CSVReader::read(const CSVOptions& options) const -> RawTab
             if (nextChar == '\n') {
                 break;
             } else {
-                ++charCount;
+//                ++charCount;
             }
         }
 
