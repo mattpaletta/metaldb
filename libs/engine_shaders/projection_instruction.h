@@ -10,6 +10,7 @@
 #include "constants.h"
 #include "column_type.h"
 #include "raw_table.h"
+#include "db_constants.h"
 
 namespace metaldb {
     class ProjectionInstruction final {
@@ -33,6 +34,10 @@ namespace metaldb {
             const int8_t columnsOffset = this->numColumns();
             const int8_t offset = numColumnsOffset + columnsOffset;
             return &this->_instructions[offset];
+        }
+
+        void GetRow(DbConstants METAL_THREAD & constants) {
+
         }
 
     private:

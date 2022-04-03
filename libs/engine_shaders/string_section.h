@@ -7,10 +7,13 @@
 
 #pragma once
 
+#include "constants.h"
+
 namespace metaldb {
-    class StringSection final {
+    template<typename T>
+    class GenericStringSection final {
     public:
-        StringSection(METAL_DEVICE char* str, uint8_t size) : _size(size), _str(str) {}
+        GenericStringSection(T str, uint8_t size) : _size(size), _str(str) {}
 
         uint8_t size() const {
             return this->_size;
@@ -22,6 +25,9 @@ namespace metaldb {
 
     private:
         uint8_t _size;
-        METAL_DEVICE char* _str;
+        T _str;
     };
+
+    using StringSection = GenericStringSection<METAL_DEVICE char*>;
+    using LocalStringSection = GenericStringSection<METAL_THREAD char*>;
 }

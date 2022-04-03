@@ -25,13 +25,17 @@ void decode(metaldb::engine::instruction_serialized_type& encoded) {
         const auto instructionType = decoder.decodeType();
         switch(instructionType) {
         case PARSEROW: {
-            auto val = decoder.decode<class ParseRow>();
+            auto val = decoder.decode<ParseRow>();
             std::cout << val.description() << std::endl;
             break;
         }
         case PROJECTION: {
-            auto val = decoder.decode<class Projection>();
+            auto val = decoder.decode<Projection>();
             std::cout << val.description() << std::endl;
+            break;
+        }
+        case OUTPUT: {
+            std::cout << "Output instruction decoding not implemented." << std::endl;
             break;
         }
         }

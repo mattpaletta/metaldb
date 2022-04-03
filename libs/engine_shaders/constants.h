@@ -18,4 +18,13 @@
 #define CPP_RESTRICT restrict
 #endif
 
+
+#ifndef __METAL__
+#include <cstdint>
+#endif
+
 #define MAX_VM_STACK_SIZE 100
+
+// TODO: Make this a function constant in Metal so we can change it.
+// 1 kilobyte
+#define MAX_OUTPUT_ROW_LENGTH 1024

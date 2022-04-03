@@ -11,7 +11,9 @@
 #include "column_type.h"
 #include "method.h"
 #include "string_section.h"
+#include "temp_row.h"
 #include "raw_table.h"
+#include "db_constants.h"
 #include "strings.h"
 
 namespace metaldb {
@@ -58,6 +60,76 @@ namespace metaldb {
             METAL_DEVICE char* endOfColumn = metal::strings::strchr(startOfColumn, ',');
 
             return StringSection(startOfColumn, endOfColumn - startOfColumn);
+        }
+
+        int8_t readCSVColumnLength(RawTable METAL_THREAD & rawTable, uint8_t row, uint8_t column) const {
+            auto rowIndex = rawTable.GetRowIndex(row);
+
+            // Get the column by scanning
+            METAL_DEVICE char* startOfColumn = rawTable.data(rowIndex);
+            for (uint8_t i = 0; i < column && startOfColumn; ++i) {
+                startOfColumn = metal::strings::strchr(startOfColumn, ',');
+            }
+
+            if (!startOfColumn) {
+                return 0;
+            }
+
+            METAL_DEVICE char* endOfColumn = metal::strings::strchr(startOfColumn, ',');
+
+            return endOfColumn - startOfColumn;
+        }
+
+        TempRow GetRow(DbConstants METAL_THREAD & constants) {
+            // Question: do I have to read all columns first to get their sizes?
+
+            TempRow::TempRowBuilder builder;
+            {
+                builder.numColumns = this->numColumns();
+
+                // Read column types
+                for (int8_t i = 0; i < this->numColumns(); ++i) {
+                    // Set all column types
+                    auto columnType = this->getColumnType(i);
+                    builder.columnTypes[i] = columnType;
+
+                    // Set all column sizes, and they might get pruned
+                    if (columnType == String) {
+                        builder.columnSizes[i] = this->readCSVColumnLength(constants.rawTable, constants.thread_position_in_grid, i);
+                    } else {
+                        builder.columnSizes[i] = 0;
+                    }
+                }
+            }
+
+            // Populate the row.
+            TempRow row = builder;
+            for (int8_t i = 0; i < this->numColumns(); ++i) {
+                // Write the columns into the buffer
+                auto stringSection = this->readCSVColumn(constants.rawTable, constants.thread_position_in_grid, i);
+
+                switch (this->getColumnType(i)) {
+                case String: {
+                    // Copy the string in directly.
+                    row.append(stringSection.str(), stringSection.size());
+                    break;
+                }
+                case Integer: {
+                    // Cast it to an integer
+                    int8_t result = metal::strings::stoi(stringSection.str(), stringSection.size());
+                    row.append((char METAL_THREAD *) &result, sizeof(int8_t));
+                    break;
+                }
+                case Float: {
+                    // Cast it to a float.
+                    float result = metal::strings::stof(stringSection.str(), stringSection.size());
+                    row.append((char METAL_THREAD *) &result, sizeof(float));
+                    break;
+                }
+                }
+            }
+
+            return row;
         }
 
     private:

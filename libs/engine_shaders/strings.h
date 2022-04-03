@@ -7,9 +7,10 @@ namespace metal {
     namespace strings {
         static METAL_CONSTANT char NULL_CHAR = '\0';
 
-        static int strcmp(const METAL_DEVICE char* str1, const METAL_DEVICE char* str2) {
-            const METAL_DEVICE char* currChar1 = str1;
-            const METAL_DEVICE char* currChar2 = str2;
+        template<typename T = METAL_DEVICE char*, typename V = METAL_DEVICE char*>
+        static int strcmp(const T str1, const T str2) {
+            const T currChar1 = str1;
+            const V currChar2 = str2;
 
             while (currChar1 && currChar2 && *currChar1 != NULL_CHAR && *currChar2 != NULL_CHAR) {
                 if (*currChar1 > *currChar2) {
@@ -31,9 +32,10 @@ namespace metal {
             }
         }
 
-        static METAL_DEVICE char* strncpy(METAL_DEVICE char* /* restrict */ destination, const METAL_DEVICE char* /* restrict */ source, size_t num) {
-            const METAL_DEVICE char* sourcePtr = source;
-            METAL_DEVICE char* destinationCpy = destination;
+        template<typename T = METAL_DEVICE char*, typename V = METAL_DEVICE char*>
+        static T strncpy(T /* restrict */ destination, const V/* restrict */ source, size_t num) {
+            V sourcePtr = source;
+            T destinationCpy = destination;
 
             for (size_t i = 0; i < num; ++i) {
                 *destinationCpy = *sourcePtr;
@@ -45,9 +47,10 @@ namespace metal {
             return destination;
         }
 
-        static METAL_DEVICE char* strcpy(METAL_DEVICE char* /* restrict */ destination, const METAL_DEVICE char* /* restrict */ source) {
-            const METAL_DEVICE char* sourcePtr = source;
-            METAL_DEVICE char* destinationCpy = destination;
+        template<typename T = METAL_DEVICE char*, typename V = METAL_DEVICE char*>
+        static T strcpy(T /* restrict */ destination, const T /* restrict */ source) {
+            const V sourcePtr = source;
+            T destinationCpy = destination;
 
             while (sourcePtr && *sourcePtr != NULL_CHAR) {
                 *destinationCpy = *sourcePtr;
@@ -59,8 +62,10 @@ namespace metal {
             return destination;
         }
 
-        static METAL_DEVICE char* strncat(METAL_DEVICE char* /* restrict */ destination, const METAL_DEVICE char* /* restrict */ source, size_t num) {
-            METAL_DEVICE char* endOfDest = destination;
+
+        template<typename T = METAL_DEVICE char*, typename V = METAL_DEVICE char*>
+        static T strncat(T /* restrict */ destination, const V/* restrict */ source, size_t num) {
+            T endOfDest = destination;
 
             // Move to the end of destination
             while (endOfDest && *endOfDest++ != NULL_CHAR) {}
@@ -69,8 +74,9 @@ namespace metal {
             return strncpy(endOfDest, source, num);
         }
 
-        static METAL_DEVICE char* strcat(METAL_DEVICE char* /* restrict */ destination, const METAL_DEVICE char* /* restrict */ source) {
-            METAL_DEVICE char* endOfDest = destination;
+        template<typename T = METAL_DEVICE char*, typename V = METAL_DEVICE char*>
+        static T strcat(T /* restrict */ destination, const V /* restrict */ source) {
+            T endOfDest = destination;
 
             // Move to the end of destination
             while (endOfDest && *endOfDest++ != NULL_CHAR) {}
@@ -79,7 +85,8 @@ namespace metal {
             return strcpy(endOfDest, source);
         }
 
-        static size_t strlen(const METAL_DEVICE char* str) {
+        template<typename T = METAL_DEVICE char*>
+        static size_t strlen(const T str) {
             size_t size = 0;
             const METAL_DEVICE char* strPtr = str;
             while (strPtr && *strPtr != NULL_CHAR) {
@@ -89,16 +96,102 @@ namespace metal {
             return size;
         }
 
-        static METAL_DEVICE char* const strchr(METAL_DEVICE char* const str, int character) {
+        template<typename T = METAL_DEVICE char*>
+        static T const strchr(T const str, int character) {
             const char charToFind = character;
-            METAL_DEVICE char* const strPtr = str;
+            T strPtr = str;
             while (strPtr && *strPtr != NULL_CHAR) {
                 if (*strPtr == charToFind) {
                     return strPtr;
                 }
+                strPtr++;
             }
 
             return nullptr;
+        }
+
+        template<typename T = METAL_DEVICE char*>
+        static T const strnchr(T const str, size_t length, int character) {
+            const char charToFind = character;
+            T strPtr = str;
+            for (size_t i = 0; i < length; ++i) {
+                if (*strPtr == charToFind) {
+                    return strPtr;
+                }
+                strPtr++;
+            }
+
+            return nullptr;
+        }
+
+        static int ctoi(char c) {
+            if (c == '0') {
+                return 0;
+            } else if (c == '1') {
+                return 1;
+            } else if (c == '2') {
+                return 2;
+            } else if (c == '3') {
+                return 3;
+            } else if (c == '4') {
+                return 4;
+            } else if (c == '5') {
+                return 5;
+            } else if (c == '6') {
+                return 6;
+            } else if (c == '7') {
+                return 7;
+            } else if (c == '8') {
+                return 8;
+            } else if (c == '9') {
+                return 9;
+            } else if (c == '.') {
+                // magic number
+                return 101;
+            }
+
+            return 102;
+        }
+
+        template<typename T = METAL_DEVICE char*>
+        static int64_t const stoi(T const str, size_t length) {
+            int64_t result = 0;
+            for (size_t i = 0; i < length; ++i) {
+                if (i > 0) {
+                    result *= 10;
+                }
+                result += ctoi(str[i]);
+            }
+            return result;
+        }
+
+        template<typename T = METAL_DEVICE char*>
+        static float const stof(T const str, size_t length) {
+            // Find first part
+            auto wholePart = strnchr(str, length, '.');
+            if (wholePart) {
+                // Found a '.'
+                auto fractionPoint = wholePart;
+                // Check if the decimal was at the end.
+                if (fractionPoint - str == length - 1) {
+                    // It's at the end
+                    return stoi(str, length - 1);
+                } else {
+                    // It's in the middle
+                    auto wholePartConv = stoi(str, wholePart - str);
+                    auto lengthOfDecimal = length - (wholePart - str) - 1;
+                    auto decimalConv = stoi(fractionPoint + 1, lengthOfDecimal);
+
+                    int multiplier =  1;
+                    for (int i = 0; i < lengthOfDecimal; ++i) {
+                        multiplier = (multiplier << 3) + (multiplier << 1);
+                    }
+                    return wholePartConv + (decimalConv * 1/multiplier);
+                }
+            } else {
+                // No decimal part, just cast to float
+                return stoi(str, length);
+            }
         }
     }
 }

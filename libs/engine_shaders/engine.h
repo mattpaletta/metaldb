@@ -5,22 +5,13 @@
 #include "instruction_type.h"
 #include "parse_row_instruction.h"
 #include "projection_instruction.h"
+#include "output_instruction.h"
 #include "method.h"
+#include "temp_row.h"
+#include "db_constants.h"
 #include "vm.h"
 
-#ifndef __METAL__
-#include <cstdint>
-#endif
-
 namespace metaldb {
-    class DbConstants final {
-    public:
-        DbConstants(metaldb::RawTable METAL_THREAD & rawTable_, uint8_t thread_position_in_grid_) : rawTable(rawTable_), thread_position_in_grid(thread_position_in_grid_) {}
-
-        metaldb::RawTable METAL_THREAD & rawTable;
-        uint8_t thread_position_in_grid;
-    };
-
     static InstructionType decodeType(METAL_DEVICE int8_t* instruction) {
         return (InstructionType) *instruction;
     }
@@ -34,19 +25,15 @@ namespace metaldb {
             return;
         }
 
-
         // TODO: how to handle sorting & aggregations? - same way, sync after creating each group/sorted.
         // Start by lazily processing each row.
-        switch ((InstructionPtr) decodedInstructions[0]) {
-        case metaldb::PARSEROW: {
-            auto parseRow = (ParseRowInstruction METAL_THREAD *) decodedInstructions[1];
-            
-            break;
-        }
-        case metaldb::OUTPUT: {
-            // TODO: Write the output and lazily grab the prev instruction.
-            break;
-        }
+        const auto indexLastInstruction = 2*(numDecodedInstructions-1);
+#ifdef __METAL
+        assert((InstructionPtr) decodedInstructions[indexLastInstruction] == metaldb::OUTPUT, "Final instruction must be output.")
+#endif
+        {
+            auto outputInstruction = ((metaldb::OutputInstruction METAL_THREAD *) decodedInstructions[indexLastInstruction+1]);
+            outputInstruction->WriteRow(constants);
         }
 
         if (numDecodedInstructions == 1) {
@@ -82,6 +69,13 @@ namespace metaldb {
 
             return decodeInstruction(decodedInstructions, numDecodedInstructions+1, numInstructions-1, projectionInstruction.end(), constants);
         }
+        case metaldb::OUTPUT:
+            auto outputProjection = metaldb::OutputInstruction(&instructions[1]);
+
+            decodedInstructions[(numDecodedInstructions*2)+0] = (InstructionPtr) metaldb::OUTPUT;
+            decodedInstructions[(numDecodedInstructions*2)+1] = (InstructionPtr) &outputProjection;
+
+            return decodeInstruction(decodedInstructions, numDecodedInstructions+1, numInstructions-1, outputProjection.end(), constants);
         }
     }
 
@@ -103,7 +97,7 @@ inline void runQueryKernelImpl(METAL_DEVICE char* rawData, METAL_DEVICE int8_t* 
 
     // Decode instructions + dispatch
     const auto numInstructions = instructions[0];
-    DbConstants constants{rawTable, thread_position_in_grid};
+    DbConstants constants{rawTable, outputBuffer, thread_position_in_grid};
 
     // Dynamically scale the parameter
     if (numInstructions == 1) {
