@@ -9,6 +9,7 @@
 
 namespace metaldb {
     enum ColumnType : instruction_serialized_value_type {
+        Unknown,
         String,
         Float,
         Integer

@@ -64,34 +64,27 @@ namespace metaldb {
 
             METAL_DEVICE char* endOfColumn = metal::strings::strchr(startOfColumn, ',');
 
+            size_t length = endOfColumn - startOfColumn;
             if (row < rawTable.GetNumRows()) {
+                // Unless it's the last row, read until the start of the next row.
                 auto startOfNextRowInd = rawTable.GetRowIndex(this->skipHeader() ? row+2 : row+1);
                 METAL_DEVICE char* startOfNextRow = rawTable.data(startOfNextRowInd);
                 auto lengthOfThisColumn = endOfColumn - startOfColumn;
                 auto lengthToNextRow = startOfNextRow - startOfColumn;
-                return StringSection(startOfColumn, lengthOfThisColumn > lengthToNextRow ? lengthToNextRow : lengthOfThisColumn);
-
+                length = lengthOfThisColumn > lengthToNextRow ? lengthToNextRow : lengthOfThisColumn;
             }
 
-            return StringSection(startOfColumn, endOfColumn - startOfColumn);
+            if ((*startOfColumn == '"' || *startOfColumn == '\'') && (*(startOfColumn+length) == '"' || (*(startOfColumn+length) == '"'))) {
+                // Starts and ends with a quote, strip them.
+                return StringSection(startOfColumn + 1, length - 2);
+            }
+
+            return StringSection(startOfColumn, length);
         }
 
         int8_t readCSVColumnLength(RawTable METAL_THREAD & rawTable, uint8_t row, uint8_t column) const {
-            auto rowIndex = rawTable.GetRowIndex(this->skipHeader() ? row+1 : row);
-
-            // Get the column by scanning
-            METAL_DEVICE char* startOfColumn = rawTable.data(rowIndex);
-            for (uint8_t i = 0; i < column && startOfColumn; ++i) {
-                startOfColumn = metal::strings::strchr(startOfColumn, ',');
-            }
-
-            if (!startOfColumn) {
-                return 0;
-            }
-
-            METAL_DEVICE char* endOfColumn = metal::strings::strchr(startOfColumn, ',');
-
-            return endOfColumn - startOfColumn;
+            // Do it this was for now to keep the code the same.
+            return this->readCSVColumn(rawTable, row, column).size();
         }
 
         TempRow GetRow(DbConstants METAL_THREAD & constants) {

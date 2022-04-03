@@ -48,10 +48,55 @@ namespace metaldb {
             row = projectionInstruction->GetRow(decodedInstructions, numDecodedInstructions - 1, constants);
         }
 
-        // Do the projection
-        
+#ifndef __METAL__
+        std::cout << "Doing Projection" << std::endl;
+#endif
 
-        return row;
+        // Do the projection
+        TempRow::TempRowBuilder builder;
+        {
+            builder.numColumns = this->numColumns();
+#ifndef __METAL__
+            std::cout << "Got N columns: " << (int)this->numColumns() << std::endl;
+#endif
+
+            // Read column types
+            for (int8_t i = 0; i < this->numColumns(); ++i) {
+                auto columnToRead = this->getColumnIndex(i);
+#ifndef __METAL__
+                std::cout << "Reading column: " << (int)columnToRead << std::endl;
+#endif
+                // Set all column types
+                auto columnType = row.ColumnType(columnToRead);
+                builder.columnTypes[i] = columnType;
+
+#ifndef __METAL__
+                // TODO: Why is the column type not being recorded correctly.
+                std::cout << "Column type: " << ((int)columnType) << std::endl;
+#endif
+
+                // Set all column sizes, and they might get pruned
+                if (columnType == String) {
+                    builder.columnSizes[i] = row.ColumnSize(columnToRead);
+                } else {
+                    builder.columnSizes[i] = 0;
+                }
+
+#ifndef __METAL__
+                std::cout << "Column Size: " << (int)builder.columnSizes[i] << std::endl;
+#endif
+            }
+        }
+        TempRow newRow = builder;
+        // Copy the columns we are interested in
+        for (size_t i = 0; i < this->numColumns(); ++i) {
+            const auto columnToRead = this->getColumnIndex(i);
+
+            // Read from row into newRow
+            newRow.append(row.data(row.ColumnStartOffset(columnToRead)), row.ColumnSize(columnToRead));
+        }
+
+        return newRow;
     }
 
     static InstructionType decodeType(METAL_DEVICE int8_t* instruction) {

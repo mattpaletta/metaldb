@@ -57,7 +57,7 @@ namespace metaldb {
             {
                 // Column sizes (for all variable columns)
                 for (uint8_t i = 0; i < builder.numColumns; ++i) {
-                    auto columnType = (ColumnType) builder.columnTypes[i];
+                    auto columnType = (enum ColumnType) builder.columnTypes[i];
                     if (columnType == String) {
                         // Hack using the length of the header so we dynamically write to the correct place.
                         this->_data[lengthOfHeader++] = builder.columnSizes[i];
@@ -70,12 +70,70 @@ namespace metaldb {
 
         TempRow() = default;
 
+        uint8_t LengthOfHeader() const {
+            return this->_data[0];
+        }
+
+        size_t NumColumns() const {
+            return this->_data[1];
+        }
+
+        enum ColumnType ColumnType(size_t column) {
+            return (enum ColumnType) this->_data[2 + column];
+        }
+
+        uint8_t ColumnSize(size_t column) {
+            // Calculate column size of variable sizes
+            switch (this->ColumnType(column)) {
+            case String:
+                break;
+            case Float:
+                return sizeof(float);
+            case Integer:
+                return sizeof(uint8_t);
+            }
+
+            size_t offsetOfVariableLength = 0;
+            for (size_t i = 0; i < column; ++i) {
+                switch (this->ColumnType(i)) {
+                case String: {
+                    offsetOfVariableLength++;
+                    break;
+                }
+                case Float:
+                case Integer:
+                    continue;
+                }
+            }
+            // Lookup in the index of column type
+            return this->_data[
+                /* fixed header */ 2 +
+                /* columnType offset */ this->NumColumns() +
+                /* read into column size */ offsetOfVariableLength];
+        }
+
+        size_t ColumnStartOffset(size_t column) {
+            size_t sum = 0;
+            for (size_t i = 0; i < column; ++i) {
+                sum += this->ColumnSize(i);
+            }
+            return sum;
+        }
+
         LocalStringSection getString() {
-            return LocalStringSection(&this->_data[0], this->_size);
+            return LocalStringSection(&this->_data[this->LengthOfHeader()], this->_size);
+        }
+
+        METAL_THREAD char* data(size_t index = 0) {
+            return &this->_data[index];
         }
 
         METAL_THREAD char* end() {
-            return &this->_data[this->_size];
+            return this->data(this->_size);
+        }
+
+        size_t size() const {
+            return this->_size;
         }
 
         void append(METAL_THREAD char* str, size_t len) {
