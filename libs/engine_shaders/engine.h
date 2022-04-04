@@ -32,6 +32,64 @@ namespace metaldb {
         }
 
         // Write row into output.
+
+        /**
+         * Size of header
+         * Num Rows
+         * Column Types
+         * --------
+         * Column Types for row (if string)
+         * Row data
+         * --------
+         */
+#ifdef __METAL__
+        // Sync here
+        threadgroup_barrier(mem_flags::mem_threadgroup);
+#endif
+        if (constants.thread_position_in_grid == 0) {
+            // Only the first thread should write the header, all other threads wait
+
+            // Write length of header
+            constants.outputBuffer[0] = 0;
+            size_t lengthOfHeader = 1;
+
+            // Write the number of columns
+            constants.outputBuffer[lengthOfHeader++] = row.NumColumns();
+
+            // Write the types of each column
+            for (int i = 0; i < row.NumColumns(); ++i) {
+                constants.outputBuffer[lengthOfHeader++] = (uint8_t) row.ColumnType(i);
+            }
+
+            // Write the size of the header
+            constants.outputBuffer[0] = lengthOfHeader;
+        }
+#ifdef __METAL__
+        // Sync here
+        threadgroup_barrier(mem_flags::mem_threadgroup);
+#endif
+
+#ifdef __METAL__
+
+#else
+        // If not metal, find the next open spot and write the data there.
+
+        // Start at the length of the header (guaranteed minimum)
+        size_t nextAvailableSlot = constants.outputBuffer[0];
+        while (constants.outputBuffer[nextAvailableSlot++] == 0) {}
+
+        // Write the column sizes for all non-zero size columns
+        for (size_t i = 0; i < row.NumColumns(); ++i) {
+            if (row.ColumnVariableSize(i)) {
+                constants.outputBuffer[nextAvailableSlot++] = row.ColumnSize(i);
+            }
+        }
+
+        // Write the data for the row
+        for (size_t i = 0; i < row.size(); ++i) {
+            constants.outputBuffer[nextAvailableSlot++] = row.data(i);
+        }
+#endif
     }
 
     inline TempRow ProjectionInstruction::GetRow(InstructionPtr METAL_THREAD * decodedInstructions, size_t numDecodedInstructions, DbConstants METAL_THREAD & constants) {

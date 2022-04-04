@@ -133,6 +133,8 @@ namespace metaldb {
                     row.append((char METAL_THREAD *) &result, sizeof(float));
                     break;
                 }
+                case Unknown:
+                    break;
                 }
             }
 

@@ -60,7 +60,7 @@ namespace metaldb {
                     auto columnType = (enum ColumnType) builder.columnTypes[i];
                     if (columnType == String) {
                         // Hack using the length of the header so we dynamically write to the correct place.
-                        this->_data[lengthOfHeader++] = builder.columnSizes[i];
+                        this->_data[lengthOfHeader++] = (value_type) builder.columnSizes[i];
                     }
                 }
             }
@@ -82,6 +82,17 @@ namespace metaldb {
             return (enum ColumnType) this->_data[2 + column];
         }
 
+        bool ColumnVariableSize(size_t column) {
+            switch (this->ColumnType(column)) {
+            case String:
+                return true;
+            case Float:
+            case Integer:
+            case Unknown:
+                return false;
+            }
+        }
+
         uint8_t ColumnSize(size_t column) {
             // Calculate column size of variable sizes
             switch (this->ColumnType(column)) {
@@ -91,6 +102,8 @@ namespace metaldb {
                 return sizeof(float);
             case Integer:
                 return sizeof(uint8_t);
+            case Unknown:
+                return 0;
             }
 
             size_t offsetOfVariableLength = 0;
@@ -102,6 +115,7 @@ namespace metaldb {
                 }
                 case Float:
                 case Integer:
+                case Unknown:
                     continue;
                 }
             }
@@ -125,11 +139,11 @@ namespace metaldb {
         }
 
         METAL_THREAD char* data(size_t index = 0) {
-            return &this->_data[index];
+            return &this->_data[this->LengthOfHeader() + index];
         }
 
         METAL_THREAD char* end() {
-            return this->data(this->_size);
+            return this->data(this->LengthOfHeader() + this->_size);
         }
 
         size_t size() const {

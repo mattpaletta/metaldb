@@ -126,12 +126,35 @@ namespace {
 auto metaldb::engine::Engine::runImpl(const reader::RawTable& rawTable, instruction_serialized_type&& instructions) -> Dataframe {
 //    auto manager = MetalManager::Create();
 //    assert(manager);
+    size_t numRows = 1000;
     auto rawDataSerialized = SerializeRawTable(rawTable);
     std::array<char, 1'000'000> outputBuffer;
-    for (uint i = 0; i < 1000; ++i) {
+    for (uint i = 0; i < numRows; ++i) {
         runQueryKernelImpl(rawDataSerialized.data(), instructions.data(), outputBuffer.data(), i);
     }
 
     // Read output buffer to Dataframe.
-    return Dataframe();
+    Dataframe df;
+
+    // Print to console
+    {
+        size_t sizeOfHeader = outputBuffer[0];
+        size_t numColumns = outputBuffer[1];
+
+        std::cout << "Size of header: " << sizeOfHeader << std::endl;
+        std::cout << "Num columns: " << numColumns << std::endl;
+
+        std::vector<ColumnType> columnTypes{numColumns};
+        for (size_t i = 0; i < numColumns; ++i) {
+            columnTypes.at(i) = (ColumnType) outputBuffer[2 + i];
+            std::cout << "Column Type: " << i << " " << columnTypes.at(i) << std::endl;
+        }
+
+        // Read the row
+        for (size_t i = sizeOfHeader; i < outputBuffer.size(); ++i) {
+
+        }
+    }
+
+    return df;
 }
