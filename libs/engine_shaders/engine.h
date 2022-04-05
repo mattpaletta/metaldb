@@ -35,6 +35,7 @@ namespace metaldb {
 
         /**
          * Size of header
+         * Num bytes (2 bytes)
          * Num Rows
          * Column Types
          * --------
@@ -44,29 +45,35 @@ namespace metaldb {
          */
 #ifdef __METAL__
         // Sync here
-        threadgroup_barrier(mem_flags::mem_threadgroup);
+        threadgroup_barrier(metal::mem_flags::mem_threadgroup);
 #endif
         if (constants.thread_position_in_grid == 0) {
             // Only the first thread should write the header, all other threads wait
 
             // Write length of header
             constants.outputBuffer[0] = 0;
-            size_t lengthOfHeader = 1;
+
+            // Write length of buffer (2 bytes)
+            constants.outputBuffer[1] = 0;
+            constants.outputBuffer[2] = 0;
+
+            size_t lengthOfHeader = 3;
 
             // Write the number of columns
             constants.outputBuffer[lengthOfHeader++] = row.NumColumns();
 
             // Write the types of each column
-            for (int i = 0; i < row.NumColumns(); ++i) {
+            for (size_t i = 0; i < row.NumColumns(); ++i) {
                 constants.outputBuffer[lengthOfHeader++] = (uint8_t) row.ColumnType(i);
             }
 
             // Write the size of the header
             constants.outputBuffer[0] = lengthOfHeader;
+            *(uint16_t METAL_DEVICE *)(&constants.outputBuffer[1]) = lengthOfHeader;
         }
 #ifdef __METAL__
         // Sync here
-        threadgroup_barrier(mem_flags::mem_threadgroup);
+        threadgroup_barrier(metal::mem_flags::mem_threadgroup);
 #endif
 
 #ifdef __METAL__
@@ -74,9 +81,8 @@ namespace metaldb {
 #else
         // If not metal, find the next open spot and write the data there.
 
-        // Start at the length of the header (guaranteed minimum)
-        size_t nextAvailableSlot = constants.outputBuffer[0];
-        while (constants.outputBuffer[nextAvailableSlot++] == 0) {}
+        // Start at the length of the buffer
+        size_t nextAvailableSlot = *(uint16_t METAL_DEVICE *)(&constants.outputBuffer[1]);
 
         // Write the column sizes for all non-zero size columns
         for (size_t i = 0; i < row.NumColumns(); ++i) {
@@ -87,8 +93,11 @@ namespace metaldb {
 
         // Write the data for the row
         for (size_t i = 0; i < row.size(); ++i) {
-            constants.outputBuffer[nextAvailableSlot++] = row.data(i);
+            constants.outputBuffer[nextAvailableSlot++] = *row.data(i);
         }
+
+        // Update the size of the buffer
+        *(uint16_t METAL_DEVICE *)(&constants.outputBuffer[1]) = nextAvailableSlot;
 #endif
     }
 
@@ -105,33 +114,18 @@ namespace metaldb {
             auto projectionInstruction = ((ProjectionInstruction METAL_THREAD *) decodedInstructions[indexLastInstruction+1]);
             row = projectionInstruction->GetRow(decodedInstructions, numDecodedInstructions - 1, constants);
         }
-
-#ifndef __METAL__
-        std::cout << "Doing Projection" << std::endl;
-#endif
-
         // Do the projection
         TempRow::TempRowBuilder builder;
         {
             builder.numColumns = this->numColumns();
-#ifndef __METAL__
-            std::cout << "Got N columns: " << (int)this->numColumns() << std::endl;
-#endif
 
             // Read column types
             for (int8_t i = 0; i < this->numColumns(); ++i) {
                 auto columnToRead = this->getColumnIndex(i);
-#ifndef __METAL__
-                std::cout << "Reading column: " << (int)columnToRead << std::endl;
-#endif
+
                 // Set all column types
                 auto columnType = row.ColumnType(columnToRead);
                 builder.columnTypes[i] = columnType;
-
-#ifndef __METAL__
-                // TODO: Why is the column type not being recorded correctly.
-                std::cout << "Column type: " << ((int)columnType) << std::endl;
-#endif
 
                 // Set all column sizes, and they might get pruned
                 if (columnType == String) {
@@ -139,10 +133,6 @@ namespace metaldb {
                 } else {
                     builder.columnSizes[i] = 0;
                 }
-
-#ifndef __METAL__
-                std::cout << "Column Size: " << (int)builder.columnSizes[i] << std::endl;
-#endif
             }
         }
         TempRow newRow = builder;
@@ -151,7 +141,9 @@ namespace metaldb {
             const auto columnToRead = this->getColumnIndex(i);
 
             // Read from row into newRow
-            newRow.append(row.data(row.ColumnStartOffset(columnToRead)), row.ColumnSize(columnToRead));
+            const auto columnStartOffset = row.ColumnStartOffset(columnToRead);
+            const auto columnSize = row.ColumnSize(columnToRead);
+            newRow.append(row.data(columnStartOffset), columnSize);
         }
 
         return newRow;
@@ -178,10 +170,6 @@ namespace metaldb {
         {
             auto outputInstruction = ((metaldb::OutputInstruction METAL_THREAD *) decodedInstructions[indexLastInstruction+1]);
             outputInstruction->WriteRow(decodedInstructions, numDecodedInstructions - 1, constants);
-        }
-
-        if (numDecodedInstructions == 1) {
-            // This is the last one, sort prefix sum, write into output buffer.
         }
     }
 
@@ -235,7 +223,7 @@ namespace metaldb {
 }
 
 
-inline void runQueryKernelImpl(METAL_DEVICE char* rawData, METAL_DEVICE int8_t* instructions, METAL_DEVICE char* outputBuffer, uint8_t thread_position_in_grid) {
+inline void runQueryKernelImpl(METAL_DEVICE char* rawData, METAL_DEVICE int8_t* instructions, METAL_DEVICE int8_t* outputBuffer, uint8_t thread_position_in_grid) {
     using namespace metaldb;
     RawTable rawTable(rawData);
 
@@ -264,7 +252,7 @@ inline void runQueryKernelImpl(METAL_DEVICE char* rawData, METAL_DEVICE int8_t* 
 }
 
 #ifdef __METAL__
-kernel void runQueryKernel(device char* rawData [[ buffer(0) ]], device int8_t* instructions [[ buffer(1) ]], device char* outputBuffer [[ buffer(2) ]], uint id [[ thread_position_in_grid ]]) {
+kernel void runQueryKernel(device char* rawData [[ buffer(0) ]], device int8_t* instructions [[ buffer(1) ]], device int8_t* outputBuffer [[ buffer(2) ]], uint id [[ thread_position_in_grid ]]) {
     runQueryKernelImpl(rawData, instructions, outputBuffer, id);
 }
 #endif

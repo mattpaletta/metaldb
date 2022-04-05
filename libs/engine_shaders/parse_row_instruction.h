@@ -123,14 +123,14 @@ namespace metaldb {
                 }
                 case Integer: {
                     // Cast it to an integer
-                    int8_t result = metal::strings::stoi(stringSection.str(), stringSection.size());
-                    row.append((char METAL_THREAD *) &result, sizeof(int8_t));
+                    types::IntegerType result = metal::strings::stoi(stringSection.str(), stringSection.size());
+                    row.append((char METAL_THREAD *) &result, sizeof(types::IntegerType));
                     break;
                 }
                 case Float: {
                     // Cast it to a float.
-                    float result = metal::strings::stof(stringSection.str(), stringSection.size());
-                    row.append((char METAL_THREAD *) &result, sizeof(float));
+                    types::FloatType result = metal::strings::stof(stringSection.str(), stringSection.size());
+                    row.append((char METAL_THREAD *) &result, sizeof(types::FloatType));
                     break;
                 }
                 case Unknown:

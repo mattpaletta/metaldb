@@ -30,3 +30,9 @@
 #define MAX_OUTPUT_ROW_LENGTH 1024
 
 using InstructionPtr = uint64_t;
+
+namespace metaldb::types {
+    using IntegerType = int8_t;
+    using FloatType = float;
+    using StringType = char;
+}

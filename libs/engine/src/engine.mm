@@ -128,7 +128,7 @@ auto metaldb::engine::Engine::runImpl(const reader::RawTable& rawTable, instruct
 //    assert(manager);
     size_t numRows = 1000;
     auto rawDataSerialized = SerializeRawTable(rawTable);
-    std::array<char, 1'000'000> outputBuffer;
+    std::array<int8_t, 1'000'000> outputBuffer{0};
     for (uint i = 0; i < numRows; ++i) {
         runQueryKernelImpl(rawDataSerialized.data(), instructions.data(), outputBuffer.data(), i);
     }
@@ -139,20 +139,66 @@ auto metaldb::engine::Engine::runImpl(const reader::RawTable& rawTable, instruct
     // Print to console
     {
         size_t sizeOfHeader = outputBuffer[0];
-        size_t numColumns = outputBuffer[1];
+        size_t numBytes = *(uint16_t*)(&outputBuffer[1]);
+        size_t numColumns = outputBuffer[3];
 
         std::cout << "Size of header: " << sizeOfHeader << std::endl;
+        std::cout << "Num bytes: " << numBytes << std::endl;
         std::cout << "Num columns: " << numColumns << std::endl;
 
-        std::vector<ColumnType> columnTypes{numColumns};
+        // Allocate this once so we don't change it
+        std::vector<std::size_t> columnSizes{numColumns, 0};
+        std::vector<ColumnType> columnTypes{numColumns, ColumnType::Unknown};
+        std::vector<size_t> variableLengthColumns;
         for (size_t i = 0; i < numColumns; ++i) {
-            columnTypes.at(i) = (ColumnType) outputBuffer[2 + i];
-            std::cout << "Column Type: " << i << " " << columnTypes.at(i) << std::endl;
+            const auto columnType = (ColumnType) outputBuffer[3 + i];
+            columnTypes.at(i) = columnType;
+            std::cout << "Column Type: " << i << " " << columnType << std::endl;
+
+            switch (columnType) {
+            case String:
+                columnSizes.at(i) = 0;
+                variableLengthColumns.push_back(i);
+                break;
+            case Float:
+                columnSizes.at(i) = sizeof(metaldb::types::FloatType);
+                break;
+            case Integer:
+                columnSizes.at(i) = sizeof(metaldb::types::IntegerType);
+                break;
+            case Unknown:
+                assert(false);
+                break;
+            }
         }
 
         // Read the row
-        for (size_t i = sizeOfHeader; i < outputBuffer.size(); ++i) {
+        size_t i = sizeOfHeader;
+        while (i < numBytes) {
+            // Read the column sizes for the dynamic sized ones
+            for (const auto& varLengthCol : variableLengthColumns) {
+                columnSizes[varLengthCol] = (std::size_t) outputBuffer[i++];
+            }
 
+            // Read the row
+            for (int col = 0; col < numColumns; ++col) {
+                auto columnType = columnTypes.at(col);
+                auto columnSize = columnSizes.at(col);
+                switch (columnType) {
+                case Integer: {
+                    auto* val = (types::IntegerType*) &outputBuffer[i];
+                    std::cout << "Reading Int: " << *val << " with size: " << columnSize << std::endl;
+                    break;
+                }
+                case Float: {
+                    auto* val = (types::FloatType*) &outputBuffer[i];
+                    std::cout << "Reading Float: " << *val << " with size: " << columnSize << std::endl;
+                    break;
+                }
+                }
+
+                i += columnSize;
+            }
         }
     }
 

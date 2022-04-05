@@ -40,7 +40,8 @@ namespace metaldb {
         };
 
         TempRow(TempRowBuilder builder) {
-            uint8_t lengthOfHeader = 0;
+            // Start at 1, because the first thing is the length of the header!
+            uint8_t lengthOfHeader = 1;
 
             {
                 // Write num columns
@@ -99,9 +100,9 @@ namespace metaldb {
             case String:
                 break;
             case Float:
-                return sizeof(float);
+                return sizeof(types::FloatType);
             case Integer:
-                return sizeof(uint8_t);
+                return sizeof(types::IntegerType);
             case Unknown:
                 return 0;
             }
@@ -143,7 +144,7 @@ namespace metaldb {
         }
 
         METAL_THREAD char* end() {
-            return this->data(this->LengthOfHeader() + this->_size);
+            return this->data(this->_size);
         }
 
         size_t size() const {
