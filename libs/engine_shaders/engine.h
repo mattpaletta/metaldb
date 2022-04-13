@@ -173,41 +173,45 @@ namespace metaldb {
         }
     }
 
-
     // Push each instruction onto the call stack, stored in `decodedInstructions`
     // Each instruction upon decoding has an 'end' method that returns the address of 1 past the end of the decoded instruction in the buffer.
     // When all instructions are decoded, can evaluate the expression using a VM based on the Metal stack.
+    template<size_t N = 1>
     static void decodeInstruction(InstructionPtr METAL_THREAD * decodedInstructions, size_t numDecodedInstructions, int8_t numInstructions, METAL_DEVICE int8_t* instructions, DbConstants METAL_THREAD & constants) {
-        if (numInstructions == 0) {
-            // When no more instructions to decode
-            // Run the instructions
-            // Need to keep calling into the stack otherwise we'll loose the decoded instructions on the call stack.
-            runExpression(decodedInstructions, numDecodedInstructions, constants);
+        if constexpr(N == 0) {
             return;
-        }
+        } else {
+            if (numInstructions == 0) {
+                // When no more instructions to decode
+                // Run the instructions
+                // Need to keep calling into the stack otherwise we'll lose the decoded instructions on the call stack.
+                runExpression(decodedInstructions, numDecodedInstructions, constants);
+                return;
+            }
 
-        switch (metaldb::decodeType(instructions)) {
-        case metaldb::PARSEROW: {
-            auto parseRowExpression = metaldb::ParseRowInstruction(&instructions[1]);
-            decodedInstructions[(numDecodedInstructions*2)+0] = (InstructionPtr) metaldb::PARSEROW;
-            decodedInstructions[(numDecodedInstructions*2)+1] = (InstructionPtr) &parseRowExpression;
+            switch (metaldb::decodeType(instructions)) {
+            case metaldb::PARSEROW: {
+                auto parseRowExpression = metaldb::ParseRowInstruction(&instructions[1]);
+                decodedInstructions[(numDecodedInstructions*2)+0] = (InstructionPtr) metaldb::PARSEROW;
+                decodedInstructions[(numDecodedInstructions*2)+1] = (InstructionPtr) &parseRowExpression;
 
-            return decodeInstruction(decodedInstructions, numDecodedInstructions+1, numInstructions - 1, parseRowExpression.end(), constants);
-        }
-        case metaldb::PROJECTION: {
-            auto projectionInstruction = metaldb::ProjectionInstruction(&instructions[1]);
-            decodedInstructions[(numDecodedInstructions*2)+0] = (InstructionPtr) metaldb::PROJECTION;
-            decodedInstructions[(numDecodedInstructions*2)+1] = (InstructionPtr) &projectionInstruction;
+                return decodeInstruction<N - 1>(decodedInstructions, numDecodedInstructions+1, numInstructions - 1, parseRowExpression.end(), constants);
+            }
+            case metaldb::PROJECTION: {
+                auto projectionInstruction = metaldb::ProjectionInstruction(&instructions[1]);
+                decodedInstructions[(numDecodedInstructions*2)+0] = (InstructionPtr) metaldb::PROJECTION;
+                decodedInstructions[(numDecodedInstructions*2)+1] = (InstructionPtr) &projectionInstruction;
 
-            return decodeInstruction(decodedInstructions, numDecodedInstructions+1, numInstructions-1, projectionInstruction.end(), constants);
-        }
-        case metaldb::OUTPUT:
-            auto outputProjection = metaldb::OutputInstruction(&instructions[1]);
+                return decodeInstruction<N - 1>(decodedInstructions, numDecodedInstructions+1, numInstructions-1, projectionInstruction.end(), constants);
+            }
+            case metaldb::OUTPUT:
+                auto outputProjection = metaldb::OutputInstruction(&instructions[1]);
 
-            decodedInstructions[(numDecodedInstructions*2)+0] = (InstructionPtr) metaldb::OUTPUT;
-            decodedInstructions[(numDecodedInstructions*2)+1] = (InstructionPtr) &outputProjection;
+                decodedInstructions[(numDecodedInstructions*2)+0] = (InstructionPtr) metaldb::OUTPUT;
+                decodedInstructions[(numDecodedInstructions*2)+1] = (InstructionPtr) &outputProjection;
 
-            return decodeInstruction(decodedInstructions, numDecodedInstructions+1, numInstructions-1, outputProjection.end(), constants);
+                return decodeInstruction<N - 1>(decodedInstructions, numDecodedInstructions+1, numInstructions-1, outputProjection.end(), constants);
+            }
         }
     }
 
@@ -218,9 +222,10 @@ namespace metaldb {
         InstructionPtr decodedInstructions[MaxNumInstructions * 2];
         size_t numDecodedInstructions = 0;
 
-        decodeInstruction(decodedInstructions, numDecodedInstructions, numInstructions, instructions, constants);
+        decodeInstruction<MaxNumInstructions>(decodedInstructions, numDecodedInstructions, numInstructions, instructions, constants);
     }
 }
+
 
 
 inline void runQueryKernelImpl(METAL_DEVICE char* rawData, METAL_DEVICE int8_t* instructions, METAL_DEVICE int8_t* outputBuffer, uint8_t thread_position_in_grid) {
