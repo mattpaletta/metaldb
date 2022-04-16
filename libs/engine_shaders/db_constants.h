@@ -13,12 +13,20 @@
 namespace metaldb {
     class DbConstants final {
     public:
-        DbConstants(metaldb::RawTable METAL_THREAD & rawTable_, METAL_DEVICE int8_t* outputBuffer_, uint8_t thread_position_in_grid_) : rawTable(rawTable_), outputBuffer(outputBuffer_), thread_position_in_grid(thread_position_in_grid_) {}
+        constexpr static METAL_CONSTANT uint16_t MAX_NUM_ROWS = 1000;
 
-        metaldb::RawTable METAL_THREAD & rawTable;
+        DbConstants(RawTable METAL_THREAD & rawTable_, METAL_DEVICE int8_t* outputBuffer_, uint thread_position_in_grid_, uint threadgroup_position_in_grid_, uint thread_position_in_threadgroup_, uint32_t METAL_THREADGROUP * rowSizeScratch_) : rawTable(rawTable_), outputBuffer(outputBuffer_), thread_position_in_grid(thread_position_in_grid_), threadgroup_position_in_grid(threadgroup_position_in_grid_), thread_position_in_threadgroup(thread_position_in_threadgroup_), rowSizeScratch(rowSizeScratch_) {}
+
+        // Metal complains if you try and pass a reference here, so we use a pointer instead.
+        RawTable METAL_THREAD & rawTable;
         METAL_DEVICE int8_t* outputBuffer;
-        uint8_t thread_position_in_grid;
-        
+        uint thread_position_in_grid;
+        uint threadgroup_position_in_grid;
+        uint thread_position_in_threadgroup;
+
+
+        METAL_THREADGROUP uint32_t* rowSizeScratch;
+
 #ifndef __METAL__
         static size_t currentOutputBufferSize;
 #endif

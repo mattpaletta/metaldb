@@ -20,7 +20,7 @@ namespace metaldb {
     class ParseRowInstruction final {
     public:
         // Pointer points to beginning of ParseRow instruction.
-        ParseRowInstruction(METAL_DEVICE int8_t* instructions) : _instructions(instructions) {}
+        ParseRowInstruction(int8_t METAL_DEVICE * instructions) : _instructions(instructions) {}
 
         Method getMethod() const {
             return (Method) this->_instructions[0];

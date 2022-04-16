@@ -23,6 +23,8 @@ namespace metaldb::engine {
             return "Float";
         case Integer:
             return "Integer";
+        case Unknown:
+            return "Unknown";
         }
     }
 

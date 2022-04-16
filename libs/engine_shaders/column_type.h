@@ -7,6 +7,8 @@
 
 #pragma once
 
+#include "instruction_type.h"
+
 namespace metaldb {
     enum ColumnType : instruction_serialized_value_type {
         Unknown,

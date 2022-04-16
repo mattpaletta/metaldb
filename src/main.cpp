@@ -71,7 +71,7 @@ int main() {
     std::cout << "Starting MetalDB" << std::endl;
 
     std::filesystem::path path;
-    path.append("iris.csv");
+    path.append("../iris.csv");
     reader::CSVReader reader(path);
     std::cout << "Table Is Valid: " << (reader.isValid() ? "YES" : "NO") << std::endl;
 

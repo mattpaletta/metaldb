@@ -8,6 +8,7 @@
 #pragma once
 
 #include "constants.h"
+#include "column_type.h"
 #include "string_section.h"
 #include "strings.h"
 
@@ -34,14 +35,14 @@ namespace metaldb {
             constexpr METAL_CONSTANT static size_t MAX_VALUE = 256;
             TempRowBuilder() = default;
 
-            uint8_t numColumns;
             ColumnType columnTypes[MAX_VALUE];
-            uint8_t columnSizes[MAX_VALUE];
+            int8_t columnSizes[MAX_VALUE];
+            int8_t numColumns = 0;
         };
 
         TempRow(TempRowBuilder builder) {
             // Start at 1, because the first thing is the length of the header!
-            uint8_t lengthOfHeader = 1;
+            int8_t lengthOfHeader = 1;
 
             {
                 // Write num columns
@@ -50,14 +51,14 @@ namespace metaldb {
             }
             {
                 // Column types
-                for (uint8_t i = 0; i < builder.numColumns; ++i) {
+                for (int8_t i = 0; i < builder.numColumns; ++i) {
                     this->_data[2 + i] = (value_type) builder.columnTypes[i];
                     lengthOfHeader++;
                 }
             }
             {
                 // Column sizes (for all variable columns)
-                for (uint8_t i = 0; i < builder.numColumns; ++i) {
+                for (int8_t i = 0; i < builder.numColumns; ++i) {
                     auto columnType = (enum ColumnType) builder.columnTypes[i];
                     if (columnType == String) {
                         // Hack using the length of the header so we dynamically write to the correct place.
@@ -71,19 +72,29 @@ namespace metaldb {
 
         TempRow() = default;
 
-        uint8_t LengthOfHeader() const {
+        int8_t LengthOfHeader() const {
             return this->_data[0];
+        }
+
+        size_t SizeOfPartialRow() const {
+            size_t sum = this->size();
+            for (size_t i = 0; i < this->NumColumns(); ++i) {
+                if (this->ColumnVariableSize(i)) {
+                    sum += sizeof(this->ColumnSize(i));
+                }
+            }
+            return sum;
         }
 
         size_t NumColumns() const {
             return this->_data[1];
         }
 
-        enum ColumnType ColumnType(size_t column) {
+        enum ColumnType ColumnType(size_t column) const {
             return (enum ColumnType) this->_data[2 + column];
         }
 
-        bool ColumnVariableSize(size_t column) {
+        bool ColumnVariableSize(size_t column) const {
             switch (this->ColumnType(column)) {
             case String:
                 return true;
@@ -94,7 +105,7 @@ namespace metaldb {
             }
         }
 
-        uint8_t ColumnSize(size_t column) {
+        int8_t ColumnSize(size_t column) const {
             // Calculate column size of variable sizes
             switch (this->ColumnType(column)) {
             case String:

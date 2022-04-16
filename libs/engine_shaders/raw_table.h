@@ -12,24 +12,25 @@
 namespace metaldb {
     class RawTable {
     public:
-        RawTable(METAL_DEVICE char* rawData) : _rawData(rawData) {}
-
+        using RowIndexType = uint16_t;
         METAL_CONSTANT static constexpr int8_t RAW_DATA_NUM_ROWS_INDEX = 2;
 
-        uint8_t GetSizeOfHeader() {
-            return (uint8_t) _rawData[0];
+        RawTable(METAL_DEVICE char* rawData) : _rawData(rawData) {}
+
+        metaldb::types::SizeType GetSizeOfHeader() {
+            return *((METAL_DEVICE metaldb::types::SizeType*) &_rawData[0 * sizeof(metaldb::types::SizeType)]);
         }
 
-        uint8_t GetSizeOfData() {
-            return (uint8_t) _rawData[1];
+        metaldb::types::SizeType GetSizeOfData() {
+            return *((METAL_DEVICE metaldb::types::SizeType*) &_rawData[1 * sizeof(metaldb::types::SizeType)]);
         }
 
-        uint8_t GetNumRows() {
-            return (uint8_t) _rawData[RAW_DATA_NUM_ROWS_INDEX];
+        metaldb::types::SizeType GetNumRows() {
+            return *((METAL_DEVICE metaldb::types::SizeType*) &_rawData[RAW_DATA_NUM_ROWS_INDEX * sizeof(metaldb::types::SizeType)]);
         }
 
-        uint8_t GetRowIndex(uint8_t index) {
-            return (uint8_t) _rawData[RAW_DATA_NUM_ROWS_INDEX + 1 + index];
+        RowIndexType GetRowIndex(uint8_t index) {
+            return *((METAL_DEVICE RowIndexType*) &_rawData[(RAW_DATA_NUM_ROWS_INDEX * sizeof(metaldb::types::SizeType)) + (1 + index) * sizeof(RowIndexType)]);
         }
 
         uint8_t GetStartOfData() {
@@ -44,4 +45,4 @@ namespace metaldb {
     private:
         METAL_DEVICE char* _rawData;
     };
-};
+}
