@@ -14,15 +14,6 @@
 
 #include <metal_stdlib>
 
-using value_type = metaldb::TempRow::value_type;
-
-template<ushort LENGTH, typename T>
-static inline void ThreadUniformAdd(thread T (&values)[LENGTH], T uni) {
-    for (ushort i = 0; i < LENGTH; ++i) {
-        values[i] += uni;
-    }
-}
-
 //------------------------------------------------------------------------------------------------//
 //  Cooperative threadgroup scan
 template<uint32_t BLOCK_SIZE, typename T>
@@ -61,7 +52,35 @@ template<uint32_t BLOCK_SIZE, typename T>
 void PrefixScanKernel(threadgroup T* scratch, T input, uint32_t local_id /*[[thread_position_in_threadgroup]]*/, ushort simdWidth /* [[ thread_execution_width ]]*/) {
     //  scan the aggregates
     T prefix = ThreadgroupCooperativePrefixExclusiveSum<BLOCK_SIZE>(input, scratch, local_id, simdWidth);
-    scratch[local_id] = input + prefix;
+    scratch[local_id] = prefix;
+}
+
+template<uint32_t BLOCK_SIZE, typename T>
+T ThreadGroupReduceCooperativeAlgorithm(threadgroup T* scratch, T value, uint32_t local_id /*[[thread_position_in_threadgroup]]*/, ushort simdWidth /* [[ thread_execution_width ]]*/) {
+    // First level of reduction in simdgroup
+    T simdAdd = metal::simd_sum(value);
+
+    if (local_id < BLOCK_SIZE) {
+        scratch[local_id] = 0;
+    }
+
+    if (local_id % simdWidth == 0) {
+        // First thread writes to local memory
+        scratch[local_id / simdWidth] = simdAdd;
+    }
+    threadgroup_barrier(metal::mem_flags::mem_threadgroup);
+
+    if (local_id < simdWidth) {
+        // Mask values
+        simdAdd = (local_id < BLOCK_SIZE / simdWidth) ? scratch[local_id] : 0;
+
+        simdAdd = metal::simd_sum(simdAdd);
+//        scratch[local_id] = simdAdd;
+    }
+
+//    threadgroup_barrier(metal::mem_flags::mem_threadgroup);
+//    return scratch[0];
+    return simdAdd;
 }
 
 

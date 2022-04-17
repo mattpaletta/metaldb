@@ -45,6 +45,10 @@ namespace metaldb {
             int8_t lengthOfHeader = 1;
 
             {
+                // Write length of buffer
+                lengthOfHeader += sizeof(uint32_t);
+            }
+            {
                 // Write num columns
                 this->_data[1] = builder.numColumns;
                 lengthOfHeader++;

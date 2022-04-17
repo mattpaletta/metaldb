@@ -67,7 +67,7 @@ namespace {
             for (std::size_t i = 0; i < instructions.size(); ++i) {
                 ((int8_t*)instructionsBuffer.contents)[i] = instructions.at(i);
             }
-//
+
 //            auto captureManager = [MTLCaptureManager sharedCaptureManager];
 //            auto captureDescriptor = [MTLCaptureDescriptor new];
 //            captureDescriptor.captureObject = this->device;
@@ -304,11 +304,12 @@ auto metaldb::engine::Engine::runImpl(const reader::RawTable& rawTable, instruct
     assert(manager);
 
     auto rawDataSerialized = SerializeRawTable(rawTable);
-    std::array<int8_t, 1'000'000> outputBuffer{0};
+    std::array<int8_t, 2'000> outputBuffer{0};
 
     manager->run(rawDataSerialized, instructions, outputBuffer, rawTable.numRows());
 
-    return;
+    // TODO: Why are floats being parsed as invalid values
+    // TODO: Compare to CPU implementation of parseRow.
 
     // Read output buffer to Dataframe.
     Dataframe df;
@@ -316,8 +317,8 @@ auto metaldb::engine::Engine::runImpl(const reader::RawTable& rawTable, instruct
     // Print to console
     {
         size_t sizeOfHeader = outputBuffer[0];
-        size_t numBytes = *(uint16_t*)(&outputBuffer[1]);
-        size_t numColumns = outputBuffer[3];
+        size_t numBytes = *(uint32_t*)(&outputBuffer[1]);
+        size_t numColumns = outputBuffer[5];
 
         std::cout << "Size of header: " << sizeOfHeader << std::endl;
         std::cout << "Num bytes: " << numBytes << std::endl;
@@ -328,7 +329,8 @@ auto metaldb::engine::Engine::runImpl(const reader::RawTable& rawTable, instruct
         std::vector<ColumnType> columnTypes{numColumns, ColumnType::Unknown};
         std::vector<size_t> variableLengthColumns;
         for (size_t i = 0; i < numColumns; ++i) {
-            const auto columnType = (ColumnType) outputBuffer[3 + i];
+            // This index is 1 + numColumns index;
+            const auto columnType = (ColumnType) outputBuffer[6 + i];
             columnTypes.at(i) = columnType;
             std::cout << "Column Type: " << i << " " << columnType << std::endl;
 

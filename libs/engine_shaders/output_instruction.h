@@ -53,32 +53,45 @@ namespace metaldb {
             PrefixScanKernel<DbConstants::MAX_NUM_ROWS, uint32_t>(constants.rowSizeScratch, rowSize, constants.thread_position_in_threadgroup, constants.thread_execution_width);
 
             threadgroup_barrier(metal::mem_flags::mem_threadgroup);
+            auto startIndex = constants.rowSizeScratch[index];
+            threadgroup_barrier(metal::mem_flags::mem_none);
 
-            const auto startIndex = constants.rowSizeScratch[index];
+            const auto bufferSize = ThreadGroupReduceCooperativeAlgorithm<DbConstants::MAX_NUM_ROWS, uint32_t>(constants.rowSizeScratch, rowSize, constants.thread_position_in_threadgroup, constants.thread_execution_width);
+
+            // Needs this threadgroup barrier, otherwise causes internal compiler error :/
+            threadgroup_barrier(metal::mem_flags::mem_threadgroup);
 #endif
             if (isFirstThread) {
                 // Only the first thread should write the header, all other threads wait
 
                 // Write length of header
-                constants.outputBuffer[0] = 0;
-
+                // First byte is the length of the header.
+                uint16_t lengthOfHeader = 1;
+#ifdef __METAL__
                 // Write length of buffer (2 bytes)
-                constants.outputBuffer[1] = 0;
-                constants.outputBuffer[2] = 0;
-
-                uint16_t lengthOfHeader = 3;
+                {
+                    for (size_t n = 0; n < sizeof(uint32_t); ++n) {
+                        constants.outputBuffer[1 + n] = (int8_t)(bufferSize >> (8 * n)) & 0xff;
+                        lengthOfHeader++;
+                    }
+                }
+#endif
 
                 // Write the number of columns
                 constants.outputBuffer[lengthOfHeader++] = row.NumColumns();
 
                 // Write the types of each column
                 for (size_t i = 0; i < row.NumColumns(); ++i) {
-                    constants.outputBuffer[lengthOfHeader++] = (uint8_t) row.ColumnType(i);
+                    constants.outputBuffer[lengthOfHeader++] = (instruction_serialized_value_type) row.ColumnType(i);
                 }
 
                 // Write the size of the header
                 constants.outputBuffer[0] = lengthOfHeader;
-                *(uint16_t METAL_DEVICE *)(&constants.outputBuffer[1]) = lengthOfHeader;
+
+#ifdef __METAL__
+                // First thread starts after the header
+                startIndex += lengthOfHeader;
+#endif
             }
 #ifndef __METAL__
             // Start at the length of the buffer
@@ -96,8 +109,8 @@ namespace metaldb {
 
             // Write the data for the row
             for (size_t i = 0; i < row.size(); ++i) {
-                nextAvailableSlot++;
-//                constants.outputBuffer[] = *row.data(i);
+                const auto value = row.data()[i];
+                constants.outputBuffer[nextAvailableSlot++] = value;
             }
 
 #ifndef __METAL__
