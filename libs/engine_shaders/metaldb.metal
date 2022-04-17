@@ -41,7 +41,7 @@ void runInstructions(METAL_DEVICE int8_t* instructions, size_t numInstructions, 
     }
 }
 
-kernel void runQueryKernelBackup(device char* rawData [[ buffer(0) ]], device int8_t* instructions [[ buffer(1) ]], device int8_t* outputBuffer [[ buffer(2) ]], uint id [[ thread_position_in_grid ]], uint group_id [[threadgroup_position_in_grid]], uint local_id [[thread_position_in_threadgroup]]) {
+kernel void runQueryKernelBackup(device char* rawData [[ buffer(0) ]], device int8_t* instructions [[ buffer(1) ]], device int8_t* outputBuffer [[ buffer(2) ]], uint id [[ thread_position_in_grid ]], uint group_id [[threadgroup_position_in_grid]], uint local_id [[thread_position_in_threadgroup]], ushort simd_width [[ thread_execution_width ]]) {
     // declare this here as this can only be declared in a 'kernel'.
     threadgroup uint32_t rowSizeScratch[metaldb::DbConstants::MAX_NUM_ROWS];
 
@@ -49,7 +49,7 @@ kernel void runQueryKernelBackup(device char* rawData [[ buffer(0) ]], device in
 
     // Decode instructions + dispatch
     const auto numInstructions = instructions[0];
-    metaldb::DbConstants constants{rawTable, outputBuffer, id, group_id, local_id, rowSizeScratch};
+    metaldb::DbConstants constants{rawTable, outputBuffer, id, group_id, local_id, simd_width, rowSizeScratch};
 
     runInstructions(&instructions[1], numInstructions, constants);
 }

@@ -50,7 +50,7 @@ namespace metaldb {
             threadgroup_barrier(metal::mem_flags::mem_threadgroup);
 
             // Do the prefix sum within the threadgroup
-            PrefixScanKernel<DbConstants::MAX_NUM_ROWS, uint32_t>(constants.rowSizeScratch, rowSize, constants.thread_position_in_threadgroup);
+            PrefixScanKernel<DbConstants::MAX_NUM_ROWS, uint32_t>(constants.rowSizeScratch, rowSize, constants.thread_position_in_threadgroup, constants.thread_execution_width);
 
             threadgroup_barrier(metal::mem_flags::mem_threadgroup);
 
