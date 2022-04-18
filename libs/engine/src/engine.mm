@@ -44,7 +44,7 @@ namespace {
         }
 
         template<size_t MAX_OUTPUT_SIZE = 1'000'000>
-        void run(const std::vector<char>& serializedData, const std::vector<int8_t>& instructions, std::array<int8_t, MAX_OUTPUT_SIZE>& outputBuffer, size_t numRows) {
+        void run(const std::vector<char>& serializedData, const std::vector<metaldb::instruction_serialized_value_type>& instructions, std::array<int8_t, MAX_OUTPUT_SIZE>& outputBuffer, size_t numRows) {
             if (numRows == 0) {
                 return;
             }

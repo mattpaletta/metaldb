@@ -15,29 +15,29 @@ namespace metaldb {
         using RowIndexType = uint16_t;
         RawTable(METAL_DEVICE char* rawData) : _rawData(rawData) {}
 
-        metaldb::types::SizeType GetSizeOfHeader() {
+        metaldb::types::SizeType GetSizeOfHeader() const {
             return *((METAL_DEVICE metaldb::types::SizeType*) &_rawData[0]);
         }
 
-        metaldb::types::SizeType GetSizeOfData() {
+        metaldb::types::SizeType GetSizeOfData() const {
             constexpr auto index = sizeof(this->GetSizeOfHeader());
             return *((METAL_DEVICE metaldb::types::SizeType*) &_rawData[index]);
         }
 
-        metaldb::types::SizeType GetNumRows() {
+        metaldb::types::SizeType GetNumRows() const {
             constexpr auto index = sizeof(this->GetSizeOfHeader()) + sizeof(this->GetSizeOfData());
             return *((METAL_DEVICE metaldb::types::SizeType*) &_rawData[index]);
         }
 
-        RowIndexType GetRowIndex(metaldb::types::SizeType index) {
+        RowIndexType GetRowIndex(metaldb::types::SizeType index) const {
             // Start row index is immediately after the getNumRows field.
             constexpr auto startRowIndex = sizeof(this->GetSizeOfHeader()) + sizeof(this->GetSizeOfData()) + sizeof(this->GetNumRows());
             const auto indexToRead = startRowIndex + (index * sizeof(RowIndexType));
             return *((METAL_DEVICE RowIndexType*) &_rawData[indexToRead]);
         }
 
-        uint8_t GetStartOfData() {
-            return GetSizeOfHeader() + 1;
+        uint8_t GetStartOfData() const {
+            return this->GetSizeOfHeader() + 1;
         }
 
         METAL_DEVICE char* data(metaldb::types::SizeType index = 0) {

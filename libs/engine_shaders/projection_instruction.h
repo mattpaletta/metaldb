@@ -19,21 +19,21 @@ namespace metaldb {
         // Pointer points to beginning of Projection instruction.
         ProjectionInstruction(METAL_DEVICE int8_t* instructions) : _instructions(instructions) {}
 
-        int8_t numColumns() const {
+        uint8_t numColumns() const {
             return this->_instructions[0];
         }
 
         // This returns the column to read from the row.
-        int8_t getColumnIndex(int8_t index) const {
+        uint8_t getColumnIndex(uint8_t index) const {
             // +1 the size is the first item
             return this->_instructions[index + 1];
         }
 
         METAL_DEVICE int8_t* end() const {
             // Returns 1 past the end of the instruction
-            const int8_t numColumnsOffset = 1;
-            const int8_t columnsOffset = this->numColumns();
-            const int8_t offset = numColumnsOffset + columnsOffset;
+            const uint8_t numColumnsOffset = 1;
+            const uint8_t columnsOffset = this->numColumns();
+            const uint8_t offset = numColumnsOffset + columnsOffset;
             return &this->_instructions[offset];
         }
 
@@ -45,7 +45,7 @@ namespace metaldb {
                 builder.numColumns = numCols;
 
                 // Read column types
-                for (int8_t i = 0; i < numCols; ++i) {
+                for (auto i = 0; i < numCols; ++i) {
                     auto columnToRead = this->getColumnIndex(i);
 
                     // Set all column types
@@ -62,7 +62,7 @@ namespace metaldb {
             }
             TempRow newRow = builder;
             // Copy the columns we are interested in
-            for (int8_t i = 0; i < numCols; ++i) {
+            for (auto i = 0; i < numCols; ++i) {
                 const auto columnToRead = this->getColumnIndex(i);
 
                 // Read from row into newRow

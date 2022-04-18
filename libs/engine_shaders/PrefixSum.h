@@ -75,12 +75,11 @@ T ThreadGroupReduceCooperativeAlgorithm(threadgroup T* scratch, T value, uint32_
         simdAdd = (local_id < BLOCK_SIZE / simdWidth) ? scratch[local_id] : 0;
 
         simdAdd = metal::simd_sum(simdAdd);
-//        scratch[local_id] = simdAdd;
+        scratch[local_id] = simdAdd;
     }
 
-//    threadgroup_barrier(metal::mem_flags::mem_threadgroup);
-//    return scratch[0];
-    return simdAdd;
+    threadgroup_barrier(metal::mem_flags::mem_threadgroup);
+    return scratch[0];
 }
 
 
