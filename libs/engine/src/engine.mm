@@ -245,49 +245,59 @@ namespace {
             // Write header section
             // size of the header
             using HeaderSizeType = decltype(((metaldb::RawTable*)nullptr)->GetSizeOfHeader());
+            constexpr auto sizeOfHeaderType = sizeof(HeaderSizeType);
+            constexpr auto sizeOfSizeType = sizeof(metaldb::types::SizeType);
+
+            using NumRowsType = decltype(((metaldb::RawTable*)nullptr)->GetNumRows());
+            constexpr auto sizeOfNumRowsType = sizeof(NumRowsType);
+
+            using RowIndexType = decltype(((metaldb::RawTable*)nullptr)->GetRowIndex(0));
+            constexpr auto sizeOfRowIndexType = sizeof(RowIndexType);
+
             HeaderSizeType sizeOfHeader = 0;
 
             // Allocate space for header size
-            for (std::size_t i = 0; i < sizeof(HeaderSizeType); ++i) {
+            for (std::size_t i = 0; i < sizeOfHeaderType; ++i) {
                 rawDataSerialized.push_back(0);
             }
-            sizeOfHeader += sizeof(HeaderSizeType);
+            sizeOfHeader += sizeOfHeaderType;
 
             // Size of data
             // Allocate space for buffer size
             {
-                for (std::size_t n = 0; n < sizeof(metaldb::types::SizeType); ++n) {
+                const metaldb::types::SizeType size = rawTable.data.size();
+                for (std::size_t n = 0; n < sizeOfSizeType; ++n) {
                     // Read the nth byte
-                    rawDataSerialized.push_back((int8_t)(rawTable.data.size() >> (8 * n)) & 0xff);
+                    rawDataSerialized.push_back((int8_t)(size >> (8 * n)) & 0xff);
                 }
-                sizeOfHeader += sizeof(metaldb::types::SizeType);
+                sizeOfHeader += sizeOfSizeType;
             }
 
             // num rows
             {
-                using NumRowsType = decltype(((metaldb::RawTable*)nullptr)->GetNumRows());
-                for (std::size_t n = 0; n < sizeof(NumRowsType); ++n) {
+                const NumRowsType num = rawTable.numRows();
+                for (std::size_t n = 0; n < sizeOfNumRowsType; ++n) {
                     // Read the nth byte
-                    rawDataSerialized.push_back((int8_t)(rawTable.numRows() >> (8 * n)) & 0xff);
+                    rawDataSerialized.push_back((int8_t)(num >> (8 * n)) & 0xff);
                 }
-                sizeOfHeader += sizeof(NumRowsType);
+                sizeOfHeader += sizeOfNumRowsType;
             }
 
             // Write the row indexes
             {
-                using RowIndexType = decltype(((metaldb::RawTable*)nullptr)->GetRowIndex(0));
                 for (const auto& index : rawTable.rowIndexes) {
-                    for (std::size_t n = 0; n < sizeof(RowIndexType); ++n) {
+                    RowIndexType num = index;
+                    for (std::size_t n = 0; n < sizeOfRowIndexType; ++n) {
                         // Read the nth byte
-                        rawDataSerialized.push_back((int8_t)(index >> (8 * n)) & 0xff);
+                        rawDataSerialized.push_back((int8_t)(num >> (8 * n)) & 0xff);
                     }
-                }
 
-                sizeOfHeader += rawTable.numRows() * sizeof(RowIndexType);
+                    sizeOfHeader += sizeOfRowIndexType;
+                }
             }
 
             // Write in size of header
-            for (std::size_t n = 0; n < sizeof(HeaderSizeType); ++n) {
+            for (std::size_t n = 0; n < sizeOfHeaderType; ++n) {
                 // Read the nth byte
                 rawDataSerialized.at(n) = ((int8_t)(sizeOfHeader >> (8 * n)) & 0xff);
             }
@@ -304,12 +314,9 @@ auto metaldb::engine::Engine::runImpl(const reader::RawTable& rawTable, instruct
     assert(manager);
 
     auto rawDataSerialized = SerializeRawTable(rawTable);
-    std::array<int8_t, 2'000> outputBuffer{0};
+    std::array<int8_t, 1'000'000> outputBuffer{0};
 
     manager->run(rawDataSerialized, instructions, outputBuffer, rawTable.numRows());
-
-    // TODO: Why are floats being parsed as invalid values
-    // TODO: Compare to CPU implementation of parseRow.
 
     // Read output buffer to Dataframe.
     Dataframe df;
@@ -353,7 +360,9 @@ auto metaldb::engine::Engine::runImpl(const reader::RawTable& rawTable, instruct
 
         // Read the row
         size_t i = sizeOfHeader;
+        std::size_t rowNum = 0;
         while (i < numBytes) {
+            std::cout << "Reading row: " << rowNum++ << std::endl;
             // Read the column sizes for the dynamic sized ones
             for (const auto& varLengthCol : variableLengthColumns) {
                 columnSizes[varLengthCol] = (std::size_t) outputBuffer[i++];
