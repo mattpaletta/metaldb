@@ -10,25 +10,54 @@
 #include "constants.h"
 
 namespace metaldb {
-    template<typename T, size_t N>
+    template<size_t N>
     class Stack {
     public:
         Stack() : _data() {}
 
+        template<typename T>
         bool push(T item) {
             if (this->isFull()) {
                 return false;
             }
-            this->_data[this->_size++] = item;
+
+            union {
+                T a;
+                uint8_t bytes[sizeof(T)];
+            } magicThing;
+
+            magicThing.a = item;
+            for (auto n = 0UL; n < sizeof(T); ++n) {
+                // Insert them in reverse order
+                this->_data[this->_size++] = magicThing.bytes[sizeof(T) - n - 1];
+            }
             return true;
         }
 
+        template<typename T>
         T peek() const {
-            return this->_data[this->_size - 1];
+            union {
+                T a;
+                uint8_t bytes[sizeof(T)];
+            } magicThing;
+
+            for (auto n = 0; n < sizeof(T); ++n) {
+                magicThing.bytes[n] = this->_data[this->_size - 1 - n];
+            }
+            return magicThing.a;
         }
 
+        template<typename T>
         T pop() {
-            return this->_data[this->_size--];
+            union {
+                T a;
+                uint8_t bytes[sizeof(T)];
+            } magicThing;
+
+            for (auto n = 0; n < sizeof(T); ++n) {
+                magicThing.bytes[n] = this->_data[this->_size-- - 1];
+            }
+            return magicThing.a;
         }
 
         bool isEmpty() const {
@@ -40,7 +69,7 @@ namespace metaldb {
         }
 
     private:
-        size_t _size;
-        T _data[N];
+        size_t _size = 0;
+        int8_t _data[N];
     };
 }

@@ -10,13 +10,26 @@
 #include "constants.h"
 #include "instruction_type.h"
 #include "stack.h"
+<<<<<<< Updated upstream
+=======
+#include "string_section.h"
+>>>>>>> Stashed changes
 
 namespace metaldb {
     class FilterInstruction final {
         enum Operation : instruction_serialized_value_type {
+<<<<<<< Updated upstream
             READ_FLOAT,
             READ_INT,
             READ_STRING,
+=======
+            READ_FLOAT_CONSTANT,
+            READ_INT_CONSTANT,
+            READ_STRING_CONSTANT,
+            READ_FLOAT_COLUMN,
+            READ_INT_COLUMN,
+            READ_STRING_COLUMN,
+>>>>>>> Stashed changes
             CAST_FLOAT_INT,
             CAST_INT_FLOAT,
             GT_FLOAT,
@@ -38,9 +51,14 @@ namespace metaldb {
             return *((uint16_t METAL_DEVICE *) &this->_instructions[0]);
         }
 
+<<<<<<< Updated upstream
         instruction_serialized_value_type GetOperation(size_t i) const {
             const auto index = sizeof(this->NumOperations()) + (i * sizeof(instruction_serialized_value_type));
             return *((instruction_serialized_value_type METAL_DEVICE *) &this->_instructions[index]);
+=======
+        Operation GetOperation(size_t i) const {
+            return (Operation) this->GetValue(i);
+>>>>>>> Stashed changes
         }
 
         METAL_DEVICE int8_t* end() const {
@@ -60,10 +78,209 @@ namespace metaldb {
         }
 
     private:
+<<<<<<< Updated upstream
         METAL_DEVICE int8_t* _instructions;
 
         bool ShouldIncludeRow(TempRow METAL_THREAD & row, DbConstants METAL_THREAD & constants) const {
             // TODO: Using a stack with different sized elements.
+=======
+
+        // Taken from C++ standard
+        static constexpr METAL_CONSTANT float floatEpsilon = 1.19209e-07f;
+
+        METAL_DEVICE int8_t* _instructions;
+
+        size_t IndexOfValue(size_t i) const {
+            return sizeof(this->NumOperations()) + (i * sizeof(instruction_serialized_value_type));
+        }
+
+        instruction_serialized_value_type GetValue(size_t i) const {
+            const auto index = this->IndexOfValue(i);
+            return *((instruction_serialized_value_type METAL_DEVICE *) &this->_instructions[index]);
+        }
+
+        template<typename T>
+        T GetTypeStartingAtByte(size_t i) const {
+            union {
+                T a;
+                instruction_serialized_value_type bytes[sizeof(T)];
+            } thing;
+
+            for (auto n = 0UL; n < sizeof(T); ++n) {
+                thing.bytes[n] = this->GetValue(i + n);
+            }
+
+            return thing.a;
+        }
+
+        types::FloatType GetFloatStartingAtByte(size_t i) const {
+            return this->GetTypeStartingAtByte<types::FloatType>(i);
+        }
+
+        types::IntegerType GetIntStartingAtByte(size_t i) const {
+            return this->GetTypeStartingAtByte<types::IntegerType>(i);
+        }
+
+        StringSection GetStringStartingAtByte(size_t i) const {
+            const auto length = this->GetIntStartingAtByte(i);
+            const auto startStringIndex = this->IndexOfValue(i + 1);
+            return StringSection((char METAL_DEVICE *) &this->_instructions[startStringIndex], length);
+        }
+
+        bool ShouldIncludeRow(TempRow METAL_THREAD & row, DbConstants METAL_THREAD & constants) const {
+            Stack<MAX_VM_STACK_SIZE> stack;
+
+            size_t operationIndex = 0;
+            for (auto i = 0; i < this->NumOperations(); ++i) {
+                switch (this->GetOperation(operationIndex++)) {
+                case READ_FLOAT_CONSTANT: {
+                    auto val = this->GetFloatStartingAtByte(operationIndex);
+                    operationIndex += sizeof(val);
+                    stack.push<decltype(val)>(val);
+                    break;
+                }
+                case READ_INT_CONSTANT: {
+                    auto val = this->GetIntStartingAtByte(operationIndex);
+                    operationIndex += sizeof(val);
+                    stack.push<decltype(val)>(val);
+                    break;
+                }
+                case READ_STRING_CONSTANT: {
+                    // TODO: Do I need new scratch space for all my strings?
+                    // Ideally wouldn't copy them from their original location
+
+                    auto val = this->GetStringStartingAtByte(operationIndex);
+                    operationIndex += val.size();
+                    for (auto j = 0UL; j < val.size(); ++j) {
+                        // Push each character of the string onto the stack (reverse order)
+                        auto ch = val.str()[val.size() - 1 - j];
+                        stack.push(ch);
+                    }
+                    // Push the length of the string
+                    stack.push<types::IntegerType>(val.size());
+                    break;
+                }
+                case READ_FLOAT_COLUMN: {
+                    const auto column = this->GetIntStartingAtByte(operationIndex++);
+                    const auto val = row.ReadColumnFloat(column);
+                    stack.push(val);
+                    break;
+                }
+                case READ_INT_COLUMN: {
+                    const auto column = this->GetIntStartingAtByte(operationIndex++);
+                    const auto val = row.ReadColumnInt(column);
+                    stack.push(val);
+                    break;
+                }
+                case READ_STRING_COLUMN: {
+                    // TODO: Do I need new scratch space for all my strings?
+                    // Ideally wouldn't copy them from their original location
+
+                    const auto column = this->GetIntStartingAtByte(operationIndex++);
+                    const auto val = row.ReadColumnString(column);
+                    operationIndex += val.size();
+                    for (auto j = 0UL; j < val.size(); ++j) {
+                        // Push each character of the string onto the stack (reverse order)
+                        auto ch = val.str()[val.size() - 1 - j];
+                        stack.push(ch);
+                    }
+                    // Push the length of the string
+                    stack.push<types::IntegerType>(val.size());
+                    break;
+                }
+                case CAST_FLOAT_INT: {
+                    const auto floatVal = stack.pop<types::FloatType>();
+                    const auto intVal = (types::IntegerType) floatVal;
+                    stack.push(intVal);
+                    break;
+                }
+                case CAST_INT_FLOAT: {
+                    const auto intVal = stack.pop<types::IntegerType>();
+                    const auto floatVal = (types::FloatType) intVal;
+                    stack.push(floatVal);
+                    break;
+                }
+                case GT_FLOAT: {
+                    const auto valA = stack.pop<types::FloatType>();
+                    const auto valB = stack.pop<types::FloatType>();
+                    const auto comp = valA > valB ? 1 : 0;
+                    stack.push(comp);
+                    break;
+                }
+                case GT_INT: {
+                    const auto valA = stack.pop<types::IntegerType>();
+                    const auto valB = stack.pop<types::IntegerType>();
+                    const auto comp = valA > valB ? 1 : 0;
+                    stack.push(comp);
+                    break;
+                }
+                case LT_FLOAT: {
+                    const auto valA = stack.pop<types::FloatType>();
+                    const auto valB = stack.pop<types::FloatType>();
+                    const auto comp = valA < valB ? 1 : 0;
+                    stack.push(comp);
+                    break;
+                }
+                case LT_INT: {
+                    const auto valA = stack.pop<types::IntegerType>();
+                    const auto valB = stack.pop<types::IntegerType>();
+                    const auto comp = valA < valB ? 1 : 0;
+                    stack.push(comp);
+                    break;
+                }
+                case GTE_FLOAT: {
+                    const auto valA = stack.pop<types::FloatType>();
+                    const auto valB = stack.pop<types::FloatType>();
+                    const auto comp = valA >= valB ? 1 : 0;
+                    stack.push(comp);
+                    break;
+                }
+                case GTE_INT: {
+                    const auto valA = stack.pop<types::FloatType>();
+                    const auto valB = stack.pop<types::FloatType>();
+                    const auto comp = valA >= valB ? 1 : 0;
+                    stack.push(comp);
+                    break;
+                }
+                case EQ_FLOAT: {
+                    const auto valA = stack.pop<types::FloatType>();
+                    const auto valB = stack.pop<types::FloatType>();
+#ifdef __METAL__
+                    const auto comp = (metal::abs(valA) - metal::abs(valB) <= floatEpsilon) ? 1 : 0;
+#else
+                    const auto comp = (abs(valA) - abs(valB) <= floatEpsilon) ? 1 : 0;
+#endif
+                    stack.push(comp);
+                    break;
+                }
+                case EQ_INT: {
+                    const auto valA = stack.pop<types::IntegerType>();
+                    const auto valB = stack.pop<types::IntegerType>();
+                    const auto comp = valA == valB ? 1 : 0;
+                    stack.push(comp);
+                    break;
+                }
+                case NE_FLOAT: {
+                    const auto valA = stack.pop<types::FloatType>();
+                    const auto valB = stack.pop<types::FloatType>();
+#ifdef __METAL__
+                    const auto comp = (metal::abs(valA) - metal::abs(valB) > floatEpsilon) ? 1 : 0;
+#else
+                    const auto comp = (abs(valA) - abs(valB) > floatEpsilon) ? 1 : 0;
+#endif
+                    stack.push(comp);
+                    break;
+                }
+                case NE_INT: {
+                    const auto valA = stack.pop<types::IntegerType>();
+                    const auto valB = stack.pop<types::IntegerType>();
+                    const auto comp = valA != valB ? 1 : 0;
+                    stack.push(comp);
+                    break;
+                }
+                }
+            }
+>>>>>>> Stashed changes
         }
     };
 }
