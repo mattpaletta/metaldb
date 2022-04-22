@@ -10,26 +10,17 @@
 #include "constants.h"
 #include "instruction_type.h"
 #include "stack.h"
-<<<<<<< Updated upstream
-=======
 #include "string_section.h"
->>>>>>> Stashed changes
 
 namespace metaldb {
     class FilterInstruction final {
         enum Operation : instruction_serialized_value_type {
-<<<<<<< Updated upstream
-            READ_FLOAT,
-            READ_INT,
-            READ_STRING,
-=======
             READ_FLOAT_CONSTANT,
             READ_INT_CONSTANT,
             READ_STRING_CONSTANT,
             READ_FLOAT_COLUMN,
             READ_INT_COLUMN,
             READ_STRING_COLUMN,
->>>>>>> Stashed changes
             CAST_FLOAT_INT,
             CAST_INT_FLOAT,
             GT_FLOAT,
@@ -51,14 +42,10 @@ namespace metaldb {
             return *((uint16_t METAL_DEVICE *) &this->_instructions[0]);
         }
 
-<<<<<<< Updated upstream
+
         instruction_serialized_value_type GetOperation(size_t i) const {
             const auto index = sizeof(this->NumOperations()) + (i * sizeof(instruction_serialized_value_type));
             return *((instruction_serialized_value_type METAL_DEVICE *) &this->_instructions[index]);
-=======
-        Operation GetOperation(size_t i) const {
-            return (Operation) this->GetValue(i);
->>>>>>> Stashed changes
         }
 
         METAL_DEVICE int8_t* end() const {
@@ -78,13 +65,6 @@ namespace metaldb {
         }
 
     private:
-<<<<<<< Updated upstream
-        METAL_DEVICE int8_t* _instructions;
-
-        bool ShouldIncludeRow(TempRow METAL_THREAD & row, DbConstants METAL_THREAD & constants) const {
-            // TODO: Using a stack with different sized elements.
-=======
-
         // Taken from C++ standard
         static constexpr METAL_CONSTANT float floatEpsilon = 1.19209e-07f;
 
@@ -280,7 +260,6 @@ namespace metaldb {
                 }
                 }
             }
->>>>>>> Stashed changes
         }
     };
 }

@@ -23,7 +23,7 @@ namespace metaldb {
             return this->_size;
         }
 
-        METAL_DEVICE char* str() const {
+        T str() const {
             return this->_str;
         }
 
