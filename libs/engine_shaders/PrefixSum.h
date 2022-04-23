@@ -14,6 +14,8 @@
 
 #include <metal_stdlib>
 
+// Based on: https://kieber-emmons.medium.com/efficient-parallel-prefix-sum-in-metal-for-apple-m1-9e60b974d62
+
 //------------------------------------------------------------------------------------------------//
 //  Cooperative threadgroup scan
 template<uint32_t BLOCK_SIZE, typename T>

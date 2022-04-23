@@ -27,8 +27,8 @@ namespace metaldb {
             // Write row into output.
 
             /**
-             * Size of header
-             * Num bytes (2 bytes)
+             * Size of header (4 bytes)
+             * Num bytes (4 bytes)
              * Num Rows
              * Column Types
              * --------
@@ -68,7 +68,7 @@ namespace metaldb {
                 // First byte is the length of the header.
                 uint16_t lengthOfHeader = 1;
 #ifdef __METAL__
-                // Write length of buffer (2 bytes)
+                // Write length of buffer (4 bytes)
                 {
                     for (size_t n = 0; n < sizeof(uint32_t); ++n) {
                         constants.outputBuffer[1 + n] = (int8_t)(bufferSize >> (8 * n)) & 0xff;

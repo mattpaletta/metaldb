@@ -20,11 +20,11 @@ namespace metaldb {
         // Metal complains if you try and pass a reference here, so we use a pointer instead.
         RawTable METAL_THREAD & rawTable;
         METAL_DEVICE int8_t* outputBuffer;
+
         uint thread_position_in_grid;
         uint threadgroup_position_in_grid;
         uint thread_position_in_threadgroup;
         ushort thread_execution_width;
-
 
         METAL_THREADGROUP uint32_t* rowSizeScratch;
 

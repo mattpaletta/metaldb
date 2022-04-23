@@ -68,6 +68,10 @@ namespace metaldb {
             return this->_size == N;
         }
 
+        size_t size() const {
+            return this->_size;
+        }
+
     private:
         size_t _size = 0;
         int8_t _data[N];

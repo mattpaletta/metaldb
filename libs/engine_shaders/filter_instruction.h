@@ -116,13 +116,13 @@ namespace metaldb {
                 case READ_FLOAT_CONSTANT: {
                     auto val = this->GetFloatStartingAtByte(operationIndex);
                     operationIndex += sizeof(val);
-                    stack.push<decltype(val)>(val);
+                    stack.push<types::FloatType>(val);
                     break;
                 }
                 case READ_INT_CONSTANT: {
                     auto val = this->GetIntStartingAtByte(operationIndex);
                     operationIndex += sizeof(val);
-                    stack.push<decltype(val)>(val);
+                    stack.push<types::IntegerType>(val);
                     break;
                 }
                 case READ_STRING_CONSTANT: {
@@ -143,13 +143,13 @@ namespace metaldb {
                 case READ_FLOAT_COLUMN: {
                     const auto column = this->GetIntStartingAtByte(operationIndex++);
                     const auto val = row.ReadColumnFloat(column);
-                    stack.push(val);
+                    stack.push<types::FloatType>(val);
                     break;
                 }
                 case READ_INT_COLUMN: {
                     const auto column = this->GetIntStartingAtByte(operationIndex++);
                     const auto val = row.ReadColumnInt(column);
-                    stack.push(val);
+                    stack.push<types::IntegerType>(val);
                     break;
                 }
                 case READ_STRING_COLUMN: {
@@ -171,55 +171,55 @@ namespace metaldb {
                 case CAST_FLOAT_INT: {
                     const auto floatVal = stack.pop<types::FloatType>();
                     const auto intVal = (types::IntegerType) floatVal;
-                    stack.push(intVal);
+                    stack.push<types::IntegerType>(intVal);
                     break;
                 }
                 case CAST_INT_FLOAT: {
                     const auto intVal = stack.pop<types::IntegerType>();
                     const auto floatVal = (types::FloatType) intVal;
-                    stack.push(floatVal);
+                    stack.push<types::FloatType>(floatVal);
                     break;
                 }
                 case GT_FLOAT: {
                     const auto valA = stack.pop<types::FloatType>();
                     const auto valB = stack.pop<types::FloatType>();
                     const auto comp = valA > valB ? 1 : 0;
-                    stack.push(comp);
+                    stack.push<types::IntegerType>(comp);
                     break;
                 }
                 case GT_INT: {
                     const auto valA = stack.pop<types::IntegerType>();
                     const auto valB = stack.pop<types::IntegerType>();
                     const auto comp = valA > valB ? 1 : 0;
-                    stack.push(comp);
+                    stack.push<types::IntegerType>(comp);
                     break;
                 }
                 case LT_FLOAT: {
                     const auto valA = stack.pop<types::FloatType>();
                     const auto valB = stack.pop<types::FloatType>();
                     const auto comp = valA < valB ? 1 : 0;
-                    stack.push(comp);
+                    stack.push<types::IntegerType>(comp);
                     break;
                 }
                 case LT_INT: {
                     const auto valA = stack.pop<types::IntegerType>();
                     const auto valB = stack.pop<types::IntegerType>();
                     const auto comp = valA < valB ? 1 : 0;
-                    stack.push(comp);
+                    stack.push<types::IntegerType>(comp);
                     break;
                 }
                 case GTE_FLOAT: {
                     const auto valA = stack.pop<types::FloatType>();
                     const auto valB = stack.pop<types::FloatType>();
                     const auto comp = valA >= valB ? 1 : 0;
-                    stack.push(comp);
+                    stack.push<types::IntegerType>(comp);
                     break;
                 }
                 case GTE_INT: {
                     const auto valA = stack.pop<types::FloatType>();
                     const auto valB = stack.pop<types::FloatType>();
                     const auto comp = valA >= valB ? 1 : 0;
-                    stack.push(comp);
+                    stack.push<types::IntegerType>(comp);
                     break;
                 }
                 case EQ_FLOAT: {
@@ -230,14 +230,14 @@ namespace metaldb {
 #else
                     const auto comp = (abs(valA) - abs(valB) <= floatEpsilon) ? 1 : 0;
 #endif
-                    stack.push(comp);
+                    stack.push<types::IntegerType>(comp);
                     break;
                 }
                 case EQ_INT: {
                     const auto valA = stack.pop<types::IntegerType>();
                     const auto valB = stack.pop<types::IntegerType>();
                     const auto comp = valA == valB ? 1 : 0;
-                    stack.push(comp);
+                    stack.push<types::IntegerType>(comp);
                     break;
                 }
                 case NE_FLOAT: {
@@ -248,18 +248,26 @@ namespace metaldb {
 #else
                     const auto comp = (abs(valA) - abs(valB) > floatEpsilon) ? 1 : 0;
 #endif
-                    stack.push(comp);
+                    stack.push<types::IntegerType>(comp);
                     break;
                 }
                 case NE_INT: {
                     const auto valA = stack.pop<types::IntegerType>();
                     const auto valB = stack.pop<types::IntegerType>();
                     const auto comp = valA != valB ? 1 : 0;
-                    stack.push(comp);
+                    stack.push<types::IntegerType>(comp);
                     break;
                 }
                 }
             }
+
+            if (stack.size() < sizeof(types::IntegerType)) {
+                // The row got us into an invalid state.
+                return false;
+            }
+
+            // Must end with an int
+            return stack.pop<types::IntegerType>() ? true : false;
         }
     };
 }
