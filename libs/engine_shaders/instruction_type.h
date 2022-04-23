@@ -13,6 +13,7 @@ namespace metaldb {
     enum InstructionType : instruction_serialized_value_type {
         PARSEROW,
         PROJECTION,
+        FILTER,
         OUTPUT,
     };
 }

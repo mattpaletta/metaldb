@@ -14,6 +14,7 @@
 
 namespace metaldb {
     class FilterInstruction final {
+    public:
         enum Operation : instruction_serialized_value_type {
             READ_FLOAT_CONSTANT,
             READ_INT_CONSTANT,

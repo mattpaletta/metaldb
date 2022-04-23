@@ -28,6 +28,13 @@ void runInstructions(METAL_DEVICE int8_t* instructions, size_t numInstructions, 
             currentInstruction = projectionInstruction.end();
             break;
         }
+        case metaldb::FILTER: {
+            auto filterInstruction = metaldb::FilterInstruction(&currentInstruction[1]);
+            row = filterInstruction.GetRow(row, constants);
+
+            currentInstruction = filterInstruction.end();
+            break;
+        }
         case metaldb::OUTPUT: {
             auto outputProjection = metaldb::OutputInstruction(&currentInstruction[1]);
             outputProjection.WriteRow(row, constants);
