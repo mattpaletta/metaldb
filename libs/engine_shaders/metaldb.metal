@@ -49,7 +49,12 @@ kernel void runQueryKernelBackup(device char* rawData [[ buffer(0) ]], device in
 
     // Decode instructions + dispatch
     const auto numInstructions = instructions[0];
-    metaldb::DbConstants constants{rawTable, outputBuffer, id, group_id, local_id, simd_width, rowSizeScratch};
+    metaldb::DbConstants constants{rawTable, outputBuffer, rowSizeScratch};
+
+    constants.thread_position_in_grid = id;
+    constants.threadgroup_position_in_grid = group_id;
+    constants.thread_position_in_threadgroup = local_id;
+    constants.thread_execution_width = simd_width;
 
     runInstructions(&instructions[1], numInstructions, constants);
 }
