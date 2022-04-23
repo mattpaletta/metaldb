@@ -166,10 +166,10 @@ namespace metaldb {
             return *((types::IntegerType METAL_THREAD *)(this->data(startOffset)));
         }
 
-        LocalStringSection ReadColumnString(size_t column) const {
+        ConstLocalStringSection ReadColumnString(size_t column) const {
             const auto startOffset = this->ColumnStartOffset(column);
             const auto columnSize = this->ColumnSize(column);
-            return LocalStringSection(this->data(startOffset), columnSize);
+            return ConstLocalStringSection(this->data(startOffset), columnSize);
         }
 
         METAL_THREAD char* data(size_t index = 0) {

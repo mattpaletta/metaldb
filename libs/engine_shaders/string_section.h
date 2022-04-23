@@ -42,5 +42,8 @@ namespace metaldb {
     };
 
     using StringSection = GenericStringSection<METAL_DEVICE char*>;
-    using LocalStringSection = GenericStringSection<const METAL_THREAD char*>;
+    using ConstStringSection = GenericStringSection<const METAL_DEVICE char*>;
+
+    using LocalStringSection = GenericStringSection<METAL_THREAD char*>;
+    using ConstLocalStringSection = GenericStringSection<const METAL_THREAD char*>;
 }
