@@ -34,7 +34,7 @@ jobs:
       working-directory: ${{github.workspace}}/build
       shell: bash
       # Execute the build.  You can specify a specific target with "--target <NAME>"
-      run: xcodebuild -configuration Release -scheme metaldb build
+      run: xcodebuild -configuration ${BUILD_TYPE} -scheme metaldb build
 
     - name: Run
       working-directory: ${{github.workspace}}/build
