@@ -41,7 +41,7 @@ namespace metaldb {
                 uint8_t bytes[sizeof(T)];
             } magicThing;
 
-            for (auto n = 0; n < sizeof(T); ++n) {
+            for (auto n = 0UL; n < sizeof(T); ++n) {
                 magicThing.bytes[n] = this->_data[this->_size - 1 - n];
             }
             return magicThing.a;
@@ -54,7 +54,7 @@ namespace metaldb {
                 uint8_t bytes[sizeof(T)];
             } magicThing;
 
-            for (auto n = 0; n < sizeof(T); ++n) {
+            for (auto n = 0UL; n < sizeof(T); ++n) {
                 magicThing.bytes[n] = this->_data[this->_size-- - 1];
             }
             return magicThing.a;
