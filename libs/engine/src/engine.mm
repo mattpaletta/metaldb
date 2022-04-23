@@ -323,9 +323,12 @@ auto metaldb::engine::Engine::runImpl(const reader::RawTable& rawTable, instruct
 
     // Print to console
     {
-        size_t sizeOfHeader = outputBuffer[0];
-        size_t numBytes = *(uint32_t*)(&outputBuffer[1]);
-        size_t numColumns = outputBuffer[5];
+        constexpr size_t HeaderOffset = 0;
+        const size_t sizeOfHeader = outputBuffer[HeaderOffset];
+        constexpr size_t NumBytesOffset = HeaderOffset + 1;
+        const size_t numBytes = *(uint32_t*)(&outputBuffer[NumBytesOffset]);
+        constexpr size_t NumColumnsOffset = NumBytesOffset + sizeof(uint32_t);
+        const size_t numColumns = outputBuffer[NumColumnsOffset];
 
         std::cout << "Size of header: " << sizeOfHeader << std::endl;
         std::cout << "Num bytes: " << numBytes << std::endl;
@@ -336,8 +339,8 @@ auto metaldb::engine::Engine::runImpl(const reader::RawTable& rawTable, instruct
         std::vector<ColumnType> columnTypes{numColumns, ColumnType::Unknown};
         std::vector<size_t> variableLengthColumns;
         for (size_t i = 0; i < numColumns; ++i) {
-            // This index is 1 + numColumns index;
-            const auto columnType = (ColumnType) outputBuffer[6 + i];
+            constexpr auto ColumnTypeStartOffset = NumColumnsOffset + 1;
+            const auto columnType = (ColumnType) outputBuffer[ColumnTypeStartOffset + i];
             columnTypes.at(i) = columnType;
             std::cout << "Column Type: " << i << " " << columnType << std::endl;
 

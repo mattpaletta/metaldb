@@ -66,30 +66,27 @@ int testEncode() {
     return 0;
 }
 
-void testMultiStack() {
-    metaldb::Stack<100> stack;
-
-    stack.push<uint8_t>(1);
-    stack.push<uint8_t>(2);
-    stack.push<uint8_t>(3);
-
-    assert(stack.pop<uint8_t>() == 3);
-    assert(stack.pop<uint8_t>() == 2);
-    assert(stack.pop<uint8_t>() == 1);
-
-    stack.push<long double>(1);
-    stack.push<uint8_t>(2);
-    stack.push<long double>(3);
-
-    assert(stack.pop<long double>() == 3);
-    assert(stack.pop<uint8_t>() == 2);
-    assert(stack.pop<long double>() == 1);
-}
+//void testMultiStack() {
+//    metaldb::Stack<100> stack;
+//
+//    stack.push<uint8_t>(1);
+//    stack.push<uint8_t>(2);
+//    stack.push<uint8_t>(3);
+//
+//    assert(stack.pop<uint8_t>() == 3);
+//    assert(stack.pop<uint8_t>() == 2);
+//    assert(stack.pop<uint8_t>() == 1);
+//
+//    stack.push<long double>(1);
+//    stack.push<uint8_t>(2);
+//    stack.push<long double>(3);
+//
+//    assert(stack.pop<long double>() == 3);
+//    assert(stack.pop<uint8_t>() == 2);
+//    assert(stack.pop<long double>() == 1);
+//}
 
 int main() {
-    testMultiStack();
-    return 0;
-
     std::cout << "Starting MetalDB" << std::endl;
 
     std::filesystem::path path;
