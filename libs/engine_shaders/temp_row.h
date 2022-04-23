@@ -8,6 +8,7 @@
 #pragma once
 
 #include "constants.h"
+#include "column_type.h"
 #include "string_section.h"
 #include "strings.h"
 
@@ -34,9 +35,9 @@ namespace metaldb {
             constexpr METAL_CONSTANT static size_t MAX_VALUE = 256;
             TempRowBuilder() = default;
 
-            uint8_t numColumns;
             ColumnType columnTypes[MAX_VALUE];
             uint8_t columnSizes[MAX_VALUE];
+            uint8_t numColumns = 0;
         };
 
         TempRow(TempRowBuilder builder) {
@@ -44,20 +45,24 @@ namespace metaldb {
             uint8_t lengthOfHeader = 1;
 
             {
+                // Write length of buffer
+                lengthOfHeader += sizeof(uint32_t);
+            }
+            {
                 // Write num columns
                 this->_data[1] = builder.numColumns;
                 lengthOfHeader++;
             }
             {
                 // Column types
-                for (uint8_t i = 0; i < builder.numColumns; ++i) {
+                for (auto i = 0; i < builder.numColumns; ++i) {
                     this->_data[2 + i] = (value_type) builder.columnTypes[i];
                     lengthOfHeader++;
                 }
             }
             {
                 // Column sizes (for all variable columns)
-                for (uint8_t i = 0; i < builder.numColumns; ++i) {
+                for (auto i = 0; i < builder.numColumns; ++i) {
                     auto columnType = (enum ColumnType) builder.columnTypes[i];
                     if (columnType == String) {
                         // Hack using the length of the header so we dynamically write to the correct place.
@@ -75,15 +80,27 @@ namespace metaldb {
             return this->_data[0];
         }
 
-        size_t NumColumns() const {
-            return this->_data[1];
+        size_t SizeOfPartialRow() const {
+            size_t sum = this->size();
+            for (size_t i = 0; i < this->NumColumns(); ++i) {
+                if (this->ColumnVariableSize(i)) {
+                    sum += sizeof(this->ColumnSize(i));
+                }
+            }
+            return sum;
         }
 
-        enum ColumnType ColumnType(size_t column) {
-            return (enum ColumnType) this->_data[2 + column];
+        uint8_t NumColumns() const {
+            constexpr auto index = sizeof(this->LengthOfHeader());
+            return this->_data[index];
         }
 
-        bool ColumnVariableSize(size_t column) {
+        enum ColumnType ColumnType(size_t column) const {
+            constexpr auto index = sizeof(this->LengthOfHeader()) + sizeof(this->NumColumns());
+            return (enum ColumnType) this->_data[index + column];
+        }
+
+        bool ColumnVariableSize(size_t column) const {
             switch (this->ColumnType(column)) {
             case String:
                 return true;
@@ -94,7 +111,7 @@ namespace metaldb {
             }
         }
 
-        uint8_t ColumnSize(size_t column) {
+        uint8_t ColumnSize(size_t column) const {
             // Calculate column size of variable sizes
             switch (this->ColumnType(column)) {
             case String:
@@ -122,12 +139,12 @@ namespace metaldb {
             }
             // Lookup in the index of column type
             return this->_data[
-                /* fixed header */ 2 +
-                /* columnType offset */ this->NumColumns() +
+                /* fixed header */ sizeof(this->LengthOfHeader()) + sizeof(this->NumColumns()) +
+                /* columnType offset */ this->NumColumns() * sizeof(this->ColumnType(0)) +
                 /* read into column size */ offsetOfVariableLength];
         }
 
-        size_t ColumnStartOffset(size_t column) {
+        size_t ColumnStartOffset(size_t column) const {
             size_t sum = 0;
             for (size_t i = 0; i < column; ++i) {
                 sum += this->ColumnSize(i);
@@ -136,10 +153,30 @@ namespace metaldb {
         }
 
         LocalStringSection getString() {
-            return LocalStringSection(&this->_data[this->LengthOfHeader()], this->_size);
+            return LocalStringSection(this->data(), this->_size);
+        }
+
+        types::FloatType ReadColumnFloat(size_t column) const {
+            const auto startOffset = this->ColumnStartOffset(column);
+            return *((types::FloatType METAL_THREAD *)(this->data(startOffset)));
+        }
+
+        types::IntegerType ReadColumnInt(size_t column) const {
+            const auto startOffset = this->ColumnStartOffset(column);
+            return *((types::IntegerType METAL_THREAD *)(this->data(startOffset)));
+        }
+
+        ConstLocalStringSection ReadColumnString(size_t column) const {
+            const auto startOffset = this->ColumnStartOffset(column);
+            const auto columnSize = this->ColumnSize(column);
+            return ConstLocalStringSection(this->data(startOffset), columnSize);
         }
 
         METAL_THREAD char* data(size_t index = 0) {
+            return &this->_data[this->LengthOfHeader() + index];
+        }
+
+        const METAL_THREAD char* data(size_t index = 0) const {
             return &this->_data[this->LengthOfHeader() + index];
         }
 

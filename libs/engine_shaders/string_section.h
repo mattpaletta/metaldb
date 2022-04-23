@@ -23,7 +23,7 @@ namespace metaldb {
             return this->_size;
         }
 
-        METAL_DEVICE char* str() const {
+        T str() const {
             return this->_str;
         }
 
@@ -42,5 +42,8 @@ namespace metaldb {
     };
 
     using StringSection = GenericStringSection<METAL_DEVICE char*>;
+    using ConstStringSection = GenericStringSection<const METAL_DEVICE char*>;
+
     using LocalStringSection = GenericStringSection<METAL_THREAD char*>;
+    using ConstLocalStringSection = GenericStringSection<const METAL_THREAD char*>;
 }

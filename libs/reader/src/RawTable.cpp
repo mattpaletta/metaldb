@@ -11,7 +11,7 @@
 
 metaldb::reader::RawTable::RawTable(bool isValid) : data(), rowIndexes(), columns(), _isValid(isValid) {}
 
-metaldb::reader::RawTable::RawTable(std::vector<char>&& buffer, const std::vector<std::size_t>& rowIndexes, const std::vector<std::string>& columns) : data(std::move(buffer)), rowIndexes(rowIndexes), columns(columns), _isValid(true) {}
+metaldb::reader::RawTable::RawTable(std::vector<char>&& buffer, const std::vector<std::uint16_t>& rowIndexes, const std::vector<std::string>& columns) : data(std::move(buffer)), rowIndexes(rowIndexes), columns(columns), _isValid(true) {}
 
 auto metaldb::reader::RawTable::invalid() -> RawTable {
     return RawTable(false);
@@ -21,7 +21,7 @@ auto metaldb::reader::RawTable::isValid() const -> bool {
     return this->_isValid;
 }
 
-auto metaldb::reader::RawTable::numRows() const -> std::size_t {
+auto metaldb::reader::RawTable::numRows() const -> std::uint32_t {
     return this->rowIndexes.size();
 }
 
@@ -57,8 +57,8 @@ std::string metaldb::reader::RawTable::debugStr() const {
         sstream << this->data.at(i);
     }
     sstream << "\n";
-    sstream << "First " << std::min(3UL, this->numRows()) << " rows:\n";
-    for (std::size_t i = 0; i < std::min(3UL, this->numRows()); ++i) {
+    sstream << "First " << std::min(3u, this->numRows()) << " rows:\n";
+    for (std::size_t i = 0; i < std::min(3u, this->numRows()); ++i) {
         const auto row = this->readRow(i);
         sstream << row << "\n";
     }

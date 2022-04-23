@@ -8,11 +8,12 @@
 #pragma once
 
 namespace metaldb {
-    using instruction_serialized_value_type = int8_t;
+    using instruction_serialized_value_type = uint8_t;
 
     enum InstructionType : instruction_serialized_value_type {
         PARSEROW,
         PROJECTION,
+        FILTER,
         OUTPUT,
     };
 }

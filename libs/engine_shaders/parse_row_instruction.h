@@ -20,7 +20,7 @@ namespace metaldb {
     class ParseRowInstruction final {
     public:
         // Pointer points to beginning of ParseRow instruction.
-        ParseRowInstruction(METAL_DEVICE int8_t* instructions) : _instructions(instructions) {}
+        ParseRowInstruction(int8_t METAL_DEVICE * instructions) : _instructions(instructions) {}
 
         Method getMethod() const {
             return (Method) this->_instructions[0];
@@ -30,22 +30,22 @@ namespace metaldb {
             return (bool) this->_instructions[1];
         }
 
-        int8_t numColumns() const {
-            return (int8_t) this->_instructions[2];
+        uint8_t numColumns() const {
+            return (uint8_t) this->_instructions[2];
         }
 
-        ColumnType getColumnType(int8_t index) const {
+        ColumnType getColumnType(uint8_t index) const {
             // +3 because of the other two functions that are first in the serialization.
             return (ColumnType) this->_instructions[index + 3];
         }
 
         METAL_DEVICE int8_t* end() const {
             // Returns 1 past the end of the instruction
-            const int8_t methodOffset = 1;
-            const int8_t numColumnsOffset = 1;
-            const int8_t columnsOffset = this->numColumns();
-            const int8_t skipRow = 1;
-            const int8_t offset = methodOffset + numColumnsOffset + columnsOffset + skipRow;
+            const uint8_t methodOffset = 1;
+            const uint8_t numColumnsOffset = 1;
+            const uint8_t columnsOffset = this->numColumns();
+            const uint8_t skipRow = 1;
+            const uint8_t offset = methodOffset + numColumnsOffset + columnsOffset + skipRow;
             return &this->_instructions[offset];
         }
 
@@ -82,7 +82,7 @@ namespace metaldb {
             return StringSection(startOfColumn, length);
         }
 
-        int8_t readCSVColumnLength(RawTable METAL_THREAD & rawTable, uint8_t row, uint8_t column) const {
+        uint8_t readCSVColumnLength(RawTable METAL_THREAD & rawTable, uint8_t row, uint8_t column) const {
             // Do it this was for now to keep the code the same.
             return this->readCSVColumn(rawTable, row, column).size();
         }
@@ -91,11 +91,12 @@ namespace metaldb {
             // Question: do I have to read all columns first to get their sizes?
 
             TempRow::TempRowBuilder builder;
+            auto numCols = this->numColumns();
             {
-                builder.numColumns = this->numColumns();
+                builder.numColumns = numCols;
 
                 // Read column types
-                for (int8_t i = 0; i < this->numColumns(); ++i) {
+                for (auto i = 0; i < numCols; ++i) {
                     // Set all column types
                     auto columnType = this->getColumnType(i);
                     builder.columnTypes[i] = columnType;
@@ -111,7 +112,7 @@ namespace metaldb {
 
             // Populate the row.
             TempRow row = builder;
-            for (int8_t i = 0; i < this->numColumns(); ++i) {
+            for (auto i = 0; i < numCols; ++i) {
                 // Write the columns into the buffer
                 auto stringSection = this->readCSVColumn(constants.rawTable, constants.thread_position_in_grid, i);
 

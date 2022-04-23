@@ -30,7 +30,7 @@ auto metaldb::reader::CSVReader::read(const CSVOptions& options) const -> RawTab
     }
 
     std::size_t charCount = 0;
-    std::vector<std::size_t> rowIndex;
+    std::vector<uint16_t> rowIndex;
     std::vector<char> buffer;
     std::vector<std::string> columns;
     if (options.containsHeaderLine) {
@@ -42,8 +42,6 @@ auto metaldb::reader::CSVReader::read(const CSVOptions& options) const -> RawTab
             firstRowBuffer << nextChar;
             if (nextChar == '\n') {
                 break;
-            } else {
-//                ++charCount;
             }
         }
 

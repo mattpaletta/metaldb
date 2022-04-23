@@ -173,7 +173,7 @@ namespace metal {
                 // Found a '.'
                 auto fractionPoint = wholePart;
                 // Check if the decimal was at the end.
-                if (fractionPoint - str == length - 1UL) {
+                if ((unsigned long)(fractionPoint - str) == length - 1UL) {
                     // It's at the end
                     return stoi(str, length - 1);
                 } else {

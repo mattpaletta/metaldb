@@ -12,31 +12,35 @@
 namespace metaldb {
     class RawTable {
     public:
+        using RowIndexType = uint16_t;
         RawTable(METAL_DEVICE char* rawData) : _rawData(rawData) {}
 
-        METAL_CONSTANT static constexpr int8_t RAW_DATA_NUM_ROWS_INDEX = 2;
-
-        uint8_t GetSizeOfHeader() {
-            return (uint8_t) _rawData[0];
+        metaldb::types::SizeType GetSizeOfHeader() const {
+            return *((METAL_DEVICE metaldb::types::SizeType*) &_rawData[0]);
         }
 
-        uint8_t GetSizeOfData() {
-            return (uint8_t) _rawData[1];
+        metaldb::types::SizeType GetSizeOfData() const {
+            constexpr auto index = sizeof(this->GetSizeOfHeader());
+            return *((METAL_DEVICE metaldb::types::SizeType*) &_rawData[index]);
         }
 
-        uint8_t GetNumRows() {
-            return (uint8_t) _rawData[RAW_DATA_NUM_ROWS_INDEX];
+        metaldb::types::SizeType GetNumRows() const {
+            constexpr auto index = sizeof(this->GetSizeOfHeader()) + sizeof(this->GetSizeOfData());
+            return *((METAL_DEVICE metaldb::types::SizeType*) &_rawData[index]);
         }
 
-        uint8_t GetRowIndex(uint8_t index) {
-            return (uint8_t) _rawData[RAW_DATA_NUM_ROWS_INDEX + 1 + index];
+        RowIndexType GetRowIndex(metaldb::types::SizeType index) const {
+            // Start row index is immediately after the getNumRows field.
+            constexpr auto startRowIndex = sizeof(this->GetSizeOfHeader()) + sizeof(this->GetSizeOfData()) + sizeof(this->GetNumRows());
+            const auto indexToRead = startRowIndex + (index * sizeof(RowIndexType));
+            return *((METAL_DEVICE RowIndexType*) &_rawData[indexToRead]);
         }
 
-        uint8_t GetStartOfData() {
-            return GetSizeOfHeader() + 1;
+        uint8_t GetStartOfData() const {
+            return this->GetSizeOfHeader() + 1;
         }
 
-        METAL_DEVICE char* data(uint8_t index = 0) {
+        METAL_DEVICE char* data(metaldb::types::SizeType index = 0) {
             const auto headerSize = this->GetSizeOfHeader();
             return &this->_rawData[headerSize + index];
         }
@@ -44,4 +48,4 @@ namespace metaldb {
     private:
         METAL_DEVICE char* _rawData;
     };
-};
+}
