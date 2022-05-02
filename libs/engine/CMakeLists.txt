@@ -7,7 +7,7 @@ find_library(CORE_FOUNDATION_LIBARY Foundation)
 
 add_library(metaldb_engine ${SRC_FILES} ${INC_FILES})
 target_include_directories(metaldb_engine PUBLIC include)
-target_link_libraries(metaldb_engine PRIVATE metaldb_reader)
+target_link_libraries(metaldb_engine PRIVATE metaldb_reader metaldb_query_engine)
 target_link_libraries(metaldb_engine PRIVATE ${METAL_LIBRARY} ${METALKIT_LIBRARY} ${CORE_FOUNDATION_LIBARY})
 add_dependencies(metaldb_engine metaldb_engine_shaders_lib)
 
