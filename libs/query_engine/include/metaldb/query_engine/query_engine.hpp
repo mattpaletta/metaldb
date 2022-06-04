@@ -1,9 +1,10 @@
 #pragma once
 
 #include "query_plan.hpp"
-#include "query_info.hpp"
+#include "metadata.hpp"
+#include "AST/expr.hpp"
 
-#include <string>
+#include <memory>
 
 namespace metaldb::QueryEngine {
     class QueryEngine {
@@ -12,6 +13,8 @@ namespace metaldb::QueryEngine {
 
         ~QueryEngine() = default;
 
-        QueryPlan compile(const QueryInfo& query);
+        QueryPlan compile(std::shared_ptr<AST::Expr> expr);
+
+        Metadata metadata;
     };
 }

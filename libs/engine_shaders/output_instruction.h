@@ -9,6 +9,7 @@
 
 #include "constants.h"
 #include "db_constants.h"
+#include "output_row.h"
 #include "strings.h"
 #include "PrefixSum.h"
 
@@ -50,13 +51,13 @@ namespace metaldb {
             threadgroup_barrier(metal::mem_flags::mem_threadgroup);
 
             // Do the prefix sum within the threadgroup
-            PrefixScanKernel<DbConstants::MAX_NUM_ROWS, uint32_t>(constants.rowSizeScratch, rowSize, constants.thread_position_in_threadgroup, constants.thread_execution_width);
+            PrefixScanKernel<DbConstants::MAX_NUM_ROWS, OutputRow::NumBytesType>(constants.rowSizeScratch, rowSize, constants.thread_position_in_threadgroup, constants.thread_execution_width);
 
             threadgroup_barrier(metal::mem_flags::mem_threadgroup);
             auto startIndex = constants.rowSizeScratch[index];
             threadgroup_barrier(metal::mem_flags::mem_none);
 
-            const auto bufferSize = ThreadGroupReduceCooperativeAlgorithm<DbConstants::MAX_NUM_ROWS, uint32_t>(constants.rowSizeScratch, rowSize, constants.thread_position_in_threadgroup, constants.thread_execution_width);
+            const auto bufferSize = ThreadGroupReduceCooperativeAlgorithm<DbConstants::MAX_NUM_ROWS, OutputRow::NumBytesType>(constants.rowSizeScratch, rowSize, constants.thread_position_in_threadgroup, constants.thread_execution_width);
 
             // Needs this threadgroup barrier, otherwise causes internal compiler error :/
             threadgroup_barrier(metal::mem_flags::mem_threadgroup);
@@ -66,11 +67,11 @@ namespace metaldb {
 
                 // Write length of header
                 // First byte is the length of the header.
-                uint16_t lengthOfHeader = 1;
+                OutputRow::SizeOfHeaderType lengthOfHeader = 1;
 #ifdef __METAL__
-                // Write length of buffer (4 bytes)
+                // Write length of buffer
                 {
-                    for (size_t n = 0; n < sizeof(uint32_t); ++n) {
+                    for (size_t n = 0; n < sizeof(OutputRow::NumBytesType); ++n) {
                         constants.outputBuffer[1 + n] = (int8_t)(bufferSize >> (8 * n)) & 0xff;
                         lengthOfHeader++;
                     }
@@ -78,7 +79,17 @@ namespace metaldb {
 #endif
 
                 // Write the number of columns
-                constants.outputBuffer[lengthOfHeader++] = row.NumColumns();
+                {
+                    auto numColumns = row.NumColumns();
+                    if constexpr(sizeof(OutputRow::NumColumnsType) == 1) {
+                        constants.outputBuffer[lengthOfHeader++] = numColumns;
+                    } else {
+                        for (size_t n = 0; n < sizeof(OutputRow::NumColumnsType); ++n) {
+                            constants.outputBuffer[lengthOfHeader++] = (int8_t)(numColumns >> (8 * n)) & 0xff;
+                        }
+                    }
+                }
+
 
                 // Write the types of each column
                 for (size_t i = 0; i < row.NumColumns(); ++i) {
@@ -86,7 +97,13 @@ namespace metaldb {
                 }
 
                 // Write the size of the header
-                constants.outputBuffer[0] = lengthOfHeader;
+                if constexpr(sizeof(OutputRow::SizeOfHeaderType) == 1) {
+                    constants.outputBuffer[OutputRow::SizeOfHeaderOffset] = lengthOfHeader;
+                } else {
+                    for (size_t n = 0; n < sizeof(OutputRow::SizeOfHeaderType); ++n) {
+                        constants.outputBuffer[OutputRow::SizeOfHeaderOffset + n] = (int8_t)(lengthOfHeader >> (8 * n)) & 0xff;
+                    }
+                }
 
 #ifdef __METAL__
                 // First thread starts after the header
@@ -103,7 +120,14 @@ namespace metaldb {
             // Write the column sizes for all non-zero size columns
             for (size_t i = 0; i < row.NumColumns(); ++i) {
                 if (row.ColumnVariableSize(i)) {
-                    constants.outputBuffer[nextAvailableSlot++] = row.ColumnSize(i);
+                    auto rowSize = row.ColumnSize(i);
+                    if constexpr(sizeof(OutputRow::ColumnSizeType) == 1) {
+                        constants.outputBuffer[nextAvailableSlot++] = rowSize;
+                    } else {
+                        for (size_t n = 0; n < sizeof(OutputRow::SizeOfHeaderType); ++n) {
+                            constants.outputBuffer[nextAvailableSlot++] = (int8_t)(rowSize >> (8 * n)) & 0xff;
+                        }
+                    }
                 }
             }
 
@@ -115,7 +139,7 @@ namespace metaldb {
 
 #ifndef __METAL__
             // Update the size of the buffer
-            *(uint16_t METAL_DEVICE *)(&constants.outputBuffer[1]) = nextAvailableSlot;
+            *(OutputRow::SizeOfHeaderType METAL_DEVICE *)(&constants.outputBuffer[1]) = nextAvailableSlot;
 #endif
         }
 

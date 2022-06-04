@@ -9,6 +9,10 @@ namespace metaldb::QueryEngine::AST {
         Read(const std::string& tableName) : _tableName(tableName) {}
         ~Read() = default;
 
+        std::string tableName() const {
+            return this->_tableName;
+        }
+
     private:
         std::string _tableName;
     };

@@ -9,13 +9,14 @@
 
 #include "raw_table.h"
 #include "constants.h"
+#include "output_row.h""
 
 namespace metaldb {
     class DbConstants final {
     public:
         constexpr static METAL_CONSTANT uint16_t MAX_NUM_ROWS = 1000;
 
-        DbConstants(RawTable METAL_THREAD & rawTable_, METAL_DEVICE int8_t* outputBuffer_, uint32_t METAL_THREADGROUP * rowSizeScratch_) : rawTable(rawTable_), outputBuffer(outputBuffer_), rowSizeScratch(rowSizeScratch_) {}
+        DbConstants(RawTable METAL_THREAD & rawTable_, METAL_DEVICE int8_t* outputBuffer_, OutputRow::NumBytesType METAL_THREADGROUP * rowSizeScratch_) : rawTable(rawTable_), outputBuffer(outputBuffer_), rowSizeScratch(rowSizeScratch_) {}
 
         // Metal complains if you try and pass a reference here, so we use a pointer instead.
         RawTable METAL_THREAD & rawTable;
@@ -26,7 +27,7 @@ namespace metaldb {
         uint thread_position_in_threadgroup = 0;
         ushort thread_execution_width = 0;
 
-        METAL_THREADGROUP uint32_t* rowSizeScratch;
+        METAL_THREADGROUP OutputRow::NumBytesType* rowSizeScratch;
 
 #ifndef __METAL__
         static size_t currentOutputBufferSize;

@@ -13,6 +13,10 @@ metaldb::reader::RawTable::RawTable(bool isValid) : data(), rowIndexes(), column
 
 metaldb::reader::RawTable::RawTable(std::vector<char>&& buffer, const std::vector<std::uint16_t>& rowIndexes, const std::vector<std::string>& columns) : data(std::move(buffer)), rowIndexes(rowIndexes), columns(columns), _isValid(true) {}
 
+auto metaldb::reader::RawTable::placeholder() -> std::shared_ptr<RawTable> {
+    return std::make_shared<RawTable>(RawTable::invalid());
+}
+
 auto metaldb::reader::RawTable::invalid() -> RawTable {
     return RawTable(false);
 }

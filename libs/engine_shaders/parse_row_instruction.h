@@ -125,13 +125,13 @@ namespace metaldb {
                 case Integer: {
                     // Cast it to an integer
                     types::IntegerType result = metal::strings::stoi(stringSection.str(), stringSection.size());
-                    row.append((char METAL_THREAD *) &result, sizeof(types::IntegerType));
+                    row.append(result);
                     break;
                 }
                 case Float: {
                     // Cast it to a float.
                     types::FloatType result = metal::strings::stof(stringSection.str(), stringSection.size());
-                    row.append((char METAL_THREAD *) &result, sizeof(types::FloatType));
+                    row.append(result);
                     break;
                 }
                 case Unknown:

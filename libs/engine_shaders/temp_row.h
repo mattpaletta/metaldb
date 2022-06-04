@@ -9,6 +9,7 @@
 
 #include "constants.h"
 #include "column_type.h"
+#include "output_row.h"
 #include "string_section.h"
 #include "strings.h"
 
@@ -36,8 +37,8 @@ namespace metaldb {
             TempRowBuilder() = default;
 
             ColumnType columnTypes[MAX_VALUE];
-            uint8_t columnSizes[MAX_VALUE];
-            uint8_t numColumns = 0;
+            OutputRow::ColumnSizeType columnSizes[MAX_VALUE];
+            OutputRow::NumColumnsType numColumns = 0;
         };
 
         TempRow(TempRowBuilder builder) {
@@ -82,7 +83,7 @@ namespace metaldb {
 
         size_t SizeOfPartialRow() const {
             size_t sum = this->size();
-            for (size_t i = 0; i < this->NumColumns(); ++i) {
+            for (auto i = 0; i < this->NumColumns(); ++i) {
                 if (this->ColumnVariableSize(i)) {
                     sum += sizeof(this->ColumnSize(i));
                 }
@@ -90,7 +91,7 @@ namespace metaldb {
             return sum;
         }
 
-        uint8_t NumColumns() const {
+        OutputRow::NumColumnsType NumColumns() const {
             constexpr auto index = sizeof(this->LengthOfHeader());
             return this->_data[index];
         }
@@ -101,29 +102,17 @@ namespace metaldb {
         }
 
         bool ColumnVariableSize(size_t column) const {
-            switch (this->ColumnType(column)) {
-            case String:
-                return true;
-            case Float:
-            case Integer:
-            case Unknown:
-                return false;
-            }
+            return metaldb::ColumnVariableSize(this->ColumnType(column));
         }
 
         uint8_t ColumnSize(size_t column) const {
             // Calculate column size of variable sizes
-            switch (this->ColumnType(column)) {
-            case String:
-                break;
-            case Float:
-                return sizeof(types::FloatType);
-            case Integer:
-                return sizeof(types::IntegerType);
-            case Unknown:
-                return 0;
+            {
+                auto columnType = this->ColumnType(column);
+                if (!metaldb::ColumnVariableSize(columnType)) {
+                    return metaldb::BaseColumnSize(columnType);
+                }
             }
-
             size_t offsetOfVariableLength = 0;
             for (size_t i = 0; i < column; ++i) {
                 switch (this->ColumnType(i)) {
@@ -193,6 +182,14 @@ namespace metaldb {
             this->_size += len;
         }
 
+        void append(types::IntegerType val) {
+            this->appendImpl(val);
+        }
+
+        void append(types::FloatType val) {
+            this->appendImpl(val);
+        }
+
 #ifdef __METAL__
         // Supports copying from device to local storage
         void append(METAL_DEVICE char* str, size_t len) {
@@ -204,5 +201,10 @@ namespace metaldb {
     private:
         METAL_THREAD value_type _data[MAX_OUTPUT_ROW_LENGTH];
         size_t _size = 0;
+
+        template<typename T>
+        void appendImpl(T val) {
+            this->append((char METAL_THREAD *) &val, sizeof(T));
+        }
     };
 }

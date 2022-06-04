@@ -5,6 +5,7 @@
 #include <metaldb/query_engine/AST/read.hpp>
 #include <metaldb/query_engine/AST/rho.hpp>
 #include <metaldb/query_engine/AST/projection.hpp>
+#include <metaldb/query_engine/AST/write.hpp>
 
 auto metaldb::QueryEngine::Parser::Parse(const std::string& query) const -> std::shared_ptr<AST::Expr> {
     std::shared_ptr<AST::Expr> expr;
@@ -12,14 +13,19 @@ auto metaldb::QueryEngine::Parser::Parse(const std::string& query) const -> std:
     /**
      * SELECT * FROM mytable;
      */
-    expr = std::make_shared<AST::Read>("mytable");
-    return expr;
+    expr = std::make_shared<AST::Read>("taxi");
 
     /**
      * SELECT colA, colB FROM mytable;
      */
-    expr = std::make_shared<AST::Projection>(std::vector<std::string>{"colA", "colB"},
-                                             std::make_shared<AST::Read>("mytable"));
+    expr = std::make_shared<AST::Projection>(std::vector<std::string>{"lpep_pickup_datetime", "lpep_dropoff_datetime"},
+                                             std::make_shared<AST::Read>("taxi"));
+
+
+    expr = std::make_shared<AST::Projection>(std::vector<std::string>{"sepal.length", "petal.length"},
+                                             std::make_shared<AST::Read>("iris"));
+    return std::make_shared<AST::Write>("output", std::vector<std::string>{"sepal_length", "petal_length"}, CSV, expr);
+
 
     /**
      * SELECT colA, colB as colC FROM mytable;

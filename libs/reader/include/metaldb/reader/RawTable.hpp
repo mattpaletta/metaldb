@@ -9,12 +9,14 @@
 
 #include <string>
 #include <vector>
+#include <memory>
 
 namespace metaldb::reader {
     class RawTable {
     public:
         RawTable(std::vector<char>&& buffer, const std::vector<std::uint16_t>& rowIndexes, const std::vector<std::string>& columns);
 
+        static std::shared_ptr<RawTable> placeholder();
         static RawTable invalid();
 
         std::vector<char> data;

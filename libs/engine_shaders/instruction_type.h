@@ -7,6 +7,10 @@
 
 #pragma once
 
+#ifndef __METAL__
+#include <cstdint>
+#endif
+
 namespace metaldb {
     using instruction_serialized_value_type = uint8_t;
 
