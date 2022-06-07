@@ -9,14 +9,17 @@ namespace metaldb::engine {
     class Engine final {
     public:
         Engine() = default;
-        ~Engine() = default;
+        ~Engine() {
+            std::cout << "Destroying Engine" << std::endl;
+        };
 
 
         template<typename... Args>
         Dataframe run(const reader::RawTable& rawTable, const Args& ...args) {
             Encoder encoder;
             this->encodeAll(encoder, args...);
-            return this->runImpl(rawTable, encoder.data());
+            auto encoded = encoder.data();
+            return this->runImpl(rawTable, std::move(encoded));
         }
 
     private:

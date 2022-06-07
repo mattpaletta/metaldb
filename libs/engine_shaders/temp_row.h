@@ -31,35 +31,51 @@ namespace metaldb {
     public:
         using value_type = char;
 
+        using SizeOfHeaderType = OutputRow::SizeOfHeaderType;
+        METAL_CONSTANT static constexpr auto SizeOfHeaderOffset = 0;
+
+        using NumColumnsType = OutputRow::NumColumnsType;
+        METAL_CONSTANT static constexpr auto NumColumnsOffset = sizeof(SizeOfHeaderType) + SizeOfHeaderOffset;
+
+        METAL_CONSTANT static constexpr auto ColumnTypeOffset = sizeof(NumColumnsType) + NumColumnsOffset;
+
+        using ColumnSizeType = OutputRow::ColumnSizeType;
+
         class TempRowBuilder {
         public:
             constexpr METAL_CONSTANT static size_t MAX_VALUE = 256;
             TempRowBuilder() = default;
 
             ColumnType columnTypes[MAX_VALUE];
-            OutputRow::ColumnSizeType columnSizes[MAX_VALUE];
-            OutputRow::NumColumnsType numColumns = 0;
+            ColumnSizeType columnSizes[MAX_VALUE];
+            NumColumnsType numColumns = 0;
         };
 
         TempRow(TempRowBuilder builder) {
             // Start at 1, because the first thing is the length of the header!
-            uint8_t lengthOfHeader = 1;
+            SizeOfHeaderType lengthOfHeader = 1;
 
             {
                 // Write length of buffer
-                lengthOfHeader += sizeof(uint32_t);
+                lengthOfHeader += sizeof(SizeOfHeaderType);
             }
             {
-                // Write num columns
-                this->_data[1] = builder.numColumns;
-                lengthOfHeader++;
+                {
+                    // Write num columns
+                    auto numColumns = builder.numColumns;
+                    for (size_t n = 0; n < sizeof(NumColumnsType); ++n) {
+                        this->_data[NumColumnsOffset + n] = (int8_t)(numColumns >> (8 * n)) & 0xff;
+                    }
+                    lengthOfHeader += sizeof(NumColumnsType);
+                }
             }
             {
                 // Column types
                 for (auto i = 0; i < builder.numColumns; ++i) {
-                    this->_data[2 + i] = (value_type) builder.columnTypes[i];
-                    lengthOfHeader++;
+                    auto columnType = builder.columnTypes[i];
+                    this->_data[ColumnTypeOffset + i] = columnType;
                 }
+                lengthOfHeader += builder.numColumns;
             }
             {
                 // Column sizes (for all variable columns)
@@ -67,18 +83,21 @@ namespace metaldb {
                     auto columnType = (enum ColumnType) builder.columnTypes[i];
                     if (columnType == String) {
                         // Hack using the length of the header so we dynamically write to the correct place.
-                        this->_data[lengthOfHeader++] = (value_type) builder.columnSizes[i];
+                        auto columnSize = builder.columnSizes[i];
+                        for (size_t n = 0; n < sizeof(ColumnSizeType); ++n) {
+                            this->_data[lengthOfHeader++] = (int8_t)(columnSize >> (8 * n)) & 0xff;
+                        }
                     }
                 }
             }
 
-            this->_data[0] = lengthOfHeader;
+            *((SizeOfHeaderType METAL_THREAD *) &(this->_data[SizeOfHeaderOffset])) = lengthOfHeader;
         }
 
         TempRow() = default;
 
-        uint8_t LengthOfHeader() const {
-            return this->_data[0];
+        SizeOfHeaderType LengthOfHeader() const {
+            return *((SizeOfHeaderType METAL_THREAD *) &(this->_data[SizeOfHeaderOffset]));
         }
 
         size_t SizeOfPartialRow() const {
@@ -91,21 +110,20 @@ namespace metaldb {
             return sum;
         }
 
-        OutputRow::NumColumnsType NumColumns() const {
+        NumColumnsType NumColumns() const {
             constexpr auto index = sizeof(this->LengthOfHeader());
-            return this->_data[index];
+            return *((NumColumnsType METAL_THREAD *) &(this->_data[index]));
         }
 
         enum ColumnType ColumnType(size_t column) const {
-            constexpr auto index = sizeof(this->LengthOfHeader()) + sizeof(this->NumColumns());
-            return (enum ColumnType) this->_data[index + column];
+            return (enum ColumnType) this->_data[ColumnTypeOffset + column];
         }
 
         bool ColumnVariableSize(size_t column) const {
             return metaldb::ColumnVariableSize(this->ColumnType(column));
         }
 
-        uint8_t ColumnSize(size_t column) const {
+        ColumnSizeType ColumnSize(size_t column) const {
             // Calculate column size of variable sizes
             {
                 auto columnType = this->ColumnType(column);
@@ -128,7 +146,7 @@ namespace metaldb {
             }
             // Lookup in the index of column type
             return this->_data[
-                /* fixed header */ sizeof(this->LengthOfHeader()) + sizeof(this->NumColumns()) +
+                /* fixed header */ColumnTypeOffset +
                 /* columnType offset */ this->NumColumns() * sizeof(this->ColumnType(0)) +
                 /* read into column size */ offsetOfVariableLength];
         }

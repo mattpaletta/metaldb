@@ -9,7 +9,7 @@
 
 #include "raw_table.h"
 #include "constants.h"
-#include "output_row.h""
+#include "output_row.h"
 
 namespace metaldb {
     class DbConstants final {

@@ -72,7 +72,7 @@ NEW_TEST(OutputRowTest, TempRowToOutputWriterMultiple) {
 NEW_TEST(OutputRowTest, OutputRowToWriterToReader) {
     auto writer = WriterFromTempRows(10);
 
-    std::vector<metaldb::OutputRowReader::value_type> instructions;
+    std::vector<metaldb::OutputRowReader<>::value_type> instructions;
     writer.write(instructions);
 
     auto reader = metaldb::OutputRowReader(instructions);
@@ -83,7 +83,7 @@ NEW_TEST(OutputRowTest, OutputRowToWriterToReader) {
 NEW_TEST(OutputRowTest, OutputRowToWriterToReaderLarge) {
     auto writer = WriterFromTempRows(200'000);
 
-    std::vector<metaldb::OutputRowReader::value_type> instructions;
+    std::vector<metaldb::OutputRowReader<>::value_type> instructions;
     writer.write(instructions);
 
     auto reader = metaldb::OutputRowReader(instructions);

@@ -17,10 +17,10 @@ find_library(CORE_FOUNDATION_LIBARY Foundation)
 
 add_library(metaldb_engine_internal INTERFACE)
 target_include_directories(metaldb_engine_internal INTERFACE src)
+target_link_libraries(metaldb_engine_internal INTERFACE metaldb_reader metaldb_query_engine Taskflow)
 
 add_library(metaldb_engine STATIC ${SRC_FILES} ${INC_FILES})
 target_include_directories(metaldb_engine PUBLIC include)
-target_link_libraries(metaldb_engine PRIVATE metaldb_reader metaldb_query_engine Taskflow)
 target_link_libraries(metaldb_engine PRIVATE metaldb_engine_internal ${METAL_LIBRARY} ${METALKIT_LIBRARY} ${CORE_FOUNDATION_LIBARY})
 add_dependencies(metaldb_engine metaldb_engine_shaders_lib)
 

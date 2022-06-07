@@ -16,7 +16,7 @@ auto metaldb::engine::Engine::runImpl(const reader::RawTable& rawTable, instruct
     {
         QueryEngine::TableDefinition taxiTable;
         taxiTable.name = "taxi";
-        taxiTable.filePath = "../taxi";
+        taxiTable.filePath = "../../datasets/taxi";
         {
             taxiTable.columns.emplace_back("VendorID",                  ColumnType::Integer);
             taxiTable.columns.emplace_back("lpep_pickup_datetime",  20, ColumnType::String);
@@ -44,7 +44,7 @@ auto metaldb::engine::Engine::runImpl(const reader::RawTable& rawTable, instruct
     {
         QueryEngine::TableDefinition irisTable;
         irisTable.name = "iris";
-        irisTable.filePath = "../iris";
+        irisTable.filePath = "../../datasets/iris";
         {
             irisTable.columns.emplace_back("sepal.length",      ColumnType::Float);
             irisTable.columns.emplace_back("sepal.width",       ColumnType::Float);
@@ -55,22 +55,22 @@ auto metaldb::engine::Engine::runImpl(const reader::RawTable& rawTable, instruct
         query.metadata.tables.push_back(std::move(irisTable));
     }
     auto plan = query.compile(parseAst);
-
-    tf::Executor executor(1);
-    auto taskflow = Scheduler::schedule(plan);
-    auto future = executor.run(taskflow);
-    future.wait();
-
-    return Dataframe();
-
-//    auto manager = MetalManager::Create();
-//    assert(manager);
 //
-//    auto rawDataSerialized = SerializeRawTable(rawTable);
-//    std::array<int8_t, 1'000'000> outputBuffer{0};
-//
-//    manager->run(rawDataSerialized, instructions, outputBuffer, rawTable.numRows());
-//
+//    tf::Executor executor(1);
+//    auto taskflow = Scheduler::schedule(plan);
+//    auto future = executor.run(taskflow);
+//    future.wait();
+
+//    return Dataframe();
+
+    auto manager = MetalManager::Create();
+    assert(manager);
+
+    auto rawDataSerialized = Scheduler::SerializeRawTable(rawTable, 1000000).at(0).first;
+    MetalManager::OutputBufferType outputBuffer;
+
+    manager->run(*rawDataSerialized, instructions, outputBuffer, rawTable.numRows());
+
     // Read output buffer to Dataframe.
     Dataframe df;
 

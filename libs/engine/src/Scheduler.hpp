@@ -52,6 +52,7 @@ namespace metaldb {
             return std::make_shared<MetalManager::OutputBufferType>();
         }
 
+    public:
         // Helper function.
         // Takes in a rawTable, and splits it into a list of pairs with `MaxNumRows` serialized rows, and the number of rows in the chunk.
         static std::vector<std::pair<IntermediateBufferTypePtr, std::size_t>> SerializeRawTable(const metaldb::reader::RawTable& rawTable, std::size_t maxNumRows);
@@ -172,23 +173,26 @@ namespace metaldb {
                 }
             };
 
+            tf::Task task;
             if (auto read = std::dynamic_pointer_cast<QueryEngine::ReadPartial>(partial)) {
-                auto task = Scheduler::registerReadPartial(read, taskflow, args...);
-                registerChildPartials(task);
-                return task;
+                task = Scheduler::registerReadPartial(read, taskflow, args...);
+
             } else if (auto projection = std::dynamic_pointer_cast<QueryEngine::ProjectionPartial>(partial)) {
-                auto task = Scheduler::registerProjectionPartial(projection, taskflow, args...);
-                registerChildPartials(task);
-                return task;
+                task = Scheduler::registerProjectionPartial(projection, taskflow, args...);
+
             } else if (auto write = std::dynamic_pointer_cast<QueryEngine::WritePartial>(partial)) {
-                auto task = Scheduler::registerWritePartial(write, taskflow, args...);
-                registerChildPartials(task);
-                return task;
+                task = Scheduler::registerWritePartial(write, taskflow, args...);
+
+            } else if (auto output = std::dynamic_pointer_cast<QueryEngine::ShuffleOutputPartial>(partial)) {
+                task = Scheduler::registerShufflePartial(output, taskflow, args...);
+            } else {
+                task = taskflow->emplace([]{
+                    std::cout << "Empty task" << std::endl;
+                });
             }
 
-            return taskflow->emplace([]{
-                std::cout << "Empty task" << std::endl;
-            });
+            registerChildPartials(task);
+            return task;
         }
 
         static tf::Task registerReadPartial(std::shared_ptr<QueryEngine::ReadPartial> read, tf::Taskflow* _Nonnull taskflow, std::shared_ptr<engine::Encoder> encoder, tf::Task& doWorkTask, std::shared_ptr<MetalManager> manager, std::shared_ptr<std::vector<char>> serializedData, const std::vector<IntermediateBufferTypePtr>& childOutputBuffers, IntermediateBufferTypePtr outputBuffer) {
@@ -283,6 +287,17 @@ namespace metaldb {
 
                 engine::Projection projectionInstr(projection->columnIndexes);
                 encoder->encode(projectionInstr);
+            });
+        }
+
+        static tf::Task registerShufflePartial(std::shared_ptr<QueryEngine::ShuffleOutputPartial> output, tf::Taskflow* _Nonnull taskflow, std::shared_ptr<engine::Encoder> encoder, tf::Task& doWorkTask, std::shared_ptr<MetalManager> manager, std::shared_ptr<std::vector<char>> serializedData, const std::vector<IntermediateBufferTypePtr>& childOutputBuffers, IntermediateBufferTypePtr outputBuffer) {
+            std::cout << "Registering Output partial" << output->id() << std::endl;
+
+            return taskflow->emplace([=]() {
+                DebugTask();
+
+                engine::Output outputInst;
+                encoder->encode(outputInst);
             });
         }
 
