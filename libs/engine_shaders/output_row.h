@@ -16,7 +16,7 @@ namespace metaldb {
         using NumBytesType = uint32_t;
         METAL_CONSTANT static constexpr auto NumBytesOffset = sizeof(SizeOfHeaderType) + SizeOfHeaderOffset;
 
-        using NumColumnsType = int8_t;
+        using NumColumnsType = uint8_t;
         METAL_CONSTANT static constexpr auto NumColumnsOffset = sizeof(NumBytesType) + NumBytesOffset;
 
         METAL_CONSTANT static constexpr auto ColumnTypeOffset = sizeof(NumColumnsType) + NumColumnsOffset;

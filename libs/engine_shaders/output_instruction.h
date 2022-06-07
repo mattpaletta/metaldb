@@ -67,12 +67,12 @@ namespace metaldb {
 
                 // Write length of header
                 // First byte is the length of the header.
-                OutputRow::SizeOfHeaderType lengthOfHeader = 1;
+                OutputRow::SizeOfHeaderType lengthOfHeader = sizeof(OutputRow::SizeOfHeaderType);
 #ifdef __METAL__
                 // Write length of buffer
                 {
                     for (size_t n = 0; n < sizeof(OutputRow::NumBytesType); ++n) {
-                        constants.outputBuffer[1 + n] = (int8_t)(bufferSize >> (8 * n)) & 0xff;
+                        constants.outputBuffer[sizeof(OutputRow::SizeOfHeaderType) + n] = (int8_t)(bufferSize >> (8 * n)) & 0xff;
                         lengthOfHeader++;
                     }
                 }
@@ -81,7 +81,7 @@ namespace metaldb {
                 // Write the number of columns
                 {
                     auto numColumns = row.NumColumns();
-                    if constexpr(sizeof(OutputRow::NumColumnsType) == 1) {
+                    if (sizeof(OutputRow::NumColumnsType) == 1) {
                         constants.outputBuffer[lengthOfHeader++] = numColumns;
                     } else {
                         for (size_t n = 0; n < sizeof(OutputRow::NumColumnsType); ++n) {
@@ -97,7 +97,7 @@ namespace metaldb {
                 }
 
                 // Write the size of the header
-                if constexpr(sizeof(OutputRow::SizeOfHeaderType) == 1) {
+                if (sizeof(OutputRow::SizeOfHeaderType) == 1) {
                     constants.outputBuffer[OutputRow::SizeOfHeaderOffset] = lengthOfHeader;
                 } else {
                     for (size_t n = 0; n < sizeof(OutputRow::SizeOfHeaderType); ++n) {
@@ -121,7 +121,7 @@ namespace metaldb {
             for (size_t i = 0; i < row.NumColumns(); ++i) {
                 if (row.ColumnVariableSize(i)) {
                     auto rowSize = row.ColumnSize(i);
-                    if constexpr(sizeof(OutputRow::ColumnSizeType) == 1) {
+                    if (sizeof(OutputRow::ColumnSizeType) == 1) {
                         constants.outputBuffer[nextAvailableSlot++] = rowSize;
                     } else {
                         for (size_t n = 0; n < sizeof(OutputRow::SizeOfHeaderType); ++n) {

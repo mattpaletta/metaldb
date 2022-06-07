@@ -129,7 +129,17 @@ namespace {
                 // If it has 0 or 1 child, combine them in a partial.
                 // Move them out of their original location;
                 // Split them out if they execute in different places.
-                stage->children = childStages;
+                if (childStages.at(0)->execution == GPU && p->execution == CPU) {
+                    // Add output instruction
+                    for (auto& child : childStages) {
+                        // Wrap the child in a shuffle operation.
+                        child->partial = std::make_shared<ShuffleOutputPartial>(child->partial);
+                        stage->children.push_back(child);
+                    }
+                } else {
+                    stage->children = childStages;
+                }
+
                 stage->partial->children = {};
             }
 

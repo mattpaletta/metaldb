@@ -53,6 +53,12 @@ namespace metaldb::QueryEngine {
         std::vector<std::size_t> columnIndexes;
     };
 
+    struct ShuffleOutputPartial : public StagePartial {
+        ShuffleOutputPartial(std::shared_ptr<StagePartial> child) : StagePartial(*child) {
+            this->children = {child};
+        }
+    };
+
     struct WritePartial : public StagePartial {
         WritePartial(const std::string& filepath_, metaldb::Method method_, const std::vector<std::string>& columnNames_ = {}) : filepath(filepath_), method(method_), columnNames(columnNames_) {
             this->execution = CPU;

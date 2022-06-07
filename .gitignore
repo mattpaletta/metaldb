@@ -1,4 +1,10 @@
 build/
+build_make/
+build_ninja/
+build_xcode/
+datasets/
+dataset/
+data
 **/*.swp
 **/*.air
 **/*.metallib
