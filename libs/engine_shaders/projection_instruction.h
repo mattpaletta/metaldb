@@ -14,26 +14,33 @@
 #include "temp_row.h"
 
 namespace metaldb {
-    class ProjectionInstruction final {
+    class ProjectionInstruction {
     public:
-        // Pointer points to beginning of Projection instruction.
-        ProjectionInstruction(METAL_DEVICE int8_t* instructions) : _instructions(instructions) {}
+        using NumColumnsType = OutputRow::NumColumnsType;
+        METAL_CONSTANT static constexpr auto NumColumnsOffset = 0;
 
-        uint8_t numColumns() const {
-            return this->_instructions[0];
+        using ColumnIndexType = NumColumnsType;
+        METAL_CONSTANT static constexpr auto ColumnIndexOffset = sizeof(NumColumnsType) + NumColumnsOffset;
+
+#ifndef __METAL__
+        ProjectionInstruction() : _instructions(nullptr) {}
+#endif
+        // Pointer points to beginning of Projection instruction.
+        ProjectionInstruction(InstSerializedValuePtr instructions) : _instructions(instructions) {}
+
+        NumColumnsType numColumns() const {
+            return ReadBytesStartingAt<NumColumnsType>(&this->_instructions[NumColumnsOffset]);
         }
 
         // This returns the column to read from the row.
-        uint8_t getColumnIndex(uint8_t index) const {
-            // +1 the size is the first item
-            return this->_instructions[index + 1];
+        ColumnIndexType getColumnIndex(NumColumnsType index) const {
+            return ReadBytesStartingAt<ColumnIndexType>(&this->_instructions[(index * sizeof(ColumnIndexType)) + ColumnIndexOffset]);
         }
 
-        METAL_DEVICE int8_t* end() const {
+        InstSerializedValuePtr end() const {
             // Returns 1 past the end of the instruction
-            const uint8_t numColumnsOffset = 1;
-            const uint8_t columnsOffset = this->numColumns();
-            const uint8_t offset = numColumnsOffset + columnsOffset;
+            const auto numColumns = this->numColumns();
+            const uint8_t offset = ColumnIndexOffset + (numColumns * sizeof(ColumnIndexType));
             return &this->_instructions[offset];
         }
 
@@ -75,6 +82,6 @@ namespace metaldb {
         }
 
     private:
-        METAL_DEVICE int8_t* _instructions;
+        InstSerializedValuePtr _instructions;
     };
 }

@@ -26,6 +26,7 @@
 
 #ifndef __METAL__
 #include <cstdint>
+#include <vector>
 #endif
 
 
@@ -38,6 +39,11 @@
 using InstructionPtr = uint64_t;
 
 namespace metaldb {
+
+    using InstSerializedValue = int8_t;
+    using InstSerializedValuePtr = METAL_DEVICE InstSerializedValue*;
+    using OutputSerializedValue = int8_t;
+
     namespace types {
         using IntegerType = int64_t;
         using FloatType = float;
@@ -45,4 +51,38 @@ namespace metaldb {
 
         using SizeType = uint64_t;
     }
+
+    template<typename Val, typename T>
+    static Val ReadBytesStartingAt(T METAL_DEVICE * ptr) {
+        if constexpr(sizeof(Val) == sizeof(T)) {
+            return (Val) *ptr;
+        } else {
+            return *((Val METAL_DEVICE *) ptr);
+        }
+    }
+
+    template<typename Val, typename T>
+    static void WriteBytesStartingAt(T METAL_DEVICE * ptr, const Val METAL_THREAD & val) {
+        if constexpr(sizeof(T) == sizeof(Val)) {
+            *ptr = val;
+        } else {
+            *((Val METAL_DEVICE *) ptr) = val;
+        }
+    }
+
+#ifndef __METAL__
+    template<typename T, typename Val>
+    static void WriteBytesStartingAt(std::vector<T>& ptr, const Val& val) {
+        union {
+            Val a;
+            T bytes[sizeof(Val)];
+        } thing;
+
+        thing.a = val;
+
+        for (auto n = 0UL; n < sizeof(Val); ++n) {
+            ptr.emplace_back(thing.bytes[n]);
+        }
+    }
+#endif
 }

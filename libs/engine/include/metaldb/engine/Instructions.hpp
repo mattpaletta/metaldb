@@ -13,7 +13,7 @@
 #include <string>
 
 namespace metaldb::engine {
-    using instruction_serialized_type = std::vector<instruction_serialized_value_type>;
+    using instruction_serialized_type = std::vector<InstSerializedValue>;
 
     static std::string columnTypeToString(ColumnType type) {
         switch (type) {
@@ -29,18 +29,18 @@ namespace metaldb::engine {
     }
 
     namespace detail {
-        template<typename T>
-        void serializeVector(instruction_serialized_type* output, const std::vector<T>& input) {
-            output->emplace_back((instruction_serialized_value_type) input.size());
+        template<typename T, typename Size>
+        void serializeVector(instruction_serialized_type* output, const std::vector<T>& input, const Size& size) {
+            WriteBytesStartingAt(*output, size);
             for (const auto& c : input) {
-                output->emplace_back((instruction_serialized_value_type) c);
+                WriteBytesStartingAt(*output, c);
             }
         }
 
         template<typename T>
-        std::vector<T> deserializeVector(instruction_serialized_value_type** input) {
+        std::vector<T> deserializeVector(InstSerializedValue** input) {
             using count_type = std::int8_t;
-            static_assert(sizeof(count_type) == sizeof(instruction_serialized_value_type), "Unsafe to statically cast values of different sizes.");
+            static_assert(sizeof(count_type) == sizeof(InstSerializedValue), "Unsafe to statically cast values of different sizes.");
             const auto size = (count_type) **input;
             (*input)++;
 
@@ -54,11 +54,11 @@ namespace metaldb::engine {
         }
     }
 
-    class ParseRow final {
+    class ParseRow final : ParseRowInstruction {
     public:
-        ParseRow(Method method, const std::vector<ColumnType>& columnTypes, bool skipHeader) : _method(method), _columnTypes(columnTypes), _skipHeader(skipHeader) {}
+        ParseRow(MethodType method, const std::vector<ColumnType>& columnTypes, SkipHeaderType skipHeader) : _method(method), _columnTypes(columnTypes), _skipHeader(skipHeader) {}
 
-        std::size_t numColumns() const {
+        NumColumnsType numColumns() const {
             return this->_columnTypes.size();
         }
 
@@ -86,14 +86,14 @@ namespace metaldb::engine {
             }
         }
 
-        static ParseRow deserialize(instruction_serialized_value_type** input) {
+        static ParseRow deserialize(InstSerializedValue** input) {
             // Assume we don't have the type encoded
             // pull out the method
-            auto method = (Method) **input;
-            (*input)++;
+            auto method = ReadBytesStartingAt<MethodType>(input);
+            (*input) += sizeof(MethodType);
 
-            bool skipHeader = (bool) **input;
-            (*input)++;
+            bool skipHeader = ReadBytesStartingAt<SkipHeaderType>(input);
+            (*input) += sizeof(SkipHeaderType);
 
             // Then the vector
             const auto columnTypes = detail::deserializeVector<ColumnType>(input);
@@ -102,19 +102,19 @@ namespace metaldb::engine {
 
         instruction_serialized_type serialize() const {
             instruction_serialized_type output;
-            output.emplace_back((instruction_serialized_value_type) this->_method);
-            output.emplace_back((instruction_serialized_value_type) this->_skipHeader);
-            detail::serializeVector(&output, this->_columnTypes);
+            WriteBytesStartingAt(output, this->_method);
+            WriteBytesStartingAt(output, this->_skipHeader);
+            detail::serializeVector(&output, this->_columnTypes, (NumColumnsType) this->_columnTypes.size());
             return output;
         }
 
     private:
         Method _method;
         std::vector<ColumnType> _columnTypes;
-        bool _skipHeader;
+        ParseRowInstruction::SkipHeaderType _skipHeader;
     };
 
-    class Projection final {
+    class Projection final : ProjectionInstruction {
     public:
         Projection(const std::vector<std::size_t>& columnIndexes) : _indexes(columnIndexes) {}
 
@@ -137,7 +137,7 @@ namespace metaldb::engine {
             return sstream.str();
         }
 
-        static Projection deserialize(instruction_serialized_value_type** input) {
+        static Projection deserialize(InstSerializedValue** input) {
             // Assume we don't have the type encoded
 
             // Pull out the vector elements
@@ -147,7 +147,7 @@ namespace metaldb::engine {
 
         instruction_serialized_type serialize() const {
             instruction_serialized_type output;
-            detail::serializeVector(&output, this->_indexes);
+            detail::serializeVector(&output, this->_indexes, (NumColumnsType) this->_indexes.size());
             return output;
         }
 
@@ -167,7 +167,7 @@ namespace metaldb::engine {
             return sstream.str();
         }
 
-        static Output deserialize(instruction_serialized_value_type** input) {
+        static Output deserialize(InstSerializedValue** input) {
             // Assume we don't have the type encoded
             return Output();
         }
@@ -213,7 +213,7 @@ namespace metaldb::engine {
             auto buffer = instruction.serialize();
 
             // Copy into vector
-            this->_data.emplace_back(static_cast<instruction_serialized_value_type>(type));
+            this->_data.emplace_back(static_cast<InstSerializedValue>(type));
             std::copy(buffer.begin(), buffer.end(), std::back_inserter(this->_data));
             return *this;
         }

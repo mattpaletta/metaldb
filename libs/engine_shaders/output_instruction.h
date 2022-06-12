@@ -16,9 +16,9 @@
 namespace metaldb {
     class OutputInstruction final {
     public:
-        OutputInstruction(int8_t METAL_DEVICE * instructions) : _instructions(instructions) {}
+        OutputInstruction(InstSerializedValuePtr instructions) : _instructions(instructions) {}
 
-        METAL_DEVICE int8_t* end() const {
+        InstSerializedValuePtr end() const {
             // Returns 1 past the end of the instruction
             const int8_t offset = 1;
             return &this->_instructions[offset];
@@ -93,7 +93,7 @@ namespace metaldb {
 
                 // Write the types of each column
                 for (size_t i = 0; i < row.NumColumns(); ++i) {
-                    constants.outputBuffer[lengthOfHeader++] = (instruction_serialized_value_type) row.ColumnType(i);
+                    constants.outputBuffer[lengthOfHeader++] = (InstSerializedValue) row.ColumnType(i);
                 }
 
                 // Write the size of the header
@@ -112,7 +112,7 @@ namespace metaldb {
             }
 #ifndef __METAL__
             // Start at the length of the buffer
-            size_t startIndex = *(uint16_t METAL_DEVICE *)(&constants.outputBuffer[1]);
+            size_t startIndex = *(OutputRow::SizeOfHeaderType METAL_DEVICE *)(&constants.outputBuffer[1]);
 #endif
 
             size_t nextAvailableSlot = startIndex;
@@ -144,6 +144,6 @@ namespace metaldb {
         }
 
     private:
-        METAL_DEVICE int8_t* _instructions;
+        InstSerializedValuePtr _instructions;
     };
 }

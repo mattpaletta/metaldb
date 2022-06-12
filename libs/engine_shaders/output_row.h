@@ -7,6 +7,8 @@
 
 #pragma once
 
+#include "string_section.h"
+
 namespace metaldb {
     class OutputRow {
     public:
@@ -21,6 +23,6 @@ namespace metaldb {
 
         METAL_CONSTANT static constexpr auto ColumnTypeOffset = sizeof(NumColumnsType) + NumColumnsOffset;
 
-        using ColumnSizeType = uint8_t;
+        using ColumnSizeType = StringSection::SizeType;
     };
 }

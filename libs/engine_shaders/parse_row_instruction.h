@@ -17,44 +17,58 @@
 #include "strings.h"
 
 namespace metaldb {
-    class ParseRowInstruction final {
+    class ParseRowInstruction {
     public:
+        using MethodType = Method;
+        METAL_CONSTANT static constexpr auto MethodOffset = 0;
+
+        using SkipHeaderType = bool;
+        METAL_CONSTANT static constexpr auto SkipHeaderOffset = sizeof(MethodType) + MethodOffset;
+
+        using NumColumnsType = OutputRow::NumColumnsType;
+        METAL_CONSTANT static constexpr auto NumColumnsOffset = sizeof(SkipHeaderType) + SkipHeaderOffset;
+
+        METAL_CONSTANT static constexpr auto ColumnTypeOffset = sizeof(NumColumnsType) + NumColumnsOffset;
+
+        using ColumnSizeType = TempRow::ColumnSizeType;
+        using RowNumType = uint8_t;
+
         // Pointer points to beginning of ParseRow instruction.
-        ParseRowInstruction(int8_t METAL_DEVICE * instructions) : _instructions(instructions) {}
+#ifndef __METAL__
+        ParseRowInstruction() : _instructions(nullptr) {}
+#endif
+        ParseRowInstruction(InstSerializedValuePtr instructions) : _instructions(instructions) {}
 
-        Method getMethod() const {
-            return (Method) this->_instructions[0];
+        MethodType getMethod() const {
+            return ReadBytesStartingAt<MethodType>(&this->_instructions[MethodOffset]);
         }
 
-        bool skipHeader() const {
-            return (bool) this->_instructions[1];
+        SkipHeaderType skipHeader() const {
+            return ReadBytesStartingAt<SkipHeaderType>(&this->_instructions[SkipHeaderOffset]);
         }
 
-        uint8_t numColumns() const {
-            return (uint8_t) this->_instructions[2];
+        NumColumnsType numColumns() const {
+            return ReadBytesStartingAt<NumColumnsType>(&this->_instructions[NumColumnsOffset]);
         }
 
-        ColumnType getColumnType(uint8_t index) const {
-            // +3 because of the other two functions that are first in the serialization.
-            return (ColumnType) this->_instructions[index + 3];
+        ColumnType getColumnType(NumColumnsType index) const {
+            return ReadBytesStartingAt<ColumnType>(&this->_instructions[(index * sizeof(ColumnType)) + ColumnTypeOffset]);
         }
 
-        METAL_DEVICE int8_t* end() const {
+        InstSerializedValuePtr end() const {
             // Returns 1 past the end of the instruction
-            const uint8_t methodOffset = 1;
-            const uint8_t numColumnsOffset = 1;
-            const uint8_t columnsOffset = this->numColumns();
-            const uint8_t skipRow = 1;
-            const uint8_t offset = methodOffset + numColumnsOffset + columnsOffset + skipRow;
+            const auto numColumns = this->numColumns();
+            const auto offset = ColumnTypeOffset + (numColumns * sizeof(ColumnType));
             return &this->_instructions[offset];
         }
 
-        StringSection readCSVColumn(RawTable METAL_THREAD & rawTable, uint8_t row, uint8_t column) const {
+        StringSection readCSVColumn(RawTable METAL_THREAD & rawTable, RowNumType row, NumColumnsType column) const {
             auto rowIndex = rawTable.GetRowIndex(this->skipHeader() ? row+1 : row);
 
             // Get the column by scanning
             METAL_DEVICE char* startOfColumn = rawTable.data(rowIndex);
-            for (uint8_t i = 0; i < column && startOfColumn; ++i) {
+
+            for (NumColumnsType i = 0; i < column && startOfColumn; ++i) {
                 startOfColumn = metal::strings::strchr(startOfColumn, ',') + 1;
             }
 
@@ -64,8 +78,10 @@ namespace metaldb {
 
             METAL_DEVICE char* endOfColumn = metal::strings::strchr(startOfColumn, ',');
 
-            size_t length = endOfColumn - startOfColumn;
-            if (row < rawTable.GetNumRows()) {
+            ColumnSizeType length = endOfColumn - startOfColumn;
+            if (row == rawTable.GetNumRows() - 1 && column == this->numColumns() - 1) {
+                length = rawTable.data(rawTable.GetSizeOfData()) - startOfColumn;
+            } else if (row < rawTable.GetNumRows()) {
                 // Unless it's the last row, read until the start of the next row.
                 auto startOfNextRowInd = rawTable.GetRowIndex(this->skipHeader() ? row+2 : row+1);
                 METAL_DEVICE char* startOfNextRow = rawTable.data(startOfNextRowInd);
@@ -82,7 +98,7 @@ namespace metaldb {
             return StringSection(startOfColumn, length);
         }
 
-        uint8_t readCSVColumnLength(RawTable METAL_THREAD & rawTable, uint8_t row, uint8_t column) const {
+        ColumnSizeType readCSVColumnLength(RawTable METAL_THREAD & rawTable, RowNumType row, NumColumnsType column) const {
             // Do it this was for now to keep the code the same.
             return this->readCSVColumn(rawTable, row, column).size();
         }
@@ -143,6 +159,6 @@ namespace metaldb {
         }
 
     private:
-        METAL_DEVICE int8_t* _instructions;
+        InstSerializedValuePtr _instructions;
     };
 }

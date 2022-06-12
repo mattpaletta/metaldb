@@ -11,7 +11,7 @@
 #include "constants.h"
 
 namespace metaldb {
-    enum ColumnType : instruction_serialized_value_type {
+    enum ColumnType : InstSerializedValue {
         Unknown,
         String,
         Float,

@@ -52,9 +52,6 @@ namespace metaldb {
             std::size_t i = this->_sizeOfHeader;
             std::size_t rowNum = 0;
             while (i < this->_numBytes + this->_sizeOfHeader) {
-                if (rowNum % 10000 == 0) {
-                    std::cout << "Reading row: " << rowNum++ << "\n";
-                }
                 this->_rowStartOffset.push_back(i);
 
                 // Read the column sizes for the dynamic sized ones
