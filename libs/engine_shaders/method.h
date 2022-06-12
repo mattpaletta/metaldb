@@ -8,7 +8,7 @@
 #pragma once
 
 namespace metaldb {
-    enum Method {
+    enum Method : uint8_t {
         CSV
     };
 }

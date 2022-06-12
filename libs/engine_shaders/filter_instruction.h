@@ -15,7 +15,7 @@
 namespace metaldb {
     class FilterInstruction final {
     public:
-        enum Operation : instruction_serialized_value_type {
+        enum Operation : InstSerializedValue {
             READ_FLOAT_CONSTANT,
             READ_INT_CONSTANT,
             READ_STRING_CONSTANT,
@@ -36,23 +36,27 @@ namespace metaldb {
             NE_INT
         };
 
+        using NumOperationsType = uint16_t;
+        METAL_CONSTANT static constexpr auto NumOperationsOffset = 0;
+
+        using OperationsType = InstSerializedValue;
+        METAL_CONSTANT static constexpr auto OperationOffset = sizeof(NumOperationsType) + NumOperationsOffset;
+
         // Pointer points to beginning of Projection instruction.
-        FilterInstruction(METAL_DEVICE int8_t* instructions) : _instructions(instructions) {}
+        FilterInstruction(InstSerializedValuePtr instructions) : _instructions(instructions) {}
 
-        uint16_t NumOperations() const {
-            return *((uint16_t METAL_DEVICE *) &this->_instructions[0]);
+        NumOperationsType NumOperations() const {
+            return ReadBytesStartingAt<NumOperationsType>(&this->_instructions[NumOperationsOffset]);
         }
 
-
-        instruction_serialized_value_type GetOperation(size_t i) const {
-            const auto index = sizeof(this->NumOperations()) + (i * sizeof(instruction_serialized_value_type));
-            return *((instruction_serialized_value_type METAL_DEVICE *) &this->_instructions[index]);
+        OperationsType GetOperation(NumOperationsType op) const {
+            const auto index = OperationOffset + (op * sizeof(NumOperationsType));
+            return ReadBytesStartingAt<OperationsType>(&this->_instructions[index]);
         }
 
-        METAL_DEVICE int8_t* end() const {
+        InstSerializedValuePtr end() const {
             // Returns 1 past the end of the instruction
-            const auto index = sizeof(this->NumOperations()) +
-                sizeof(this->GetOperation(0)) * this->NumOperations();
+            const auto index = OperationOffset + sizeof(OperationsType) * this->NumOperations();
             return &this->_instructions[index];
         }
 
@@ -67,24 +71,24 @@ namespace metaldb {
 
     private:
         // Taken from C++ standard
-        static constexpr METAL_CONSTANT float floatEpsilon = 1.19209e-07f;
+        METAL_CONSTANT static constexpr float floatEpsilon = 1.19209e-07f;
 
-        METAL_DEVICE int8_t* _instructions;
+        InstSerializedValuePtr _instructions;
 
         size_t IndexOfValue(size_t i) const {
-            return sizeof(this->NumOperations()) + (i * sizeof(instruction_serialized_value_type));
+            return sizeof(this->NumOperations()) + (i * sizeof(InstSerializedValue));
         }
 
-        instruction_serialized_value_type GetValue(size_t i) const {
+        InstSerializedValue GetValue(size_t i) const {
             const auto index = this->IndexOfValue(i);
-            return *((instruction_serialized_value_type METAL_DEVICE *) &this->_instructions[index]);
+            return *((InstSerializedValue METAL_DEVICE *) &this->_instructions[index]);
         }
 
         template<typename T>
         T GetTypeStartingAtByte(size_t i) const {
             union {
                 T a;
-                instruction_serialized_value_type bytes[sizeof(T)];
+                InstSerializedValue bytes[sizeof(T)];
             } thing;
 
             for (auto n = 0UL; n < sizeof(T); ++n) {

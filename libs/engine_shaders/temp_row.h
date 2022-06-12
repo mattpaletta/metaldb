@@ -40,6 +40,7 @@ namespace metaldb {
         METAL_CONSTANT static constexpr auto ColumnTypeOffset = sizeof(NumColumnsType) + NumColumnsOffset;
 
         using ColumnSizeType = OutputRow::ColumnSizeType;
+        using SizeType = size_t;
 
         class TempRowBuilder {
         public:
@@ -100,7 +101,7 @@ namespace metaldb {
             return *((SizeOfHeaderType METAL_THREAD *) &(this->_data[SizeOfHeaderOffset]));
         }
 
-        size_t SizeOfPartialRow() const {
+        SizeType SizeOfPartialRow() const {
             size_t sum = this->size();
             for (auto i = 0; i < this->NumColumns(); ++i) {
                 if (this->ColumnVariableSize(i)) {
@@ -151,7 +152,7 @@ namespace metaldb {
                 /* read into column size */ offsetOfVariableLength];
         }
 
-        size_t ColumnStartOffset(size_t column) const {
+        SizeType ColumnStartOffset(size_t column) const {
             size_t sum = 0;
             for (size_t i = 0; i < column; ++i) {
                 sum += this->ColumnSize(i);
@@ -191,11 +192,11 @@ namespace metaldb {
             return this->data(this->_size);
         }
 
-        size_t size() const {
+        SizeType size() const {
             return this->_size;
         }
 
-        void append(METAL_THREAD char* str, size_t len) {
+        void append(METAL_THREAD char* str, SizeType len) {
             metal::strings::strncpy(this->end(), str, len);
             this->_size += len;
         }
@@ -210,7 +211,7 @@ namespace metaldb {
 
 #ifdef __METAL__
         // Supports copying from device to local storage
-        void append(METAL_DEVICE char* str, size_t len) {
+        void append(METAL_DEVICE char* str, ColumnSizeType len) {
             metal::strings::strncpy(this->end(), str, len);
             this->_size += len;
         }
@@ -218,7 +219,7 @@ namespace metaldb {
 
     private:
         METAL_THREAD value_type _data[MAX_OUTPUT_ROW_LENGTH];
-        size_t _size = 0;
+        SizeType _size = 0;
 
         template<typename T>
         void appendImpl(T val) {

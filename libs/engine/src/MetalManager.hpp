@@ -50,7 +50,7 @@ public:
         return this->pipeline.maxTotalThreadsPerThreadgroup;
     }
 
-    void run(const std::vector<char>& serializedData, const std::vector<metaldb::instruction_serialized_value_type>& instructions, OutputBufferType& outputBuffer, size_t numRows) {
+    void run(const std::vector<char>& serializedData, const std::vector<metaldb::InstSerializedValue>& instructions, OutputBufferType& outputBuffer, size_t numRows) {
         if (numRows == 0) {
             return;
         }

@@ -26,7 +26,7 @@ int main() {
     ParseRow parseRow(Method::CSV, {ColumnType::Float, ColumnType::Float, ColumnType::Float, ColumnType::Float, ColumnType::String}, /* skipHeader */ false);
     Projection projection({0, 1});
     Output output;
-    engine.run(rawTable, parseRow, projection, output);
+    engine.run(rawTable, parseRow/*, projection, output*/);
 
 	return 0;
 }

@@ -2,11 +2,11 @@
 #include "constants.h"
 #include "engine.h"
 
-static metaldb::InstructionType decodeType(METAL_DEVICE int8_t* instruction) {
+static metaldb::InstructionType decodeType(metaldb::InstSerializedValuePtr instruction) {
     return (metaldb::InstructionType) *instruction;
 }
 
-void runInstructions(METAL_DEVICE int8_t* instructions, size_t numInstructions, metaldb::DbConstants METAL_THREAD & constants) {
+void runInstructions(metaldb::InstSerializedValuePtr instructions, size_t numInstructions, metaldb::DbConstants METAL_THREAD & constants) {
     // Combines decoding instructions and running them.
 
     metaldb::TempRow row;
@@ -48,9 +48,9 @@ void runInstructions(METAL_DEVICE int8_t* instructions, size_t numInstructions, 
     }
 }
 
-kernel void runQueryKernelBackup(device char* rawData [[ buffer(0) ]], device int8_t* instructions [[ buffer(1) ]], device int8_t* outputBuffer [[ buffer(2) ]], uint id [[ thread_position_in_grid ]], uint group_id [[threadgroup_position_in_grid]], uint local_id [[thread_position_in_threadgroup]], ushort simd_width [[ thread_execution_width ]]) {
+kernel void runQueryKernelBackup(device char* rawData [[ buffer(0) ]], metaldb::InstSerializedValuePtr instructions [[ buffer(1) ]], device int8_t* outputBuffer [[ buffer(2) ]], uint id [[ thread_position_in_grid ]], uint group_id [[threadgroup_position_in_grid]], uint local_id [[thread_position_in_threadgroup]], ushort simd_width [[ thread_execution_width ]]) {
     // declare this here as this can only be declared in a 'kernel'.
-    threadgroup uint32_t rowSizeScratch[metaldb::DbConstants::MAX_NUM_ROWS];
+    threadgroup metaldb::OutputRow::NumBytesType rowSizeScratch[metaldb::DbConstants::MAX_NUM_ROWS];
 
     metaldb::RawTable rawTable(rawData);
 

@@ -8,62 +8,56 @@ namespace {
         {
             // Write header section
             // size of the header
-            using HeaderSizeType = decltype(((metaldb::RawTable*)nullptr)->GetSizeOfHeader());
-            constexpr auto sizeOfHeaderType = sizeof(HeaderSizeType);
-            constexpr auto sizeOfSizeType = sizeof(metaldb::types::SizeType);
+            using SizeOfHeaderType = metaldb::RawTable::SizeOfHeaderType;
+            using SizeOfDataType = metaldb::RawTable::SizeOfDataType;
+            using NumRowsType = metaldb::RawTable::NumRowsType;
+            using RowIndexType = metaldb::RawTable::RowIndexType;
 
-            using NumRowsType = decltype(((metaldb::RawTable*)nullptr)->GetNumRows());
-            constexpr auto sizeOfNumRowsType = sizeof(NumRowsType);
-
-            using RowIndexType = decltype(((metaldb::RawTable*)nullptr)->GetRowIndex(0));
-            constexpr auto sizeOfRowIndexType = sizeof(RowIndexType);
-
-            HeaderSizeType sizeOfHeader = 0;
+            SizeOfHeaderType sizeOfHeader = 0;
 
             // Allocate space for header size
-            for (std::size_t i = 0; i < sizeOfHeaderType; ++i) {
+            for (std::size_t i = 0; i < sizeof(SizeOfHeaderType); ++i) {
                 rawDataSerialized.push_back(0);
             }
-            sizeOfHeader += sizeOfHeaderType;
+            sizeOfHeader += sizeof(SizeOfHeaderType);
 
             // Size of data
             // Allocate space for buffer size
             {
-                const metaldb::types::SizeType size = rawTable.data.size();
-                for (std::size_t n = 0; n < sizeOfSizeType; ++n) {
+                const SizeOfDataType size = rawTable.data.size();
+                for (std::size_t n = 0; n < sizeof(SizeOfDataType); ++n) {
                     // Read the nth byte
                     rawDataSerialized.push_back((int8_t)(size >> (8 * n)) & 0xff);
                 }
-                sizeOfHeader += sizeOfSizeType;
+                sizeOfHeader += sizeof(SizeOfDataType);
             }
 
             // num rows
             {
                 const NumRowsType num = rawTable.numRows();
-                for (std::size_t n = 0; n < sizeOfNumRowsType; ++n) {
+                for (std::size_t n = 0; n < sizeof(NumRowsType); ++n) {
                     // Read the nth byte
                     rawDataSerialized.push_back((int8_t)(num >> (8 * n)) & 0xff);
                 }
-                sizeOfHeader += sizeOfNumRowsType;
+                sizeOfHeader += sizeof(NumRowsType);
             }
 
             // Write the row indexes
             {
                 for (const auto& index : rawTable.rowIndexes) {
                     RowIndexType num = index;
-                    for (std::size_t n = 0; n < sizeOfRowIndexType; ++n) {
+                    for (std::size_t n = 0; n < sizeof(RowIndexType); ++n) {
                         // Read the nth byte
                         rawDataSerialized.push_back((int8_t)(num >> (8 * n)) & 0xff);
                     }
-
-                    sizeOfHeader += sizeOfRowIndexType;
                 }
+                sizeOfHeader += sizeof(RowIndexType) * rawTable.rowIndexes.size();
             }
 
             // Write in size of header
-            for (std::size_t n = 0; n < sizeOfHeaderType; ++n) {
+            for (std::size_t n = 0; n < sizeof(SizeOfHeaderType); ++n) {
                 // Read the nth byte
-                rawDataSerialized.at(n) = ((int8_t)(sizeOfHeader >> (8 * n)) & 0xff);
+                rawDataSerialized.at(metaldb::RawTable::SizeOfHeaderOffset + n) = ((int8_t)(sizeOfHeader >> (8 * n)) & 0xff);
             }
         }
 

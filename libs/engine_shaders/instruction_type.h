@@ -1,20 +1,9 @@
-//
-//  instruction_type.h
-//  metaldb
-//
-//  Created by Matthew Paletta on 2022-03-23.
-//
-
 #pragma once
 
-#ifndef __METAL__
-#include <cstdint>
-#endif
+#include "constants.h"
 
 namespace metaldb {
-    using instruction_serialized_value_type = uint8_t;
-
-    enum InstructionType : instruction_serialized_value_type {
+    enum InstructionType : InstSerializedValue {
         PARSEROW,
         PROJECTION,
         FILTER,

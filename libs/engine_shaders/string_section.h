@@ -10,16 +10,18 @@
 #include "constants.h"
 
 #ifndef __METAL__
-#include <iostream>
+#    include <iostream>
 #endif
 
 namespace metaldb {
     template<typename T>
     class GenericStringSection final {
     public:
-        GenericStringSection(T str, uint8_t size) : _size(size), _str(str) {}
+        using SizeType = uint8_t;
 
-        uint8_t size() const {
+        GenericStringSection(T str, SizeType size) : _size(size), _str(str) {}
+
+        SizeType size() const {
             return this->_size;
         }
 
@@ -29,7 +31,7 @@ namespace metaldb {
 
 #ifndef __METAL__
         void print() const {
-            for (int i = 0; i < this->size(); ++i) {
+            for (SizeType i = 0; i < this->size(); ++i) {
                 std::cout << this->str()[i];
             }
             std::cout << std::endl;
@@ -37,7 +39,7 @@ namespace metaldb {
 #endif
 
     private:
-        uint8_t _size;
+        SizeType _size;
         T _str;
     };
 
