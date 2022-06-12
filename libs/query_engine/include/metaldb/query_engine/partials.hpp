@@ -48,9 +48,10 @@ namespace metaldb::QueryEngine {
     };
 
     struct ProjectionPartial : public StagePartial {
-        ProjectionPartial(const std::vector<std::size_t>& columnIndexes_) : columnIndexes(columnIndexes_) {}
+        using ColumnIndexType = uint8_t;
+        ProjectionPartial(const std::vector<ColumnIndexType>& columnIndexes_) : columnIndexes(columnIndexes_) {}
 
-        std::vector<std::size_t> columnIndexes;
+        std::vector<ColumnIndexType> columnIndexes;
     };
 
     struct ShuffleOutputPartial : public StagePartial {

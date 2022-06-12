@@ -78,7 +78,7 @@ namespace {
         tableDef->name = childTableDef->name;
 
         // Lookup column indexes
-        std::vector<std::size_t> columnIndexes;
+        std::vector<ProjectionPartial::ColumnIndexType> columnIndexes;
         columnIndexes.reserve(expr->numColumns());
         for (const auto& column : expr->columns()) {
             // Store the current table definiton in the AST?
