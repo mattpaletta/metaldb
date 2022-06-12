@@ -20,16 +20,23 @@ namespace metaldb {
         using value_type = typename Container::value_type;
 
         OutputRowReader(const Container& instructions) : _instructions(instructions) {
-            this->_sizeOfHeader = *(decltype(_sizeOfHeader) *)(&instructions.at(OutputRow::SizeOfHeaderOffset));
-            this->_numBytes = *(decltype(_numBytes) *)(&instructions.at(OutputRow::NumBytesOffset));
+            std::cout << "Reading Size Of Header from position: " << OutputRow::SizeOfHeaderOffset << std::endl;
+            this->_sizeOfHeader = ReadBytesStartingAt<OutputRow::SizeOfHeaderType>(&instructions.at(OutputRow::SizeOfHeaderOffset));
+            std::cout << "Reading Size Of Header: " << this->_sizeOfHeader << std::endl;
 
-            this->_numColumns = *(decltype(_numColumns) *)(&instructions.at(OutputRow::NumColumnsOffset));
+            std::cout << "Reading Num Bytes from position: " << OutputRow::NumBytesOffset << std::endl;
+            this->_numBytes = ReadBytesStartingAt<OutputRow::NumBytesType>(&instructions.at(OutputRow::NumBytesOffset));
+            std::cout << "Reading Num Bytes: " << this->_numBytes << std::endl;
+
+            std::cout << "Reading Num Columns from position: " << OutputRow::NumColumnsOffset << std::endl;
+            this->_numColumns = ReadBytesStartingAt<OutputRow::NumColumnsType>(&instructions.at(OutputRow::NumColumnsOffset));
+            std::cout << "Reading Num Columns: " << (int) this->_numColumns << std::endl;
 
             this->_columnSizes.resize(this->_numColumns);
             this->_columnTypes.resize(this->_numColumns);
 
             for (size_t i = 0; i < this->_numColumns; ++i) {
-                const auto columnType = (ColumnType) instructions.at(OutputRow::ColumnTypeOffset + i);
+                const auto columnType = ReadBytesStartingAt<ColumnType>(&instructions.at(OutputRow::ColumnTypeOffset + (i * sizeof(ColumnType))));
                 this->_columnTypes.at(i) = columnType;
 
                 switch (columnType) {
@@ -50,14 +57,14 @@ namespace metaldb {
             }
 
             std::size_t i = this->_sizeOfHeader;
-            std::size_t rowNum = 0;
-            while (i < this->_numBytes + this->_sizeOfHeader) {
+            while (i < this->_numBytes) {
                 this->_rowStartOffset.push_back(i);
 
                 // Read the column sizes for the dynamic sized ones
                 auto columnSizes = this->_columnSizes;
                 for (const auto& varLengthCol : this->_variableLengthColumns) {
-                    columnSizes.at(varLengthCol) = (OutputRow::ColumnSizeType) instructions.at(i++);
+                    columnSizes.at(varLengthCol) = ReadBytesStartingAt<OutputRow::ColumnSizeType>(&instructions.at(i));
+                    i += sizeof(OutputRow::ColumnSizeType);
                 }
 
                 // Read the row

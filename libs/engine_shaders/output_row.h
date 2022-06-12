@@ -15,6 +15,9 @@ namespace metaldb {
         using SizeOfHeaderType = uint16_t;
         METAL_CONSTANT static constexpr auto SizeOfHeaderOffset = 0;
 
+        /**
+         * Num bytes include the size of the header.
+         */
         using NumBytesType = uint32_t;
         METAL_CONSTANT static constexpr auto NumBytesOffset = sizeof(SizeOfHeaderType) + SizeOfHeaderOffset;
 

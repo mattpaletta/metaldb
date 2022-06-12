@@ -61,22 +61,18 @@ namespace metaldb {
                 lengthOfHeader += sizeof(SizeOfHeaderType);
             }
             {
-                {
-                    // Write num columns
-                    auto numColumns = builder.numColumns;
-                    for (size_t n = 0; n < sizeof(NumColumnsType); ++n) {
-                        this->_data[NumColumnsOffset + n] = (int8_t)(numColumns >> (8 * n)) & 0xff;
-                    }
-                    lengthOfHeader += sizeof(NumColumnsType);
-                }
+                // Write num columns
+                auto numColumns = builder.numColumns;
+                WriteBytesStartingAt(&this->_data[NumColumnsOffset], numColumns);
+                lengthOfHeader += sizeof(numColumns);
             }
             {
                 // Column types
                 for (auto i = 0; i < builder.numColumns; ++i) {
                     auto columnType = builder.columnTypes[i];
-                    this->_data[ColumnTypeOffset + i] = columnType;
+                    WriteBytesStartingAt(&this->_data[ColumnTypeOffset + (i * sizeof(enum ColumnType))], columnType);
                 }
-                lengthOfHeader += builder.numColumns;
+                lengthOfHeader += (builder.numColumns * sizeof(enum ColumnType));
             }
             {
                 // Column sizes (for all variable columns)
@@ -85,20 +81,19 @@ namespace metaldb {
                     if (columnType == String) {
                         // Hack using the length of the header so we dynamically write to the correct place.
                         auto columnSize = builder.columnSizes[i];
-                        for (size_t n = 0; n < sizeof(ColumnSizeType); ++n) {
-                            this->_data[lengthOfHeader++] = (int8_t)(columnSize >> (8 * n)) & 0xff;
-                        }
+                        WriteBytesStartingAt(&this->_data[lengthOfHeader], columnSize);
+                        lengthOfHeader += sizeof(columnSize);
                     }
                 }
             }
 
-            *((SizeOfHeaderType METAL_THREAD *) &(this->_data[SizeOfHeaderOffset])) = lengthOfHeader;
+            WriteBytesStartingAt(&this->_data[SizeOfHeaderOffset], lengthOfHeader);
         }
 
         TempRow() = default;
 
         SizeOfHeaderType LengthOfHeader() const {
-            return *((SizeOfHeaderType METAL_THREAD *) &(this->_data[SizeOfHeaderOffset]));
+            return ReadBytesStartingAt<SizeOfHeaderType>(&this->_data[SizeOfHeaderOffset]);
         }
 
         SizeType SizeOfPartialRow() const {
@@ -112,12 +107,11 @@ namespace metaldb {
         }
 
         NumColumnsType NumColumns() const {
-            constexpr auto index = sizeof(this->LengthOfHeader());
-            return *((NumColumnsType METAL_THREAD *) &(this->_data[index]));
+            return ReadBytesStartingAt<NumColumnsType>(&this->_data[NumColumnsOffset]);
         }
 
         enum ColumnType ColumnType(size_t column) const {
-            return (enum ColumnType) this->_data[ColumnTypeOffset + column];
+            return ReadBytesStartingAt<enum ColumnType>(&this->_data[ColumnTypeOffset + (column * sizeof(enum ColumnType))]);
         }
 
         bool ColumnVariableSize(size_t column) const {
@@ -146,10 +140,10 @@ namespace metaldb {
                 }
             }
             // Lookup in the index of column type
-            return this->_data[
+            return ReadBytesStartingAt<ColumnSizeType>(&this->_data[
                 /* fixed header */ColumnTypeOffset +
                 /* columnType offset */ this->NumColumns() * sizeof(this->ColumnType(0)) +
-                /* read into column size */ offsetOfVariableLength];
+                /* read into column size */ offsetOfVariableLength]);
         }
 
         SizeType ColumnStartOffset(size_t column) const {
@@ -166,12 +160,12 @@ namespace metaldb {
 
         types::FloatType ReadColumnFloat(size_t column) const {
             const auto startOffset = this->ColumnStartOffset(column);
-            return *((types::FloatType METAL_THREAD *)(this->data(startOffset)));
+            return ReadBytesStartingAt<types::FloatType>(this->data() + startOffset);
         }
 
         types::IntegerType ReadColumnInt(size_t column) const {
             const auto startOffset = this->ColumnStartOffset(column);
-            return *((types::IntegerType METAL_THREAD *)(this->data(startOffset)));
+            return ReadBytesStartingAt<types::IntegerType>(this->data() + startOffset);
         }
 
         ConstLocalStringSection ReadColumnString(size_t column) const {
