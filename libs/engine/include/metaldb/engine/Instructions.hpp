@@ -116,7 +116,7 @@ namespace metaldb::engine {
 
     class Projection final : ProjectionInstruction {
     public:
-        Projection(const std::vector<std::size_t>& columnIndexes) : _indexes(columnIndexes) {}
+        Projection(const std::vector<ColumnIndexType>& columnIndexes) : _indexes(columnIndexes) {}
 
         std::size_t numColumns() const {
             return this->_indexes.size();
@@ -141,7 +141,7 @@ namespace metaldb::engine {
             // Assume we don't have the type encoded
 
             // Pull out the vector elements
-            const auto input_values = detail::deserializeVector<std::size_t>(input);
+            const auto input_values = detail::deserializeVector<ColumnIndexType>(input);
             return Projection(input_values);
         }
 
@@ -152,7 +152,7 @@ namespace metaldb::engine {
         }
 
     private:
-        std::vector<std::size_t> _indexes;
+        std::vector<ColumnIndexType> _indexes;
     };
 
     class Output final {
