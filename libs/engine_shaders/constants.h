@@ -61,14 +61,42 @@ namespace metaldb {
         }
     }
 
+#ifdef __METAL__
+    template<typename Val, typename T>
+    static Val ReadBytesStartingAt(T METAL_THREAD * ptr) {
+        if constexpr(sizeof(Val) == sizeof(T)) {
+            return (Val) *ptr;
+        } else {
+            return *((Val METAL_THREAD *) ptr);
+        }
+    }
+#endif
+
     template<typename Val, typename T>
     static void WriteBytesStartingAt(T METAL_DEVICE * ptr, const Val METAL_THREAD & val) {
         if constexpr(sizeof(T) == sizeof(Val)) {
             *ptr = val;
         } else {
-            *((Val METAL_DEVICE *) ptr) = val;
+            for (size_t n = 0; n < (sizeof(Val) / sizeof(T)); ++n) {
+                *(ptr++) = (T)(val >> (8 * n)) & 0xff;
+            }
+//            *((Val METAL_DEVICE *) ptr) = val;
         }
     }
+
+#ifdef __METAL__
+    template<typename Val, typename T>
+    static void WriteBytesStartingAt(T METAL_THREAD * ptr, const Val METAL_THREAD & val) {
+        if constexpr(sizeof(T) == sizeof(Val)) {
+            *ptr = val;
+        } else {
+            for (size_t n = 0; n < (sizeof(Val) / sizeof(T)); ++n) {
+                *(ptr++) = (T)(val >> (8 * n)) & 0xff;
+            }
+//            *((Val METAL_THREAD *) ptr) = val;
+        }
+    }
+#endif
 
 #ifndef __METAL__
     template<typename T, typename Val>
