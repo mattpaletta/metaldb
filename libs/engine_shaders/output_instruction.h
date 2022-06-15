@@ -38,16 +38,6 @@ namespace metaldb {
         void WriteRow(TempRow METAL_THREAD & row, DbConstants METAL_THREAD & constants) {
             // Write row into output.
 
-            /**
-             * Size of header (4 bytes)
-             * Num bytes (4 bytes)
-             * Num Rows
-             * Column Types
-             * --------
-             * Column Types for row (if string)
-             * Row data
-             * --------
-             */
             const auto index = constants.thread_position_in_grid;
             const auto isFirstThread = index == 0;
 #ifdef __METAL__
@@ -85,34 +75,24 @@ namespace metaldb {
                 NumBytesType bufferSize = 0;
 #endif
                 // Write length of buffer
-#ifndef __METAL__
-                std::cout << "Writing Num Bytes at: " << NumBytesOffset << " with value: " << bufferSize << std::endl;
-#endif
                 WriteBytesStartingAt(&constants.outputBuffer[NumBytesOffset], bufferSize);
-                lengthOfHeader += sizeof(NumBytesType);
+                lengthOfHeader += sizeof(bufferSize);
 
                 // Write the number of columns
-                auto numColumns = row.NumColumns();
-#ifndef __METAL__
-                std::cout << "Writing Num Columns at: " << NumColumnsOffset << " with value: " << (int) numColumns << std::endl;
-#endif
-                WriteBytesStartingAt(&constants.outputBuffer[NumColumnsOffset], numColumns);
-                lengthOfHeader += sizeof(NumColumnsType);
+                {
+                    auto numColumns = row.NumColumns();
+                    WriteBytesStartingAt(&constants.outputBuffer[NumColumnsOffset], numColumns);
+                    lengthOfHeader += sizeof(numColumns);
+                }
 
                 // Write the types of each column
                 for (auto i = 0; i < row.NumColumns(); ++i) {
                     auto columnType = row.ColumnType(i);
-#ifndef __METAL__
-                    std::cout << "Writing Column Type at: " << lengthOfHeader << " with value: " << (int) columnType << std::endl;
-#endif
                     WriteBytesStartingAt(&constants.outputBuffer[lengthOfHeader], columnType);
-                    lengthOfHeader += sizeof(ColumnType);
+                    lengthOfHeader += sizeof(columnType);
                 }
 
                 // Write the size of the header
-#ifndef __METAL__
-                std::cout << "Writing Length of header at: " << SizeOfHeaderOffset << " with value: " << lengthOfHeader << std::endl;
-#endif
                 WriteBytesStartingAt(&constants.outputBuffer[SizeOfHeaderOffset], lengthOfHeader);
 #ifdef __METAL__
                 // First thread starts after the header
@@ -130,12 +110,8 @@ namespace metaldb {
                 }
             }();
 #endif
-
             size_t nextAvailableSlot = startIndex;
 
-#ifndef __METAL__
-            std::cout << "Next available slot: " << nextAvailableSlot << std::endl;
-#endif
             // Write the column sizes for all non-zero size columns
             for (size_t i = 0; i < row.NumColumns(); ++i) {
                 if (row.ColumnVariableSize(i)) {
@@ -148,15 +124,11 @@ namespace metaldb {
             // Write the data for the row
             for (size_t i = 0; i < row.size(); ++i) {
                 const auto value = row.data()[i];
-#ifndef __METAL__
-//                std::cout << "Writing at position: " << nextAvailableSlot << std::endl;
-#endif
                 constants.outputBuffer[nextAvailableSlot++] = value;
             }
 
 #ifndef __METAL__
             // Update the size of the buffer
-            std::cout << "Writing Num Bytes Final at: " << NumBytesOffset << " with value: " << nextAvailableSlot << std::endl;
             WriteBytesStartingAt<NumBytesType>(&constants.outputBuffer[NumBytesOffset], nextAvailableSlot);
 #endif
         }

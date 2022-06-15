@@ -74,15 +74,15 @@ public:
             ((int8_t*)instructionsBuffer.contents)[i] = instructions.at(i);
         }
 
-        auto captureManager = [MTLCaptureManager sharedCaptureManager];
-        auto captureDescriptor = [MTLCaptureDescriptor new];
-        captureDescriptor.captureObject = this->device;
-
-        NSError* error = nil;
-        [captureManager startCaptureWithDescriptor:captureDescriptor error:&error];
-        if (error) {
-            std::cerr << "Failed to start capture: " << error.debugDescription.UTF8String << std::endl;
-        }
+//        auto captureManager = [MTLCaptureManager sharedCaptureManager];
+//        auto captureDescriptor = [MTLCaptureDescriptor new];
+//        captureDescriptor.captureObject = this->device;
+//
+//        NSError* error = nil;
+//        [captureManager startCaptureWithDescriptor:captureDescriptor error:&error];
+//        if (error) {
+//            std::cerr << "Failed to start capture: " << error.debugDescription.UTF8String << std::endl;
+//        }
 
         auto commandBuffer = [this->commandQueue commandBuffer];
 

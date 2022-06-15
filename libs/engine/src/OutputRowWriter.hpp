@@ -23,7 +23,7 @@ namespace metaldb {
 
         OutputRowWriter() = default;
         OutputRowWriter(const OutputRowBuilder& builder) {
-            this->_sizeOfHeader = OutputRow::NumColumnsOffset;
+            this->_sizeOfHeader = OutputRow::ColumnTypeOffset;
 
             this->_columnTypes = builder.columnTypes;
             this->_sizeOfHeader += sizeof(ColumnType) * this->NumColumns();
@@ -32,7 +32,7 @@ namespace metaldb {
 
         ~OutputRowWriter() = default;
 
-        size_t CurrentNumRows() const {
+        OutputRow::NumRowsType CurrentNumRows() const {
             return this->_numRows;
         }
 
@@ -81,9 +81,9 @@ namespace metaldb {
                 this->_hasCopiedHeader = true;
             }
 
-            for (std::size_t c = 0; c < reader.NumColumns(); ++c) {
+            for (auto c = 0; c < reader.NumColumns(); ++c) {
                 auto [columnStart, columnSize] = reader.ColumnIndexInfo(0, row);
-                for (std::size_t i = columnStart; i < columnSize; ++i) {
+                for (auto i = columnStart; i < columnSize; ++i) {
                     this->appendToData(reader.Raw().at(i));
                 }
             }
@@ -92,10 +92,7 @@ namespace metaldb {
 
         void write(std::vector<char>& buffer) {
             // Write the header
-            constexpr decltype(this->_sizeOfHeader) sizeOfHeaderBase =
-                sizeof(this->_sizeOfHeader) +
-                sizeof(this->NumBytes()) +
-                sizeof(this->NumColumns());
+            constexpr decltype(this->_sizeOfHeader) sizeOfHeaderBase = OutputRow::ColumnTypeOffset;
             const decltype(this->_sizeOfHeader) sizeOfHeader =
                 sizeOfHeaderBase +
                 (sizeof(ColumnType) * this->NumColumns());
@@ -120,7 +117,7 @@ namespace metaldb {
     private:
         bool _hasCopiedHeader = false;
         OutputRow::SizeOfHeaderType _sizeOfHeader = 0;
-        std::uint64_t _numRows = 0;
+        OutputRow::NumRowsType _numRows = 0;
         std::vector<ColumnType> _columnTypes;
 
         std::vector<char> _data;

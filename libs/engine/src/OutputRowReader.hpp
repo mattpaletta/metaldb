@@ -11,7 +11,6 @@
 #include "output_row.h"
 
 #include <vector>
-#include <iostream>
 
 namespace metaldb {
     template<typename Container = std::vector<char>>
@@ -20,17 +19,9 @@ namespace metaldb {
         using value_type = typename Container::value_type;
 
         OutputRowReader(const Container& instructions) : _instructions(instructions) {
-            std::cout << "Reading Size Of Header from position: " << OutputRow::SizeOfHeaderOffset << std::endl;
             this->_sizeOfHeader = ReadBytesStartingAt<OutputRow::SizeOfHeaderType>(&instructions.at(OutputRow::SizeOfHeaderOffset));
-            std::cout << "Reading Size Of Header: " << this->_sizeOfHeader << std::endl;
-
-            std::cout << "Reading Num Bytes from position: " << OutputRow::NumBytesOffset << std::endl;
             this->_numBytes = ReadBytesStartingAt<OutputRow::NumBytesType>(&instructions.at(OutputRow::NumBytesOffset));
-            std::cout << "Reading Num Bytes: " << this->_numBytes << std::endl;
-
-            std::cout << "Reading Num Columns from position: " << OutputRow::NumColumnsOffset << std::endl;
             this->_numColumns = ReadBytesStartingAt<OutputRow::NumColumnsType>(&instructions.at(OutputRow::NumColumnsOffset));
-            std::cout << "Reading Num Columns: " << (int) this->_numColumns << std::endl;
 
             this->_columnSizes.resize(this->_numColumns);
             this->_columnTypes.resize(this->_numColumns);
@@ -87,12 +78,12 @@ namespace metaldb {
             return this->_columnTypes;
         }
 
-        std::size_t StartOfColumn(size_t column, size_t row) const {
+        OutputRow::NumBytesType StartOfColumn(size_t column, size_t row) const {
             auto columnSizes = this->ColumnSizesForRow(row);
             return this->StartOfColumn(column, row, columnSizes);
         }
 
-        std::pair<std::size_t, OutputRow::ColumnSizeType> ColumnIndexInfo(size_t column, size_t row) const {
+        std::pair<OutputRow::NumBytesType, OutputRow::ColumnSizeType> ColumnIndexInfo(size_t column, size_t row) const {
             auto columnSizes = this->ColumnSizesForRow(row);
             return std::make_pair(this->StartOfColumn(column, row, columnSizes), columnSizes.at(column));
         }
@@ -109,8 +100,8 @@ namespace metaldb {
             return this->_numColumns;
         }
 
-        std::uint32_t NumRows() const {
-            return (std::uint32_t) this->_rowStartOffset.size();
+        OutputRow::NumRowsType NumRows() const {
+            return (OutputRow::NumRowsType) this->_rowStartOffset.size();
         }
 
         const Container& Raw() const {
@@ -125,23 +116,24 @@ namespace metaldb {
 
         std::vector<OutputRow::ColumnSizeType> _columnSizes;
         std::vector<ColumnType> _columnTypes;
-        std::vector<size_t> _variableLengthColumns;
-        std::vector<size_t> _rowStartOffset;
+        std::vector<OutputRow::ColumnSizeType> _variableLengthColumns;
+        std::vector<OutputRow::NumBytesType> _rowStartOffset;
         
-        std::size_t StartOfColumn(size_t column, size_t row, const decltype(_columnSizes) columnSizes) const {
-            size_t offset = this->_rowStartOffset.at(row);
-            for (size_t i = 0; i < column; ++i) {
+        OutputRow::NumBytesType StartOfColumn(OutputRow::NumColumnsType column, OutputRow::NumRowsType row, const std::vector<OutputRow::ColumnSizeType>& columnSizes) const {
+            auto offset = this->_rowStartOffset.at(row);
+            for (auto i = 0; i < column; ++i) {
                 offset += columnSizes.at(i);
             }
             return offset;
         }
 
-        decltype(_columnSizes) ColumnSizesForRow(size_t row) const {
+        std::vector<OutputRow::ColumnSizeType> ColumnSizesForRow(OutputRow::NumRowsType row) const {
             auto rowStart = this->_rowStartOffset.at(row);
 
             auto columnSizes = this->_columnSizes;
             for (const auto& varLengthCol : this->_variableLengthColumns) {
-                columnSizes.at(varLengthCol) = (OutputRow::ColumnSizeType) this->_instructions.at(rowStart++);
+                columnSizes.at(varLengthCol) = ReadBytesStartingAt<OutputRow::ColumnSizeType>(&this->_instructions.at(rowStart));
+                rowStart += sizeof(OutputRow::ColumnSizeType);
             }
 
             return columnSizes;

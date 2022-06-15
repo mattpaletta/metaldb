@@ -29,13 +29,6 @@
 #include <vector>
 #endif
 
-
-// TODO: Make this a function constant in Metal so we can change it.
-#define MAX_VM_STACK_SIZE 32
-
-// 1 kilobyte
-#define MAX_OUTPUT_ROW_LENGTH 1024
-
 using InstructionPtr = uint64_t;
 
 namespace metaldb {
@@ -43,6 +36,8 @@ namespace metaldb {
     using InstSerializedValue = int8_t;
     using InstSerializedValuePtr = METAL_DEVICE InstSerializedValue*;
     using OutputSerializedValue = int8_t;
+
+    METAL_CONSTANT static constexpr auto MAX_OUTPUT_ROW_LENGTH = 1024;
 
     namespace types {
         using IntegerType = int64_t;
@@ -77,10 +72,10 @@ namespace metaldb {
         if constexpr(sizeof(T) == sizeof(Val)) {
             *ptr = val;
         } else {
-            for (size_t n = 0; n < (sizeof(Val) / sizeof(T)); ++n) {
-                *(ptr++) = (T)(val >> (8 * n)) & 0xff;
-            }
-//            *((Val METAL_DEVICE *) ptr) = val;
+//            for (size_t n = 0; n < (sizeof(Val) / sizeof(T)); ++n) {
+//                *(ptr++) = (T)(val >> (8 * n)) & 0xff;
+//            }
+            *((Val METAL_DEVICE *) ptr) = val;
         }
     }
 
@@ -90,10 +85,10 @@ namespace metaldb {
         if constexpr(sizeof(T) == sizeof(Val)) {
             *ptr = val;
         } else {
-            for (size_t n = 0; n < (sizeof(Val) / sizeof(T)); ++n) {
-                *(ptr++) = (T)(val >> (8 * n)) & 0xff;
-            }
-//            *((Val METAL_THREAD *) ptr) = val;
+//            for (size_t n = 0; n < (sizeof(Val) / sizeof(T)); ++n) {
+//                *(ptr++) = (T)(val >> (8 * n)) & 0xff;
+//            }
+            *((Val METAL_THREAD *) ptr) = val;
         }
     }
 #endif

@@ -28,13 +28,5 @@ namespace metaldb {
         ushort thread_execution_width = 0;
 
         METAL_THREADGROUP OutputRow::NumBytesType* rowSizeScratch;
-
-#ifndef __METAL__
-        static size_t currentOutputBufferSize;
-#endif
     };
-
-#ifndef __METAL__
-    inline size_t DbConstants::currentOutputBufferSize = 0;
-#endif
 }

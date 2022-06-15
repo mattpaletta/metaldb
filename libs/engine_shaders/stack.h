@@ -10,7 +10,7 @@
 #include "constants.h"
 
 namespace metaldb {
-    template<size_t N>
+    template<types::SizeType N>
     class Stack {
     public:
         Stack() : _data() {}
@@ -68,12 +68,12 @@ namespace metaldb {
             return this->_size == N;
         }
 
-        size_t size() const {
+        types::SizeType size() const {
             return this->_size;
         }
 
     private:
-        size_t _size = 0;
-        int8_t _data[N];
+        types::SizeType _size = 0;
+        InstSerializedValue _data[N];
     };
 }
