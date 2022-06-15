@@ -31,7 +31,7 @@ namespace metaldb {
         METAL_CONSTANT static constexpr auto ColumnTypeOffset = sizeof(NumColumnsType) + NumColumnsOffset;
 
         using ColumnSizeType = TempRow::ColumnSizeType;
-        using RowNumType = uint8_t;
+        using RowNumType = uint16_t;
 
         // Pointer points to beginning of ParseRow instruction.
 #ifndef __METAL__

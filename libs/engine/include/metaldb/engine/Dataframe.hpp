@@ -25,8 +25,5 @@ namespace metaldb::engine {
 
         Dataframe& select(const std::vector<Column>& columns, const std::string& table);
         Dataframe& filter(const Filter& filter);
-
-    private:
-
     };
 }

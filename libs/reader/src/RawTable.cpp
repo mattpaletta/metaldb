@@ -45,7 +45,7 @@ auto metaldb::reader::RawTable::readRow(std::size_t row) const -> std::string {
     return sstream.str();
 }
 
-std::string metaldb::reader::RawTable::debugStr() const {
+auto metaldb::reader::RawTable::debugStr() const -> std::string {
     std::stringstream sstream;
     sstream << "************************\n";
     sstream << "Num Columns: " << this->columns.size() << "\n";

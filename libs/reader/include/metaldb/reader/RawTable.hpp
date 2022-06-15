@@ -32,6 +32,5 @@ namespace metaldb::reader {
     private:
         RawTable(bool isValid);
         bool _isValid;
-
     };
 }

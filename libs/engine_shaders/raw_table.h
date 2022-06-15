@@ -12,6 +12,8 @@
 namespace metaldb {
     class RawTable {
     public:
+        using value_type = METAL_DEVICE char*;
+
         using SizeOfHeaderType = types::SizeType;
         METAL_CONSTANT static constexpr auto SizeOfHeaderOffset = 0;
 
@@ -24,7 +26,7 @@ namespace metaldb {
         using RowIndexType = uint16_t;
         METAL_CONSTANT static constexpr auto RowIndexOffset = sizeof(NumRowsOffset) + NumRowsOffset;
 
-        RawTable(METAL_DEVICE char* rawData) : _rawData(rawData) {}
+        RawTable(value_type rawData) : _rawData(rawData) {}
 
         SizeOfHeaderType GetSizeOfHeader() const {
             return ReadBytesStartingAt<SizeOfHeaderType>(&_rawData[SizeOfHeaderOffset]);
@@ -48,12 +50,12 @@ namespace metaldb {
             return this->GetSizeOfHeader();
         }
 
-        METAL_DEVICE char* data(SizeOfDataType index = 0) {
+        value_type data(SizeOfDataType index = 0) {
             const auto dataStart = this->GetStartOfData();
             return &this->_rawData[dataStart + index];
         }
 
     private:
-        METAL_DEVICE char* _rawData;
+        value_type _rawData;
     };
 }

@@ -1,96 +1,17 @@
 #include "Scheduler.hpp"
 #include <algorithm>
 
-namespace {
-    std::vector<char> SerializeRawTableLegacy(const metaldb::reader::RawTable& rawTable) {
-        std::vector<char> rawDataSerialized;
-
-        {
-            // Write header section
-            // size of the header
-            using SizeOfHeaderType = metaldb::RawTable::SizeOfHeaderType;
-            using SizeOfDataType = metaldb::RawTable::SizeOfDataType;
-            using NumRowsType = metaldb::RawTable::NumRowsType;
-            using RowIndexType = metaldb::RawTable::RowIndexType;
-
-            SizeOfHeaderType sizeOfHeader = 0;
-
-            // Allocate space for header size
-            for (std::size_t i = 0; i < sizeof(SizeOfHeaderType); ++i) {
-                rawDataSerialized.push_back(0);
-            }
-            sizeOfHeader += sizeof(SizeOfHeaderType);
-
-            // Size of data
-            // Allocate space for buffer size
-            {
-                const SizeOfDataType size = rawTable.data.size();
-                for (std::size_t n = 0; n < sizeof(SizeOfDataType); ++n) {
-                    // Read the nth byte
-                    rawDataSerialized.push_back((int8_t)(size >> (8 * n)) & 0xff);
-                }
-                sizeOfHeader += sizeof(SizeOfDataType);
-            }
-
-            // num rows
-            {
-                const NumRowsType num = rawTable.numRows();
-                for (std::size_t n = 0; n < sizeof(NumRowsType); ++n) {
-                    // Read the nth byte
-                    rawDataSerialized.push_back((int8_t)(num >> (8 * n)) & 0xff);
-                }
-                sizeOfHeader += sizeof(NumRowsType);
-            }
-
-            // Write the row indexes
-            {
-                for (const auto& index : rawTable.rowIndexes) {
-                    RowIndexType num = index;
-                    for (std::size_t n = 0; n < sizeof(RowIndexType); ++n) {
-                        // Read the nth byte
-                        rawDataSerialized.push_back((int8_t)(num >> (8 * n)) & 0xff);
-                    }
-                }
-                sizeOfHeader += sizeof(RowIndexType) * rawTable.rowIndexes.size();
-            }
-
-            // Write in size of header
-            for (std::size_t n = 0; n < sizeof(SizeOfHeaderType); ++n) {
-                // Read the nth byte
-                rawDataSerialized.at(metaldb::RawTable::SizeOfHeaderOffset + n) = ((int8_t)(sizeOfHeader >> (8 * n)) & 0xff);
-            }
-        }
-
-        std::copy(rawTable.data.begin(), rawTable.data.end(), std::back_inserter(rawDataSerialized));
-        return rawDataSerialized;
-    }
-}
-
 auto metaldb::Scheduler::SerializeRawTable(const metaldb::reader::RawTable& rawTable, std::size_t maxChunkSize) -> std::vector<std::pair<IntermediateBufferTypePtr, std::size_t>> {
-    auto serialized = SerializeRawTableLegacy(rawTable);
-    auto serializedPtr = MakeBufferPtr();
-    *serializedPtr = std::move(serialized);
+    using SizeOfHeaderType = RawTable::SizeOfHeaderType;
+    using SizeOfDataType = RawTable::SizeOfDataType;
+    using NumRowsType = RawTable::NumRowsType;
+    using RowIndexType = RawTable::RowIndexType;
+
     std::vector<std::pair<IntermediateBufferTypePtr, std::size_t>> output;
-    output.emplace_back(serializedPtr, (std::size_t) rawTable.numRows());
-    return output;
-
-    using HeaderSizeType = decltype(((metaldb::RawTable*)nullptr)->GetSizeOfHeader());
-    constexpr auto SizeOfHeaderType = sizeof(HeaderSizeType);
-
-    using NumBytesType = decltype(((metaldb::RawTable*)nullptr)->GetSizeOfData());
-    constexpr auto SizeOfNumBytesType = sizeof(NumBytesType);
-
-    using NumRowsType = decltype(((metaldb::RawTable*)nullptr)->GetNumRows());
-    constexpr auto SizeOfNumRowsType = sizeof(NumRowsType);
-
-    using RowIndexType = decltype(((metaldb::RawTable*)nullptr)->GetRowIndex(0));
-    constexpr auto SizeOfRowIndexType = sizeof(RowIndexType);
-
-//    std::vector<std::pair<IntermediateBufferTypePtr, std::size_t>> output;
     auto rawDataSerialized = MakeBufferPtr();
 
     std::size_t lastDataOffset = 0;
-    auto prepareChunk = [&](std::size_t startRow, std::size_t endRow) {
+    auto prepareChunk = [&](NumRowsType startRow, NumRowsType endRow) {
         const auto numRowsLocal = endRow - startRow;
         if (numRowsLocal == 0 || endRow < startRow /* if overflowed */) {
             return;
@@ -99,45 +20,64 @@ auto metaldb::Scheduler::SerializeRawTable(const metaldb::reader::RawTable& rawT
         // Write header section
 
         // size of the header
-        HeaderSizeType sizeOfHeader = 0;
-        // Allocate space for header size
-        for (std::size_t i = 0; i < SizeOfHeaderType; ++i) {
-            rawDataSerialized->push_back(0);
+        SizeOfHeaderType sizeOfHeader = 0;
+        {
+            // Allocate space for header size
+            for (std::size_t i = 0; i < sizeof(SizeOfHeaderType); ++i) {
+                rawDataSerialized->push_back(0);
+            }
+            sizeOfHeader += sizeof(SizeOfHeaderType);
         }
-        sizeOfHeader += SizeOfHeaderType;
 
-        NumBytesType numBytes = 0;
-        for (std::size_t i = 0; i < SizeOfNumBytesType; ++i) {
-            rawDataSerialized->push_back(0);
+
+        // Allocate space for buffer size
+        SizeOfDataType numBytes = 0;
+
+        // Size of data
+        {
+#ifdef DEBUG
+            assert(rawDataSerialized->size() == RawTable::SizeOfHeaderOffset);
+#endif
+            for (auto n = 0; n < sizeof(SizeOfDataType); ++n) {
+                // Read the nth byte
+                rawDataSerialized->push_back(0);
+            }
+            sizeOfHeader += sizeof(SizeOfDataType);
         }
-        sizeOfHeader += SizeOfNumBytesType;
 
         // num rows
         {
             const NumRowsType num = numRowsLocal;
-            for (std::size_t n = 0; n < SizeOfNumRowsType; ++n) {
+#ifdef DEBUG
+            assert(rawDataSerialized->size() == RawTable::NumRowsOffset);
+#endif
+            for (std::size_t n = 0; n < sizeof(NumRowsType); ++n) {
                 // Read the nth byte
                 rawDataSerialized->push_back((int8_t)(num >> (8 * n)) & 0xff);
             }
-            sizeOfHeader += SizeOfNumRowsType;
+            sizeOfHeader += sizeof(NumRowsType);
         }
 
         // Write the row indexes
         {
-            for (std::size_t row = startRow; row < endRow; ++row) {
+#ifdef DEBUG
+            assert(rawDataSerialized->size() == RawTable::RowIndexOffset);
+#endif
+            for (auto row = startRow; row < endRow; ++row) {
                 // Last data access stores the highest index on the last iteration, which we offset
                 // because those rows are not in this batch.
                 RowIndexType index = rawTable.rowIndexes.at(row) - lastDataOffset;
-                for (std::size_t n = 0; n < SizeOfRowIndexType; ++n) {
+                for (std::size_t n = 0; n < sizeof(RowIndexType); ++n) {
                     // Read the nth byte
                     rawDataSerialized->push_back((int8_t)(index >> (8 * n)) & 0xff);
                 }
             }
-            sizeOfHeader += (SizeOfRowIndexType * numRowsLocal);
+            sizeOfHeader += (sizeof(RowIndexType) * numRowsLocal);
         }
+
         {
             // Write in the data
-            for (std::size_t row = startRow; row < endRow; ++row) {
+            for (auto row = startRow; row < endRow; ++row) {
                 RowIndexType index = rawTable.rowIndexes.at(row);
                 if (row == rawTable.rowIndexes.size() - 1) {
                     // This is the last row, read until the end.
@@ -149,7 +89,7 @@ auto metaldb::Scheduler::SerializeRawTable(const metaldb::reader::RawTable& rawT
                 } else {
                     // Read until the next row
                     RowIndexType nextRow = rawTable.rowIndexes.at(row + 1);
-                    for (std::size_t i = index; i < nextRow; ++i) {
+                    for (auto i = index; i < nextRow; ++i) {
                         rawDataSerialized->push_back(rawTable.data.at(i));
                     }
                     numBytes += (nextRow - index);
@@ -159,34 +99,22 @@ auto metaldb::Scheduler::SerializeRawTable(const metaldb::reader::RawTable& rawT
         }
 
         // Final cleanup
-        {
-            // Write in size of buffer
-            const NumBytesType size = numBytes;
-            for (std::size_t n = 0; n < SizeOfNumBytesType; ++n) {
-                // Read the nth byte
-                rawDataSerialized->at(SizeOfHeaderType + n) = ((int8_t)(size >> (8 * n)) & 0xff);
-            }
-        }
-        {
-            // Write in size of header
-            for (std::size_t n = 0; n < SizeOfHeaderType; ++n) {
-                // Read the nth byte
-                rawDataSerialized->at(n) = ((int8_t)(sizeOfHeader >> (8 * n)) & 0xff);
-            }
-        }
+        WriteBytesStartingAt(&rawDataSerialized->at(RawTable::SizeOfDataOffset), numBytes);
+        WriteBytesStartingAt(&rawDataSerialized->at(RawTable::SizeOfHeaderOffset), sizeOfHeader);
 
         // Flush buffer
         output.emplace_back(rawDataSerialized, numRowsLocal);
         rawDataSerialized = MakeBufferPtr();
     };
 
-    std::size_t i = 0;
+    // Chunk it into the max size appropriately.
+    NumRowsType i = 0;
     if (rawTable.numRows() > maxChunkSize) {
         for (; i < rawTable.numRows(); i += maxChunkSize) {
             prepareChunk(i, i + maxChunkSize);
         }
     }
-    prepareChunk(i, /*rawTable.numRows() - 1*/ 10);
+    prepareChunk(i, rawTable.numRows());
 
     return output;
 }

@@ -10,6 +10,10 @@
 #include "instruction_type.h"
 #include "constants.h"
 
+#ifndef __METAL__
+#    include <string>
+#endif
+
 namespace metaldb {
     enum ColumnType : InstSerializedValue {
         Unknown,
@@ -41,4 +45,19 @@ namespace metaldb {
             return 0;
         }
     }
+
+#ifndef __METAL__
+    static std::string columnTypeToString(ColumnType type) {
+        switch (type) {
+        case String:
+            return "String";
+        case Float:
+            return "Float";
+        case Integer:
+            return "Integer";
+        case Unknown:
+            return "Unknown";
+        }
+    }
+#endif
 }

@@ -7,7 +7,6 @@
 
 #pragma once
 
-#include "temp_row.h"
 #include "constants.h"
 
 #ifdef __METAL__

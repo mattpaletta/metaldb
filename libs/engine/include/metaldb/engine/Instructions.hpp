@@ -15,19 +15,6 @@
 namespace metaldb::engine {
     using instruction_serialized_type = std::vector<InstSerializedValue>;
 
-    static std::string columnTypeToString(ColumnType type) {
-        switch (type) {
-        case String:
-            return "String";
-        case Float:
-            return "Float";
-        case Integer:
-            return "Integer";
-        case Unknown:
-            return "Unknown";
-        }
-    }
-
     namespace detail {
         template<typename T, typename Size>
         void serializeVector(instruction_serialized_type* output, const std::vector<T>& input, const Size& size) {
@@ -194,6 +181,15 @@ namespace metaldb::engine {
 
         Encoder& encode(const class Output& output) {
             return this->encodeImpl(output, OUTPUT);
+        }
+
+        template <class T, class... Ts>
+        void encodeAll(const T& first, const Ts&... rest) {
+            this->encode(first);
+
+            if constexpr (sizeof...(rest) > 0) {
+                this->encodeAll(rest...);
+            }
         }
 
         instruction_serialized_type data() const {

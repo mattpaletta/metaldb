@@ -15,6 +15,8 @@
 namespace metaldb {
     class FilterInstruction final {
     public:
+        METAL_CONSTANT static constexpr auto MAX_VM_STACK_SIZE = 32;
+
         enum Operation : InstSerializedValue {
             READ_FLOAT_CONSTANT,
             READ_INT_CONSTANT,

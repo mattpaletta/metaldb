@@ -305,7 +305,7 @@ namespace metaldb {
             std::cout << "Registering Write partial" << write->id() << std::endl;
 
             doWorkTask.work([=]() {
-                // TODO: How to get access to the output buffer.
+                // TODO: Get access to the output buffer.
             });
 
             return taskflow->emplace([=]() {
