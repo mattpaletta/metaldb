@@ -76,12 +76,14 @@ namespace metaldb {
                 return StringSection(startOfColumn, 0);
             }
 
-            METAL_DEVICE char* endOfColumn = metal::strings::strchr(startOfColumn, ',');
-
-            ColumnSizeType length = endOfColumn - startOfColumn;
+            ColumnSizeType length = 0;
             if (row == rawTable.GetNumRows() - 1 && column == this->numColumns() - 1) {
                 length = rawTable.data(rawTable.GetSizeOfData()) - startOfColumn;
             } else if (row < rawTable.GetNumRows()) {
+                // Only safe to calculate the end of the column if not the last row.
+                // Otherwise could read past the end of the buffer.
+                METAL_DEVICE char* endOfColumn = metal::strings::strchr(startOfColumn, ',');
+
                 // Unless it's the last row, read until the start of the next row.
                 auto startOfNextRowInd = rawTable.GetRowIndex(this->skipHeader() ? row+2 : row+1);
                 METAL_DEVICE char* startOfNextRow = rawTable.data(startOfNextRowInd);
