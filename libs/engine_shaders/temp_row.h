@@ -207,7 +207,7 @@ namespace metaldb {
 #endif
 
     private:
-        METAL_THREAD value_type _data[MAX_OUTPUT_ROW_LENGTH];
+        mutable METAL_THREAD value_type _data[MAX_OUTPUT_ROW_LENGTH];
         SizeType _size = 0;
 
         template<typename T>
