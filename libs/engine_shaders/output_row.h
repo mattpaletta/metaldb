@@ -11,8 +11,18 @@
 #include "string_section.h"
 
 namespace metaldb {
+    namespace details {
+        template<typename T>
+        static constexpr size_t DetermineAlignment(size_t baseOffset) {
+            constexpr auto tAlign = alignof(T);
+            return baseOffset + (baseOffset % tAlign);
+        }
+    }
+
     class OutputRow {
     public:
+
+        assert(false, "Fix the size of header for tests")
         using SizeOfHeaderType = uint16_t;
         METAL_CONSTANT static constexpr auto SizeOfHeaderOffset = 0;
 
@@ -20,12 +30,12 @@ namespace metaldb {
          * Num bytes include the size of the header.
          */
         using NumBytesType = uint32_t;
-        METAL_CONSTANT static constexpr auto NumBytesOffset = sizeof(SizeOfHeaderType) + SizeOfHeaderOffset;
+        METAL_CONSTANT static constexpr auto NumBytesOffset = details::DetermineAlignment<NumBytesType>(sizeof(SizeOfHeaderType) + SizeOfHeaderOffset);
 
         using NumColumnsType = uint8_t;
-        METAL_CONSTANT static constexpr auto NumColumnsOffset = sizeof(NumBytesType) + NumBytesOffset;
+        METAL_CONSTANT static constexpr auto NumColumnsOffset = details::DetermineAlignment<NumColumnsType>(sizeof(NumBytesType) + NumBytesOffset);
 
-        METAL_CONSTANT static constexpr auto ColumnTypeOffset = sizeof(NumColumnsType) + NumColumnsOffset;
+        METAL_CONSTANT static constexpr auto ColumnTypeOffset = details::DetermineAlignment<ColumnType>(sizeof(NumColumnsType) + NumColumnsOffset);
 
         using ColumnSizeType = StringSection::SizeType;
 
