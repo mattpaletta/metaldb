@@ -23,7 +23,7 @@ namespace metaldb {
 
         OutputRowWriter() = default;
         OutputRowWriter(const OutputRowBuilder& builder) {
-            this->_sizeOfHeader = OutputRow::ColumnTypeOffset;
+            this->_sizeOfHeader = OutputRow::NumColumnsOffset;
 
             this->_columnTypes = builder.columnTypes;
             this->_sizeOfHeader += sizeof(ColumnType) * this->NumColumns();
@@ -92,14 +92,34 @@ namespace metaldb {
 
         void write(std::vector<char>& buffer) {
             // Write the header
-            constexpr decltype(this->_sizeOfHeader) sizeOfHeaderBase = OutputRow::ColumnTypeOffset;
+            constexpr decltype(this->_sizeOfHeader) sizeOfHeaderBase = OutputRow::NumColumnsOffset;
             const decltype(this->_sizeOfHeader) sizeOfHeader =
                 sizeOfHeaderBase +
                 (sizeof(ColumnType) * this->NumColumns());
 
+            // Insert padding
+            while (OutputRow::SizeOfHeaderOffset > 0 && buffer.size() < OutputRow::SizeOfHeaderOffset) {
+                this->appendGeneric(0, buffer);
+            }
+            std::cout << "Writing size of header at: " << (int) (buffer.size() - 1) << std::endl;
             this->appendGeneric(sizeOfHeader, buffer);
+
+            while (buffer.size() < OutputRow::NumBytesOffset - 1) {
+                this->appendGeneric(0, buffer);
+            }
+            std::cout << "Writing num bytes at: " << (int) (buffer.size() - 1) << std::endl;
             this->appendGeneric(this->NumBytes(), buffer);
+
+            while (buffer.size() < OutputRow::NumColumnsOffset - 1) {
+                this->appendGeneric(0, buffer);
+            }
+            std::cout << "Writing num columns at: " << (int) (buffer.size() - 1) << std::endl;
             this->appendGeneric(this->NumColumns(), buffer);
+
+            while (buffer.size() < OutputRow::ColumnTypeOffset - 1) {
+                this->appendGeneric(0, buffer);
+            }
+            std::cout << "Writing column type at: " << (int) (buffer.size() - 1) << std::endl;
             for (const auto& colType : this->_columnTypes) {
                 this->appendGeneric(colType, buffer);
             }

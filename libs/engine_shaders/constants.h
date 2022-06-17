@@ -72,10 +72,10 @@ namespace metaldb {
         if constexpr(sizeof(T) == sizeof(Val)) {
             *ptr = val;
         } else {
-            for (size_t n = 0; n < (sizeof(Val) / sizeof(T)); ++n) {
-                *(ptr++) = (T)(val >> (8 * n)) & 0xff;
-            }
-//            *((Val METAL_DEVICE *) ptr) = val;
+//            for (size_t n = 0; n < (sizeof(Val) / sizeof(T)); ++n) {
+//                *(ptr++) = (T)(val >> (8 * n)) & 0xff;
+//            }
+            *((Val METAL_DEVICE *) ptr) = val;
         }
     }
 
@@ -85,10 +85,10 @@ namespace metaldb {
         if constexpr(sizeof(T) == sizeof(Val)) {
             *ptr = val;
         } else {
-            for (size_t n = 0; n < (sizeof(Val) / sizeof(T)); ++n) {
-                *(ptr++) = (T)(val >> (8 * n)) & 0xff;
-            }
-//            *((Val METAL_THREAD *) ptr) = val;
+//            for (size_t n = 0; n < (sizeof(Val) / sizeof(T)); ++n) {
+//                *(ptr++) = (T)(val >> (8 * n)) & 0xff;
+//            }
+            *((Val METAL_THREAD *) ptr) = val;
         }
     }
 #endif

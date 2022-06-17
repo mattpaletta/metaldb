@@ -19,15 +19,20 @@ namespace metaldb {
         using value_type = typename Container::value_type;
 
         OutputRowReader(const Container& instructions) : _instructions(instructions) {
+            std::cout << "Reading Header size at index: " << OutputRow::SizeOfHeaderOffset << std::endl;
             this->_sizeOfHeader = ReadBytesStartingAt<OutputRow::SizeOfHeaderType>(&instructions.at(OutputRow::SizeOfHeaderOffset));
+            std::cout << "Reading Num bytes at index: " << OutputRow::NumBytesOffset << std::endl;
             this->_numBytes = ReadBytesStartingAt<OutputRow::NumBytesType>(&instructions.at(OutputRow::NumBytesOffset));
+            std::cout << "Reading Num columns at index: " << OutputRow::NumColumnsOffset << std::endl;
             this->_numColumns = ReadBytesStartingAt<OutputRow::NumColumnsType>(&instructions.at(OutputRow::NumColumnsOffset));
 
             this->_columnSizes.resize(this->_numColumns);
             this->_columnTypes.resize(this->_numColumns);
 
             for (size_t i = 0; i < this->_numColumns; ++i) {
-                const auto columnType = ReadBytesStartingAt<ColumnType>(&instructions.at(OutputRow::ColumnTypeOffset + (i * sizeof(ColumnType))));
+                const auto index = OutputRow::ColumnTypeOffset + (i * sizeof(ColumnType));
+                std::cout << "Reading Column Type at index: " << index << std::endl;
+                const auto columnType = ReadBytesStartingAt<ColumnType>(&instructions.at(index));
                 this->_columnTypes.at(i) = columnType;
 
                 switch (columnType) {

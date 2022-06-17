@@ -13,6 +13,10 @@
 #include "strings.h"
 #include "PrefixSum.h"
 
+#ifndef __METAL__
+#include <iostream>
+#endif
+
 namespace metaldb {
     class OutputInstruction final {
     public:
@@ -68,31 +72,44 @@ namespace metaldb {
 
                 // Write length of header
                 // First byte is the length of the header.
-                SizeOfHeaderType lengthOfHeader = sizeof(SizeOfHeaderType);
+                SizeOfHeaderType lengthOfHeader = 0;
 
 #ifndef __METAL__
                 // Placeholder
                 NumBytesType bufferSize = 0;
 #endif
                 // Write length of buffer
+#ifndef __METAL__
+                std::cout << "Writing num bytes at offset: " << NumBytesOffset << " with value: " << bufferSize << std::endl;
+#endif
                 WriteBytesStartingAt(&constants.outputBuffer[NumBytesOffset], bufferSize);
-                lengthOfHeader += sizeof(bufferSize);
 
                 // Write the number of columns
                 {
                     auto numColumns = row.NumColumns();
+#ifndef __METAL__
+                    std::cout << "Writing num columns at offset: " << NumColumnsOffset << " with value: " << numColumns << std::endl;
+#endif
                     WriteBytesStartingAt(&constants.outputBuffer[NumColumnsOffset], numColumns);
-                    lengthOfHeader += sizeof(numColumns);
                 }
+
+                // Compute length of header here because we know everything above is constant space.
+                lengthOfHeader = ColumnTypeOffset;
 
                 // Write the types of each column
                 for (auto i = 0; i < row.NumColumns(); ++i) {
                     auto columnType = row.ColumnType(i);
+#ifndef __METAL__
+                    std::cout << "Writing column type at offset: " << lengthOfHeader << " with value: " << (int) columnType << std::endl;
+#endif
                     WriteBytesStartingAt(&constants.outputBuffer[lengthOfHeader], columnType);
                     lengthOfHeader += sizeof(columnType);
                 }
 
                 // Write the size of the header
+#ifndef __METAL__
+                std::cout << "Writing header size at offset: " << SizeOfHeaderOffset << " with value: " << lengthOfHeader << std::endl;
+#endif
                 WriteBytesStartingAt(&constants.outputBuffer[SizeOfHeaderOffset], lengthOfHeader);
 #ifdef __METAL__
                 // First thread starts after the header
