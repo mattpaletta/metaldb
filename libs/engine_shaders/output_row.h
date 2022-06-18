@@ -22,7 +22,6 @@ namespace metaldb {
     class OutputRow {
     public:
 
-        assert(false, "Fix the size of header for tests")
         using SizeOfHeaderType = uint16_t;
         METAL_CONSTANT static constexpr auto SizeOfHeaderOffset = 0;
 
