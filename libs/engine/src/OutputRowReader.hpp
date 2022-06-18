@@ -19,12 +19,9 @@ namespace metaldb {
         using value_type = typename Container::value_type;
 
         OutputRowReader(const Container& instructions) : _instructions(instructions) {
-            std::cout << "Reading Header size at index: " << OutputRow::SizeOfHeaderOffset << std::endl;
-            this->_sizeOfHeader = ReadBytesStartingAt<OutputRow::SizeOfHeaderType>(&instructions.at(OutputRow::SizeOfHeaderOffset));
-            std::cout << "Reading Num bytes at index: " << OutputRow::NumBytesOffset << std::endl;
-            this->_numBytes = ReadBytesStartingAt<OutputRow::NumBytesType>(&instructions.at(OutputRow::NumBytesOffset));
-            std::cout << "Reading Num columns at index: " << OutputRow::NumColumnsOffset << std::endl;
-            this->_numColumns = ReadBytesStartingAt<OutputRow::NumColumnsType>(&instructions.at(OutputRow::NumColumnsOffset));
+            this->_sizeOfHeader = OutputRowReader::SizeOfHeader(instructions);
+            this->_numBytes = OutputRowReader::NumBytes(instructions);
+            this->_numColumns = OutputRowReader::NumColumns(instructions);
 
             this->_columnSizes.resize(this->_numColumns);
             this->_columnTypes.resize(this->_numColumns);
@@ -97,12 +94,27 @@ namespace metaldb {
             return this->_sizeOfHeader;
         }
 
+        static OutputRow::SizeOfHeaderType SizeOfHeader(const Container& buffer) {
+            std::cout << "Reading Header size at index: " << OutputRow::SizeOfHeaderOffset << std::endl;
+            return ReadBytesStartingAt<OutputRow::SizeOfHeaderType>(&buffer.at(OutputRow::SizeOfHeaderOffset));
+        }
+
         OutputRow::NumBytesType NumBytes() const {
             return this->_numBytes;
         }
 
+        static OutputRow::NumBytesType NumBytes(const Container& buffer) {
+            std::cout << "Reading Num bytes at index: " << OutputRow::NumBytesOffset << std::endl;
+            return ReadBytesStartingAt<OutputRow::NumBytesType>(&buffer.at(OutputRow::NumBytesOffset));
+        }
+
         OutputRow::NumColumnsType NumColumns() const {
             return this->_numColumns;
+        }
+
+        static OutputRow::NumColumnsType NumColumns(const Container& buffer) {
+            std::cout << "Reading Num columns at index: " << OutputRow::NumColumnsOffset << std::endl;
+            return ReadBytesStartingAt<OutputRow::NumColumnsType>(&buffer.at(OutputRow::NumColumnsOffset));
         }
 
         OutputRow::NumRowsType NumRows() const {

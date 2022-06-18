@@ -23,7 +23,7 @@ namespace metaldb {
 
         OutputRowWriter() = default;
         OutputRowWriter(const OutputRowBuilder& builder) {
-            this->_sizeOfHeader = OutputRow::NumColumnsOffset;
+            this->_sizeOfHeader = OutputRow::ColumnTypeOffset;
 
             this->_columnTypes = builder.columnTypes;
             this->_sizeOfHeader += sizeof(ColumnType) * this->NumColumns();
@@ -45,7 +45,7 @@ namespace metaldb {
 
         void appendTempRow(const metaldb::TempRow& row) {
             if (!this->_hasCopiedHeader) {
-                this->_sizeOfHeader = OutputRow::NumColumnsOffset;
+                this->_sizeOfHeader = OutputRow::ColumnTypeOffset;
 
                 for (std::size_t col = 0; col < row.NumColumns(); ++col) {
                     this->_columnTypes.push_back(row.ColumnType(col));
@@ -72,7 +72,7 @@ namespace metaldb {
         template<typename Container>
         void copyRow(const OutputRowReader<Container>& reader, std::size_t row) {
             if (!this->_hasCopiedHeader) {
-                this->_sizeOfHeader = OutputRow::NumColumnsOffset;
+                this->_sizeOfHeader = OutputRow::ColumnTypeOffset;
 
                 // Write types of columns
                 this->_columnTypes = reader.ColumnTypes();
@@ -92,35 +92,27 @@ namespace metaldb {
 
         void write(std::vector<char>& buffer) {
             // Write the header
-            constexpr decltype(this->_sizeOfHeader) sizeOfHeaderBase = OutputRow::NumColumnsOffset;
+            constexpr decltype(this->_sizeOfHeader) sizeOfHeaderBase = OutputRow::ColumnTypeOffset;
             const decltype(this->_sizeOfHeader) sizeOfHeader =
                 sizeOfHeaderBase +
                 (sizeof(ColumnType) * this->NumColumns());
 
             // Insert padding
-            while (OutputRow::SizeOfHeaderOffset > 0 && buffer.size() < OutputRow::SizeOfHeaderOffset) {
-                this->appendGeneric(0, buffer);
-            }
-            std::cout << "Writing size of header at: " << (int) (buffer.size() - 1) << std::endl;
+            this->addPaddingUntilIndex(OutputRow::SizeOfHeaderOffset, buffer);
+            std::cout << "Writing size of header at: " << (int) (buffer.size() - 1) << " with value: " << (int) sizeOfHeader << std::endl;
             this->appendGeneric(sizeOfHeader, buffer);
 
-            while (buffer.size() < OutputRow::NumBytesOffset - 1) {
-                this->appendGeneric(0, buffer);
-            }
-            std::cout << "Writing num bytes at: " << (int) (buffer.size() - 1) << std::endl;
+            this->addPaddingUntilIndex(OutputRow::NumBytesOffset, buffer);
+            std::cout << "Writing num bytes at: " << (int) (buffer.size() - 1) << " with value: " << (int) this->NumBytes() << std::endl;
             this->appendGeneric(this->NumBytes(), buffer);
 
-            while (buffer.size() < OutputRow::NumColumnsOffset - 1) {
-                this->appendGeneric(0, buffer);
-            }
-            std::cout << "Writing num columns at: " << (int) (buffer.size() - 1) << std::endl;
+            this->addPaddingUntilIndex(OutputRow::NumColumnsOffset, buffer);
+            std::cout << "Writing num columns at: " << (int) (buffer.size() - 1) << " with value: " << (int) this->NumColumns() << std::endl;
             this->appendGeneric(this->NumColumns(), buffer);
 
-            while (buffer.size() < OutputRow::ColumnTypeOffset - 1) {
-                this->appendGeneric(0, buffer);
-            }
-            std::cout << "Writing column type at: " << (int) (buffer.size() - 1) << std::endl;
+            this->addPaddingUntilIndex(OutputRow::ColumnTypeOffset, buffer);
             for (const auto& colType : this->_columnTypes) {
+                std::cout << "Writing column type at: " << (int) (buffer.size() - 1) << " with value: " << (int) colType << std::endl;
                 this->appendGeneric(colType, buffer);
             }
             std::copy(this->_data.cbegin(), this->_data.cend(), std::back_inserter(buffer));
@@ -141,6 +133,13 @@ namespace metaldb {
         std::vector<ColumnType> _columnTypes;
 
         std::vector<char> _data;
+
+        void addPaddingUntilIndex(size_t index, std::vector<char>& buffer) {
+            // Subract 1 for the last index, subtract 1 for the next index.
+            while (index > 0 && buffer.size() < index) {
+                this->appendGeneric((uint8_t) 0, buffer);
+            }
+        }
 
         template<typename T>
         void appendToData(T val) {
