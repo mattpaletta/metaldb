@@ -14,11 +14,22 @@
 
 #include <vector>
 
+template<typename... Args>
+static std::pair<std::vector<char>, std::vector<metaldb::RawTable::RowIndexType>> StringsToRow(Args... input) {
+    std::vector<char> output;
+    std::vector<metaldb::RawTable::RowIndexType> rowIndexes;
+    for (std::string str : {input...}) {
+        rowIndexes.push_back(output.size());
+        for (auto c : str) {
+            output.push_back(c);
+        }
+    }
+    return std::make_pair(output, rowIndexes);
+}
+
 static std::vector<char> CreateMetalRawTable() {
     // Generate a csv and serialize it and read it with a RawTable object (CPU)
-    std::vector<char> rawData = {'4', ',', '3', ',', '2', ',', '1',
-                                 '5', ',', '6', ',', '7', ',', '8'};
-    std::vector<uint16_t> rowIndexes = {0, 7};
+    auto [rawData, rowIndexes] = StringsToRow("4,3,2,1", "5,6,7,8");
     std::vector<std::string> columns{"colA", "colB", "colC", "colD"};
 
     metaldb::reader::RawTable rawTableCPU{std::move(rawData), rowIndexes, columns};

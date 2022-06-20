@@ -23,7 +23,7 @@ namespace metaldb {
         using NumRowsType = types::SizeType;
         METAL_CONSTANT static constexpr auto NumRowsOffset = sizeof(SizeOfDataType) + SizeOfDataOffset;
 
-        using RowIndexType = uint16_t;
+        using RowIndexType = uint32_t;
         METAL_CONSTANT static constexpr auto RowIndexOffset = sizeof(NumRowsOffset) + NumRowsOffset;
 
         RawTable(value_type rawData) : _rawData(rawData) {}

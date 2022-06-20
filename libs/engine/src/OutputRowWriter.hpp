@@ -99,20 +99,16 @@ namespace metaldb {
 
             // Insert padding
             this->addPaddingUntilIndex(OutputRow::SizeOfHeaderOffset, buffer);
-            std::cout << "Writing size of header at: " << (int) (buffer.size() - 1) << " with value: " << (int) sizeOfHeader << std::endl;
             this->appendGeneric(sizeOfHeader, buffer);
 
             this->addPaddingUntilIndex(OutputRow::NumBytesOffset, buffer);
-            std::cout << "Writing num bytes at: " << (int) (buffer.size() - 1) << " with value: " << (int) this->NumBytes() << std::endl;
             this->appendGeneric(this->NumBytes(), buffer);
 
             this->addPaddingUntilIndex(OutputRow::NumColumnsOffset, buffer);
-            std::cout << "Writing num columns at: " << (int) (buffer.size() - 1) << " with value: " << (int) this->NumColumns() << std::endl;
             this->appendGeneric(this->NumColumns(), buffer);
 
             this->addPaddingUntilIndex(OutputRow::ColumnTypeOffset, buffer);
             for (const auto& colType : this->_columnTypes) {
-                std::cout << "Writing column type at: " << (int) (buffer.size() - 1) << " with value: " << (int) colType << std::endl;
                 this->appendGeneric(colType, buffer);
             }
             std::copy(this->_data.cbegin(), this->_data.cend(), std::back_inserter(buffer));

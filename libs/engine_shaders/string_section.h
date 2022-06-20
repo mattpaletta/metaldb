@@ -11,6 +11,7 @@
 
 #ifndef __METAL__
 #    include <iostream>
+#    include <string>
 #endif
 
 namespace metaldb {
@@ -25,11 +26,15 @@ namespace metaldb {
             return this->_size;
         }
 
-        T str() const {
+        T c_str() const {
             return this->_str;
         }
 
 #ifndef __METAL__
+        std::string str() const {
+            return std::string(this->c_str(), this->size());
+        }
+
         void print() const {
             for (SizeType i = 0; i < this->size(); ++i) {
                 std::cout << this->str()[i];

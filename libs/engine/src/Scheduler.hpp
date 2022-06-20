@@ -222,7 +222,7 @@ namespace metaldb {
             // This reads in a file (1 chunk) and splits it into serialized sub-chunks each with a max
             // row count of `maxNumRows` (metal/implementation defined).
             // The GPU is guaranteed to always return `OutputRow` buffers, so we can merge them together.
-            auto maxNumRows = manager->MaxNumRows();
+            auto maxNumRows = 50; //manager->MaxNumRows();
             doWorkTask.work([=](tf::Subflow& subflow) {
                 // Chunk the work out.
                 DebugTask();
@@ -237,7 +237,8 @@ namespace metaldb {
                     auto numRowsLocal = numRows;
                     subflow.emplace([=]() {
                         auto bufferPtr = localCurrentInputBuffer;
-                        manager->run(*bufferPtr, encoder->data(), *subtaskNewBuffer, numRowsLocal);
+                        auto localOutput = subtaskNewBuffer;
+                        manager->run(*bufferPtr, encoder->data(), *localOutput, numRowsLocal);
                     })
                     .name("Do Work Chunk")
                     .precede(mergeSubtasks);
@@ -305,7 +306,16 @@ namespace metaldb {
             std::cout << "Registering Write partial" << write->id() << std::endl;
 
             doWorkTask.work([=]() {
-                // TODO: Get access to the output buffer.
+                // Merge child buffers
+                OutputRowWriter writer;
+                for (auto& childBuffer : childOutputBuffers) {
+                    auto reader = OutputRowReader(*childBuffer);
+                    for (auto i = 0; i < reader.NumRows(); ++i) {
+                        writer.copyRow(reader, i);
+                    }
+                }
+
+                std::cout << "Writing output -- Num Columns: " << (int) writer.NumColumns() << " -- Num Bytes: " << (int) writer.NumBytes() << " -- Num Rows: " << (int) writer.CurrentNumRows() << std::endl;
             });
 
             return taskflow->emplace([=]() {
