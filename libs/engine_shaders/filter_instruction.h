@@ -140,7 +140,7 @@ namespace metaldb {
                     operationIndex += val.size();
                     for (auto j = 0UL; j < val.size(); ++j) {
                         // Push each character of the string onto the stack (reverse order)
-                        auto ch = val.str()[val.size() - 1 - j];
+                        auto ch = val.c_str()[val.size() - 1 - j];
                         stack.push(ch);
                     }
                     // Push the length of the string
@@ -168,7 +168,7 @@ namespace metaldb {
                     operationIndex += val.size();
                     for (auto j = 0UL; j < val.size(); ++j) {
                         // Push each character of the string onto the stack (reverse order)
-                        auto ch = val.str()[val.size() - 1 - j];
+                        auto ch = val.c_str()[val.size() - 1 - j];
                         stack.push(ch);
                     }
                     // Push the length of the string

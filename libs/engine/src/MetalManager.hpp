@@ -1,6 +1,7 @@
 #pragma once
 
 #include "instruction_type.h"
+#include "engine.h"
 
 #import <Metal/Metal.h>
 #import <MetalKit/MetalKit.h>
@@ -50,10 +51,28 @@ public:
         return this->pipeline.maxTotalThreadsPerThreadgroup;
     }
 
+    void runCPU(const std::vector<char>& serializedData, const std::vector<metaldb::InstSerializedValue>& instructions, OutputBufferType& outputBuffer, size_t numRows) {
+        // Mimic the GPU on the CPU
+        // Force const cast the pointers (bad)
+        const auto numInstructions = instructions.at(0);
+        std::array<metaldb::OutputRow::NumBytesType, metaldb::DbConstants::MAX_NUM_ROWS> scratch;
+        metaldb::RawTable rawTable((char*) serializedData.data());
+        metaldb::DbConstants constants{rawTable, outputBuffer.data(), scratch.data()};
+
+        constants.threadgroup_position_in_grid = 0;
+        constants.thread_execution_width = 1;
+        for (std::size_t thread = 0; thread < numRows; ++thread) {
+            constants.thread_position_in_grid = thread;
+            constants.thread_position_in_threadgroup = thread;
+            metaldb::runInstructions((metaldb::InstSerializedValue*) &instructions.at(1), numInstructions, constants);
+        }
+    }
+
     void run(const std::vector<char>& serializedData, const std::vector<metaldb::InstSerializedValue>& instructions, OutputBufferType& outputBuffer, size_t numRows) {
         if (numRows == 0) {
             return;
         }
+        return this->runCPU(serializedData, instructions, outputBuffer, numRows);
 
         // Input buffer
         auto inputBuffer = [this->device newBufferWithLength:serializedData.size() * sizeof(serializedData.at(0))
@@ -67,11 +86,11 @@ public:
 
 
         for (std::size_t i = 0; i < serializedData.size(); ++i) {
-            ((char*)inputBuffer.contents)[i] = serializedData.at(i);
+            ((metaldb::InstSerializedValue*)inputBuffer.contents)[i] = serializedData.at(i);
         }
 
         for (std::size_t i = 0; i < instructions.size(); ++i) {
-            ((int8_t*)instructionsBuffer.contents)[i] = instructions.at(i);
+            ((OutputBufferType::value_type*)instructionsBuffer.contents)[i] = instructions.at(i);
         }
 
 //        auto captureManager = [MTLCaptureManager sharedCaptureManager];
@@ -164,7 +183,7 @@ private:
     }
 
     static id<MTLFunction> _Nullable GetEntryFunction(id<MTLLibrary> _Nonnull library, MTLFunctionConstantValues* _Nonnull constants) {
-        return MetalManager::GetFunction(@"runQueryKernelBackup", library, constants);
+        return MetalManager::GetFunction(@"runQueryKernel", library, constants);
     }
 
     static id<MTLFunction> _Nullable GetInternalBinaryFunction(NSString* _Nonnull funcName, id<MTLLibrary> _Nonnull library) {

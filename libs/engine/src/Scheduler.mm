@@ -109,8 +109,9 @@ auto metaldb::Scheduler::SerializeRawTable(const metaldb::reader::RawTable& rawT
 
     // Chunk it into the max size appropriately.
     NumRowsType i = 0;
-    if (rawTable.numRows() > maxChunkSize) {
-        for (; i < rawTable.numRows(); i += maxChunkSize) {
+    auto numRows = rawTable.numRows();
+    if (numRows > maxChunkSize) {
+        for (; i < numRows - maxChunkSize; i += maxChunkSize) {
             prepareChunk(i, i + maxChunkSize);
         }
     }

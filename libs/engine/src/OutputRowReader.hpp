@@ -28,7 +28,6 @@ namespace metaldb {
 
             for (size_t i = 0; i < this->_numColumns; ++i) {
                 const auto index = OutputRow::ColumnTypeOffset + (i * sizeof(ColumnType));
-                std::cout << "Reading Column Type at index: " << index << std::endl;
                 const auto columnType = ReadBytesStartingAt<ColumnType>(&instructions.at(index));
                 this->_columnTypes.at(i) = columnType;
 
@@ -95,7 +94,6 @@ namespace metaldb {
         }
 
         static OutputRow::SizeOfHeaderType SizeOfHeader(const Container& buffer) {
-            std::cout << "Reading Header size at index: " << OutputRow::SizeOfHeaderOffset << std::endl;
             return ReadBytesStartingAt<OutputRow::SizeOfHeaderType>(&buffer.at(OutputRow::SizeOfHeaderOffset));
         }
 
@@ -104,7 +102,6 @@ namespace metaldb {
         }
 
         static OutputRow::NumBytesType NumBytes(const Container& buffer) {
-            std::cout << "Reading Num bytes at index: " << OutputRow::NumBytesOffset << std::endl;
             return ReadBytesStartingAt<OutputRow::NumBytesType>(&buffer.at(OutputRow::NumBytesOffset));
         }
 
@@ -113,7 +110,6 @@ namespace metaldb {
         }
 
         static OutputRow::NumColumnsType NumColumns(const Container& buffer) {
-            std::cout << "Reading Num columns at index: " << OutputRow::NumColumnsOffset << std::endl;
             return ReadBytesStartingAt<OutputRow::NumColumnsType>(&buffer.at(OutputRow::NumColumnsOffset));
         }
 

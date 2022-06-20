@@ -64,7 +64,9 @@ namespace metaldb {
 
         StringSection readCSVColumn(RawTable METAL_THREAD & rawTable, RowNumType row, NumColumnsType column) const {
             auto rowIndex = rawTable.GetRowIndex(this->skipHeader() ? row+1 : row);
-
+#ifndef __METAL__
+            std::cout << "Reading row index for row: " << row << " ind: " << rowIndex << std::endl;
+#endif
             // Get the column by scanning
             METAL_DEVICE char* startOfColumn = rawTable.data(rowIndex);
 
@@ -92,7 +94,8 @@ namespace metaldb {
                 length = lengthOfThisColumn > lengthToNextRow ? lengthToNextRow : lengthOfThisColumn;
             }
 
-            if ((*startOfColumn == '"' || *startOfColumn == '\'') && (*(startOfColumn+length) == '"' || (*(startOfColumn+length) == '"'))) {
+            // TODO: Must be matching quotes.
+            if ((*startOfColumn == '"' || *startOfColumn == '\'') && (*(startOfColumn+length-1) == '"' || (*(startOfColumn+length-1) == '"'))) {
                 // Starts and ends with a quote, strip them.
                 return StringSection(startOfColumn + 1, length - 2);
             }
@@ -107,6 +110,9 @@ namespace metaldb {
 
         TempRow GetRow(DbConstants METAL_THREAD & constants) {
             // Question: do I have to read all columns first to get their sizes?
+#ifndef __METAL__
+            std::cout << "Reading row: " << constants.thread_position_in_grid << std::endl;
+#endif
 
             TempRow::TempRowBuilder builder;
             auto numCols = this->numColumns();
@@ -134,21 +140,29 @@ namespace metaldb {
                 // Write the columns into the buffer
                 auto stringSection = this->readCSVColumn(constants.rawTable, constants.thread_position_in_grid, i);
 
+#ifndef __METAL__
+//                if (stringSection.size() > 0) {
+//                    std::cout << "Got Value for column: " << i << " " << stringSection.str() << std::endl;
+//                } else {
+//                    std::cout << "Got blank vaue for column: " << i << std::endl;
+//                }
+#endif
+
                 switch (this->getColumnType(i)) {
                 case String: {
                     // Copy the string in directly.
-                    row.append(stringSection.str(), stringSection.size());
+                    row.append(stringSection.c_str(), stringSection.size());
                     break;
                 }
                 case Integer: {
                     // Cast it to an integer
-                    types::IntegerType result = metal::strings::stoi(stringSection.str(), stringSection.size());
+                    types::IntegerType result = metal::strings::stoi(stringSection.c_str(), stringSection.size());
                     row.append(result);
                     break;
                 }
                 case Float: {
                     // Cast it to a float.
-                    types::FloatType result = metal::strings::stof(stringSection.str(), stringSection.size());
+                    types::FloatType result = metal::strings::stof(stringSection.c_str(), stringSection.size());
                     row.append(result);
                     break;
                 }
