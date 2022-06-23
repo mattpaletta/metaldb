@@ -71,7 +71,10 @@ namespace metaldb {
             METAL_DEVICE char* startOfColumn = rawTable.data(rowIndex);
 
             for (NumColumnsType i = 0; i < column && startOfColumn; ++i) {
-                startOfColumn = metal::strings::strchr(startOfColumn, ',') + 1;
+                startOfColumn = metal::strings::strchr(startOfColumn, ',');
+                if (startOfColumn) {
+                    startOfColumn++;
+                }
             }
 
             if (!startOfColumn) {

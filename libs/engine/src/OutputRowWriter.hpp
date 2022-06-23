@@ -82,7 +82,7 @@ namespace metaldb {
             }
 
             for (auto c = 0; c < reader.NumColumns(); ++c) {
-                auto [columnStart, columnSize] = reader.ColumnIndexInfo(0, row);
+                auto [columnStart, columnSize] = reader.ColumnIndexInfo(c, row);
                 const auto columnEnd = columnStart + columnSize;
                 for (auto i = columnStart; i < columnEnd; ++i) {
                     this->appendToData(reader.Raw().at(i));
