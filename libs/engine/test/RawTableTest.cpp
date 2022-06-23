@@ -57,4 +57,71 @@ NEW_TEST(RawTableTest, NullColumnTableTest) {
     }
 }
 
+NEW_TEST(RawTableTest, MultiGroupTest) {
+    // Generate a csv and serialize it and read it with a RawTable object (CPU)
+    auto [rawData, rowIndexes] = StringsToRow("a,b,c",
+                                              "d,e,f",
+                                              "g,h,i",
+                                              "j,k,l",
+                                              "m,n,o",
+                                              "p,q,r",
+                                              "s,t,u",
+                                              "v,w,x",
+                                              "y,z,0",
+                                              "a,b,c",
+                                              "d,e,f",
+                                              "g,h,i",
+                                              "j,k,l",
+                                              "m,n,o",
+                                              "p,q,r",
+                                              "s,t,u",
+                                              "v,w,x",
+                                              "y,z,0",
+                                              "a,b,c",
+                                              "d,e,f");
+    std::vector<std::string> columns{"colA", "colB", "colC"};
+
+    metaldb::reader::RawTable rawTableCPU{std::move(rawData), rowIndexes, columns};
+    CPPTEST_ASSERT(rawTableCPU.numRows() == 20);
+
+    auto serialized = [&] {
+        // Split 20 rows into groups of 3.
+        auto serialized = metaldb::Scheduler::SerializeRawTable(rawTableCPU, 3);
+        CPPTEST_ASSERT(serialized.size() == (20 / 3)+1);
+        return serialized;
+    }();
+    CPPTEST_ASSERT(!rawTableCPU.data.empty());
+
+    std::size_t numRows = 0;
+    std::size_t offset = 0;
+    for (auto& [ser, count] : serialized) {
+        CPPTEST_ASSERT(!ser->empty());
+        CPPTEST_ASSERT(count > 0);
+        auto metalRawTable = metaldb::RawTable(ser->data());
+        CPPTEST_ASSERT(metalRawTable.GetSizeOfHeader() > 0);
+        CPPTEST_ASSERT(metalRawTable.GetSizeOfHeader() < 100);
+
+        CPPTEST_ASSERT(metalRawTable.GetStartOfData() > 0);
+        CPPTEST_ASSERT(metalRawTable.GetStartOfData() < 1000);
+        CPPTEST_ASSERT(metalRawTable.GetNumRows() == count);
+
+        for (std::size_t i = 0; i < count; ++i) {
+            CPPTEST_ASSERT(metalRawTable.GetRowIndex(i) + offset == rowIndexes.at(i + numRows));
+        }
+
+        {
+            auto* data = metalRawTable.data();
+            for (std::size_t i = 0; i < metalRawTable.GetSizeOfData(); ++i) {
+                CPPTEST_ASSERT(data[i] == rawTableCPU.data.at(i + offset));
+            }
+        }
+
+        offset = metalRawTable.GetRowIndex(count - 1);
+        numRows += count;
+    }
+    // All rows accounted for.
+    CPPTEST_ASSERT(numRows == rawTableCPU.numRows());
+    CPPTEST_ASSERT(offset == rawTableCPU.data.size());
+}
+
 CPPTEST_END_CLASS(RawTableTest)
