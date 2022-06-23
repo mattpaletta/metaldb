@@ -222,7 +222,7 @@ namespace metaldb {
             // This reads in a file (1 chunk) and splits it into serialized sub-chunks each with a max
             // row count of `maxNumRows` (metal/implementation defined).
             // The GPU is guaranteed to always return `OutputRow` buffers, so we can merge them together.
-            auto maxNumRows = 50; //manager->MaxNumRows();
+            auto maxNumRows = 200; //manager->MaxNumRows();
             doWorkTask.work([=](tf::Subflow& subflow) {
                 // Chunk the work out.
                 DebugTask();

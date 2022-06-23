@@ -141,11 +141,11 @@ namespace metaldb {
                 auto stringSection = this->readCSVColumn(constants.rawTable, constants.thread_position_in_grid, i);
 
 #ifndef __METAL__
-//                if (stringSection.size() > 0) {
-//                    std::cout << "Got Value for column: " << i << " " << stringSection.str() << std::endl;
-//                } else {
-//                    std::cout << "Got blank vaue for column: " << i << std::endl;
-//                }
+                if (stringSection.size() > 0) {
+                    std::cout << "Got Value for column: " << i << " " << stringSection.str() << std::endl;
+                } else {
+                    std::cout << "Got blank vaue for column: " << i << std::endl;
+                }
 #endif
 
                 switch (this->getColumnType(i)) {

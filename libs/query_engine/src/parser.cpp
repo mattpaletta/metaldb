@@ -22,8 +22,8 @@ auto metaldb::QueryEngine::Parser::Parse(const std::string& query) const -> std:
                                              std::make_shared<AST::Read>("taxi_sample"));
 
 
-    expr = std::make_shared<AST::Projection>(std::vector<std::string>{"sepal.length", "petal.length"},
-                                             std::make_shared<AST::Read>("iris"));
+//    expr = std::make_shared<AST::Projection>(std::vector<std::string>{"sepal.length", "petal.length"},
+//                                             std::make_shared<AST::Read>("iris"));
     return std::make_shared<AST::Write>("output", std::vector<std::string>{"pickup", "dropoff"}, CSV, expr);
 
 
