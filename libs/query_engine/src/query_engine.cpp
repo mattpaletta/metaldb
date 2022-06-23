@@ -82,7 +82,14 @@ namespace {
         columnIndexes.reserve(expr->numColumns());
         for (const auto& column : expr->columns()) {
             // Store the current table definiton in the AST?
-            tableDef->columns.push_back(*childTableDef->getColumnDefinition(column));
+            auto index = childTableDef->getColumnIndex(column);
+            if (index) {
+                tableDef->columns.push_back(childTableDef->columns.at(*index));
+                columnIndexes.push_back(*index);
+            } else {
+                std::cerr << "Failed to get column name: " << column << std::endl;
+                return partials;
+            }
         }
 
         for (auto& p : childPartials) {

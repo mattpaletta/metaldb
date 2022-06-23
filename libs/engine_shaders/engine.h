@@ -16,11 +16,11 @@ namespace metaldb {
         return (InstructionType) *instruction;
     }
 
-    static void runInstructions(metaldb::InstSerializedValuePtr instructions, size_t numInstructions, DbConstants METAL_THREAD & constants) {
+    static void runInstructions(InstSerializedValuePtr instructions, size_t numInstructions, DbConstants METAL_THREAD & constants) {
         // Combines decoding instructions and running them.
 
-        metaldb::TempRow row;
-        METAL_DEVICE int8_t* currentInstruction = instructions;
+        TempRow row;
+        InstSerializedValuePtr currentInstruction = instructions;
 
         for (size_t i = 0; i < numInstructions; ++i) {
             switch (decodeType(currentInstruction)) {
