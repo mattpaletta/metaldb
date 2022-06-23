@@ -93,7 +93,7 @@ auto metaldb::Scheduler::SerializeRawTable(const metaldb::reader::RawTable& rawT
                         rawDataSerialized->push_back(rawTable.data.at(i));
                     }
                     numBytes += (nextRow - index);
-                    lastDataOffset = std::max(lastDataOffset, nextRow - 1UL);
+                    lastDataOffset = std::max(lastDataOffset, nextRow - 0UL);
                 }
             }
         }
