@@ -23,9 +23,7 @@ auto metaldb::Scheduler::SerializeRawTable(const metaldb::reader::RawTable& rawT
         SizeOfHeaderType sizeOfHeader = 0;
         {
             // Allocate space for header size
-            for (std::size_t i = 0; i < sizeof(SizeOfHeaderType); ++i) {
-                rawDataSerialized->push_back(0);
-            }
+            WriteBytesStartingAt<SizeOfHeaderType>(*rawDataSerialized, 0);
             sizeOfHeader += sizeof(SizeOfHeaderType);
         }
 
@@ -38,10 +36,7 @@ auto metaldb::Scheduler::SerializeRawTable(const metaldb::reader::RawTable& rawT
 #ifdef DEBUG
             assert(rawDataSerialized->size() == RawTable::SizeOfHeaderOffset);
 #endif
-            for (auto n = 0; n < sizeof(SizeOfDataType); ++n) {
-                // Read the nth byte
-                rawDataSerialized->push_back(0);
-            }
+            WriteBytesStartingAt<SizeOfDataType>(*rawDataSerialized, 0);
             sizeOfHeader += sizeof(SizeOfDataType);
         }
 
@@ -51,10 +46,7 @@ auto metaldb::Scheduler::SerializeRawTable(const metaldb::reader::RawTable& rawT
 #ifdef DEBUG
             assert(rawDataSerialized->size() == RawTable::NumRowsOffset);
 #endif
-            for (std::size_t n = 0; n < sizeof(NumRowsType); ++n) {
-                // Read the nth byte
-                rawDataSerialized->push_back((int8_t)(num >> (8 * n)) & 0xff);
-            }
+            WriteBytesStartingAt(*rawDataSerialized, num);
             sizeOfHeader += sizeof(NumRowsType);
         }
 
@@ -67,10 +59,7 @@ auto metaldb::Scheduler::SerializeRawTable(const metaldb::reader::RawTable& rawT
                 // Last data access stores the highest index on the last iteration, which we offset
                 // because those rows are not in this batch.
                 RowIndexType index = rawTable.rowIndexes.at(row) - lastDataOffset;
-                for (std::size_t n = 0; n < sizeof(RowIndexType); ++n) {
-                    // Read the nth byte
-                    rawDataSerialized->push_back((int8_t)(index >> (8 * n)) & 0xff);
-                }
+                WriteBytesStartingAt(*rawDataSerialized, index);
             }
             sizeOfHeader += (sizeof(RowIndexType) * numRowsLocal);
         }
