@@ -94,7 +94,7 @@ namespace metaldb {
 #endif
 
 #ifndef __METAL__
-    template<typename T, typename Val>
+    template<typename Val, typename T>
     static void WriteBytesStartingAt(std::vector<T>& ptr, const Val& val) {
         union {
             Val a;

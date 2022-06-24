@@ -102,11 +102,14 @@ NEW_TEST(RawTableTest, MultiGroupTest) {
         CPPTEST_ASSERT(metalRawTable.GetSizeOfHeader() < 100);
 
         CPPTEST_ASSERT(metalRawTable.GetStartOfData() > 0);
-        CPPTEST_ASSERT(metalRawTable.GetStartOfData() < 1000);
+        CPPTEST_ASSERT(metalRawTable.GetSizeOfData() == 5 * count);
         CPPTEST_ASSERT(metalRawTable.GetNumRows() == count);
 
         for (std::size_t i = 0; i < count; ++i) {
-            CPPTEST_ASSERT(metalRawTable.GetRowIndex(i) + offset == rowIndexes.at(i + numRows));
+            auto metalRowIndex = metalRawTable.GetRowIndex(i);
+            auto originalRowIndex = rowIndexes.at(i + numRows);
+            auto metalRowIndexNorm = metalRowIndex + offset;
+            CPPTEST_ASSERT(metalRowIndexNorm == originalRowIndex);
         }
 
         {
@@ -116,8 +119,8 @@ NEW_TEST(RawTableTest, MultiGroupTest) {
             }
         }
 
-        offset = metalRawTable.GetRowIndex(count - 1);
         numRows += count;
+        offset += metalRawTable.GetSizeOfData();
     }
     // All rows accounted for.
     CPPTEST_ASSERT(numRows == rawTableCPU.numRows());
