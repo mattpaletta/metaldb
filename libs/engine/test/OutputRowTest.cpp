@@ -95,6 +95,34 @@ NEW_TEST(OutputRowTest, OutputRowToWriterToReaderLarge) {
     CPPTEST_ASSERT(reader.NumRows() == writer.CurrentNumRows());
 }
 
+NEW_TEST(OutputRowTest, MultipleWritersMergeTest) {
+    auto writer0 = WriterFromTempRows(200);
+    std::vector<metaldb::OutputRowReader<>::value_type> instructions0;
+    writer0.write(instructions0);
+    auto reader0 = metaldb::OutputRowReader(instructions0);
+    CPPTEST_ASSERT(reader0.NumColumns() == writer0.NumColumns());
+    CPPTEST_ASSERT(reader0.NumRows() == writer0.CurrentNumRows());
+
+    auto writer1 = WriterFromTempRows(300);
+    std::vector<metaldb::OutputRowReader<>::value_type> instructions1;
+    writer1.write(instructions1);
+    auto reader1 = metaldb::OutputRowReader(instructions1);
+    CPPTEST_ASSERT(reader1.NumColumns() == writer1.NumColumns());
+    CPPTEST_ASSERT(reader1.NumRows() == writer1.CurrentNumRows());
+
+
+    metaldb::OutputRowWriter writer2;
+    for (std::size_t i = 0; i < reader0.NumRows(); ++i) {
+        writer2.copyRow(reader0, i);
+    }
+    for (std::size_t i = 0; i < reader1.NumRows(); ++i) {
+        writer2.copyRow(reader1, i);
+    }
+    CPPTEST_ASSERT(writer2.NumColumns() == writer0.NumColumns());
+    CPPTEST_ASSERT(writer2.NumBytes() == writer1.NumBytes() + writer0.NumBytes());
+    CPPTEST_ASSERT(writer2.CurrentNumRows() == writer1.CurrentNumRows() + writer0.CurrentNumRows());
+}
+
 NEW_TEST(OutputRowTest, CompareHeaderSizeInstructionWriter) {
     auto row0 = GenerateTempRow();
     auto row1 = GenerateTempRow();
