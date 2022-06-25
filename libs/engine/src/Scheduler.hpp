@@ -131,7 +131,6 @@ namespace metaldb {
 
                     for (std::size_t i = 0; i < reader.NumRows(); ++i) {
                         writer.copyRow(reader, i);
-
                         if (writer.CurrentNumRows() == maxNumRows - 1) {
                             // Submit the work and reset the writer.
                             submitWork();
@@ -222,7 +221,7 @@ namespace metaldb {
             // This reads in a file (1 chunk) and splits it into serialized sub-chunks each with a max
             // row count of `maxNumRows` (metal/implementation defined).
             // The GPU is guaranteed to always return `OutputRow` buffers, so we can merge them together.
-            auto maxNumRows = 200; //manager->MaxNumRows();
+            auto maxNumRows = manager->MaxNumRows();
             doWorkTask.work([=](tf::Subflow& subflow) {
                 // Chunk the work out.
                 DebugTask();
@@ -259,6 +258,11 @@ namespace metaldb {
                     }
 
                     writer.write(*outputBuffer);
+
+                    std::cout << "Writing output -- Num Columns: " << (int) writer.NumColumns() << " -- Num Bytes: " << (int) writer.NumBytes() << " -- Num Rows: " << (int) writer.CurrentNumRows() << std::endl;
+                    auto reader = OutputRowReader(*outputBuffer);
+                    std::cout << "Reading -- Num Columns: " << (int) reader.NumColumns() << " -- Num Bytes: " << (int) reader.NumBytes() << " -- Num Rows: " << (int) reader.NumRows() << std::endl;
+
                 }).name("Merge subtasks");
             })
             .name("Do Work");

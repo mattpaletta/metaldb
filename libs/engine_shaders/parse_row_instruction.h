@@ -64,9 +64,7 @@ namespace metaldb {
 
         StringSection readCSVColumn(RawTable METAL_THREAD & rawTable, RowNumType row, NumColumnsType column) const {
             auto rowIndex = rawTable.GetRowIndex(this->skipHeader() ? row+1 : row);
-#ifndef __METAL__
-            std::cout << "Reading row index for row: " << row << " ind: " << rowIndex << std::endl;
-#endif
+
             // Get the column by scanning
             METAL_DEVICE char* startOfColumn = rawTable.data(rowIndex);
 
@@ -83,7 +81,7 @@ namespace metaldb {
 
             ColumnSizeType length = 0;
             if (row == rawTable.GetNumRows() - 1 && column == this->numColumns() - 1) {
-                length = rawTable.data(rawTable.GetSizeOfData()) - startOfColumn;
+                length = ((ColumnSizeType) (rawTable.data(rawTable.GetSizeOfData() - 1) - startOfColumn)) + 1;
             } else if (row < rawTable.GetNumRows()) {
                 // Only safe to calculate the end of the column if not the last row.
                 // Otherwise could read past the end of the buffer.
@@ -107,16 +105,11 @@ namespace metaldb {
         }
 
         ColumnSizeType readCSVColumnLength(RawTable METAL_THREAD & rawTable, RowNumType row, NumColumnsType column) const {
-            // Do it this was for now to keep the code the same.
+            // Do it this way for now to keep the code the same.
             return this->readCSVColumn(rawTable, row, column).size();
         }
 
         TempRow GetRow(DbConstants METAL_THREAD & constants) {
-            // Question: do I have to read all columns first to get their sizes?
-#ifndef __METAL__
-            std::cout << "Reading row: " << constants.thread_position_in_grid << std::endl;
-#endif
-
             TempRow::TempRowBuilder builder;
             auto numCols = this->numColumns();
             {
@@ -142,14 +135,6 @@ namespace metaldb {
             for (auto i = 0; i < numCols; ++i) {
                 // Write the columns into the buffer
                 auto stringSection = this->readCSVColumn(constants.rawTable, constants.thread_position_in_grid, i);
-
-#ifndef __METAL__
-                if (stringSection.size() > 0) {
-                    std::cout << "Got Value for column: " << i << " " << stringSection.str() << std::endl;
-                } else {
-                    std::cout << "Got blank vaue for column: " << i << std::endl;
-                }
-#endif
 
                 switch (this->getColumnType(i)) {
                 case String: {

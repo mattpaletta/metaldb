@@ -75,7 +75,6 @@ namespace metaldb {
             for (size_t n = 0; n < (sizeof(Val) / sizeof(T)); ++n) {
                 *(ptr++) = (T)(val >> (8 * n)) & 0xff;
             }
-//            *((Val METAL_DEVICE *) ptr) = val;
         }
     }
 
@@ -88,7 +87,6 @@ namespace metaldb {
             for (size_t n = 0; n < (sizeof(Val) / sizeof(T)); ++n) {
                 *(ptr++) = (T)(val >> (8 * n)) & 0xff;
             }
-//            *((Val METAL_THREAD *) ptr) = val;
         }
     }
 #endif

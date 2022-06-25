@@ -39,7 +39,9 @@ auto metaldb::reader::CSVReader::read(const CSVOptions& options) const -> RawTab
         while (myfile.good()) {
             // Buffer the row
             char nextChar = myfile.get();
-            firstRowBuffer << nextChar;
+            if (nextChar != '\r' && nextChar != '\n') {
+                firstRowBuffer << nextChar;
+            }
             if (nextChar == '\n') {
                 break;
             }
@@ -59,15 +61,26 @@ auto metaldb::reader::CSVReader::read(const CSVOptions& options) const -> RawTab
 
     // Just read the rows straight
     rowIndex.push_back(charCount);
+    bool lastWasNewLine = false;
     while (myfile.good()) {
         char nextChar = myfile.get();
-        if (nextChar == '\n') {
+        if (nextChar == '\n' || nextChar == '\r') {
             // Don't copy the newline, unneeded space.
-            rowIndex.push_back(charCount);
-        } else {
+            // Ignore consecutive empty lines
+            if (!lastWasNewLine) {
+                rowIndex.push_back(charCount);
+                lastWasNewLine = true;
+            }
+        } else if (nextChar != EOF) {
             ++charCount;
             buffer.push_back(nextChar);
+            lastWasNewLine = false;
         }
+    }
+    
+    if (lastWasNewLine) {
+        // The last newLine should not be included.
+        rowIndex.pop_back();
     }
 
     return RawTable(std::move(buffer), rowIndex, columns);

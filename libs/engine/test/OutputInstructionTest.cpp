@@ -79,4 +79,49 @@ NEW_TEST(OutputInstructionTest, ReadOutputInstruction) {
     }
 }
 
+NEW_TEST(OutputInstructionTest, MultipleWriters) {
+    using namespace metaldb;
+    using namespace metaldb::engine;
+    OutputInstruction outputInst = nullptr;
+
+    std::array<metaldb::OutputSerializedValue, 100'000> output0{0};
+    std::array<metaldb::OutputSerializedValue, 100'000> output1{0};
+    auto generateReader = [&](std::size_t count, auto& output) {
+        std::array<metaldb::OutputRow::NumBytesType, 500> scratch{0};
+        metaldb::RawTable rawTable(nullptr);
+        metaldb::DbConstants constants{rawTable, output.data(), scratch.data()};
+
+        for (std::size_t i = 0; i < count; ++i) {
+            constants.thread_position_in_grid = i;
+            auto tempRow = GenerateTempRow(i);
+            outputInst.WriteRow(tempRow, constants);
+        }
+
+        auto reader = metaldb::OutputRowReader(output);
+        CPPTEST_ASSERT(reader.NumRows() == count);
+        CPPTEST_ASSERT(reader.NumColumns() == 3);
+        {
+            CPPTEST_ASSERT(reader.TypeOfColumn(0) == ColumnType::Integer);
+            CPPTEST_ASSERT(reader.TypeOfColumn(1) == ColumnType::Integer);
+            CPPTEST_ASSERT(reader.TypeOfColumn(2) == ColumnType::Integer);
+        }
+
+        return reader;
+    };
+
+    auto reader0 = generateReader(2000, output0);
+    auto reader1 = generateReader(3000, output1);
+
+    metaldb::OutputRowWriter writer2;
+    for (std::size_t i = 0; i < reader0.NumRows(); ++i) {
+        writer2.copyRow(reader0, i);
+    }
+    for (std::size_t i = 0; i < reader1.NumRows(); ++i) {
+        writer2.copyRow(reader1, i);
+    }
+    CPPTEST_ASSERT(writer2.NumColumns() == reader0.NumColumns());
+    CPPTEST_ASSERT(writer2.CurrentNumRows() == reader0.NumRows() + reader1.NumRows());
+}
+
+
 CPPTEST_END_CLASS(OutputInstructionTest)
