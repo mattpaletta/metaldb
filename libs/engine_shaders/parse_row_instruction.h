@@ -122,7 +122,7 @@ namespace metaldb {
                     builder.columnTypes[i] = columnType;
 
                     // Set all column sizes, and they might get pruned
-                    if (columnType == String) {
+                    if (ColumnVariableSize(columnType)) {
                         builder.columnSizes[i] = this->readCSVColumnLength(constants.rawTable, constants.thread_position_in_grid, i);
                     } else {
                         builder.columnSizes[i] = 0;
@@ -137,7 +137,8 @@ namespace metaldb {
                 auto stringSection = this->readCSVColumn(constants.rawTable, constants.thread_position_in_grid, i);
 
                 switch (this->getColumnType(i)) {
-                case String: {
+                case String:
+                case String_opt: {
                     // Copy the string in directly.
                     row.append(stringSection.c_str(), stringSection.size());
                     break;
@@ -148,10 +149,24 @@ namespace metaldb {
                     row.append(result);
                     break;
                 }
+                case Integer_opt: {
+                    if (stringSection.size() > 0) {
+                        types::IntegerType result = metal::strings::stoi(stringSection.c_str(), stringSection.size());
+                        row.append(result);
+                    }
+                    break;
+                }
                 case Float: {
                     // Cast it to a float.
                     types::FloatType result = metal::strings::stof(stringSection.c_str(), stringSection.size());
                     row.append(result);
+                    break;
+                }
+                case Float_opt: {
+                    if (stringSection.size() > 0) {
+                        types::FloatType result = metal::strings::stof(stringSection.c_str(), stringSection.size());
+                        row.append(result);
+                    }
                     break;
                 }
                 case Unknown:

@@ -73,7 +73,7 @@ namespace metaldb {
                 // Column sizes (for all variable columns)
                 for (auto i = 0; i < builder.numColumns; ++i) {
                     auto columnType = (enum ColumnType) builder.columnTypes[i];
-                    if (columnType == String) {
+                    if (metaldb::ColumnVariableSize(columnType)) {
                         // Hack using the length of the header so we dynamically write to the correct place.
                         auto columnSize = builder.columnSizes[i];
                         WriteBytesStartingAt(&this->_data[lengthOfHeader], columnSize);
@@ -124,7 +124,10 @@ namespace metaldb {
             NumColumnsType offsetOfVariableLength = 0;
             for (size_t i = 0; i < column; ++i) {
                 switch (this->ColumnType(i)) {
-                case String: {
+                case String:
+                case String_opt:
+                case Float_opt:
+                case Integer_opt: {
                     offsetOfVariableLength++;
                     break;
                 }
@@ -153,17 +156,39 @@ namespace metaldb {
             return LocalStringSection(this->data(), this->_size);
         }
 
-        types::FloatType ReadColumnFloat(size_t column) const {
+        bool hasValue(NumColumnsType column) const {
+            if (this->isNullable(column)) {
+                return this->ColumnSize(column) > 0;
+            } else {
+                return true;
+            }
+        }
+
+        bool isNullable(NumColumnsType column) const {
+            switch(this->ColumnType(column)) {
+            case String_opt:
+            case Float_opt:
+            case Integer_opt:
+            case Unknown:
+                return true;
+            case String:
+            case Float:
+            case Integer:
+                return false;
+            }
+        }
+
+        types::FloatType ReadColumnFloat(NumColumnsType column) const {
             const auto startOffset = this->ColumnStartOffset(column);
             return ReadBytesStartingAt<types::FloatType>(this->data() + startOffset);
         }
 
-        types::IntegerType ReadColumnInt(size_t column) const {
+        types::IntegerType ReadColumnInt(NumColumnsType column) const {
             const auto startOffset = this->ColumnStartOffset(column);
             return ReadBytesStartingAt<types::IntegerType>(this->data() + startOffset);
         }
 
-        ConstLocalStringSection ReadColumnString(size_t column) const {
+        ConstLocalStringSection ReadColumnString(NumColumnsType column) const {
             const auto startOffset = this->ColumnStartOffset(column);
             const auto columnSize = this->ColumnSize(column);
             return ConstLocalStringSection(this->data(startOffset), columnSize);

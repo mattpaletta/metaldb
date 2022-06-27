@@ -117,6 +117,7 @@ namespace metaldb {
         bool ShouldIncludeRow(TempRow METAL_THREAD & row, DbConstants METAL_THREAD & constants) const {
             Stack<MAX_VM_STACK_SIZE> stack;
 
+            // TODO: Add support and operations for null.
             size_t operationIndex = 0;
             for (auto i = 0; i < this->NumOperations(); ++i) {
                 switch (this->GetOperation(operationIndex++)) {

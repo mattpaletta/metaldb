@@ -18,13 +18,19 @@ namespace metaldb {
     enum ColumnType : InstSerializedValue {
         Unknown,
         String,
+        String_opt,
         Float,
-        Integer
+        Float_opt,
+        Integer,
+        Integer_opt,
     };
 
     static bool ColumnVariableSize(ColumnType type) {
         switch (type) {
         case String:
+        case String_opt:
+        case Float_opt:
+        case Integer_opt:
             return true;
         case Float:
         case Integer:
@@ -36,6 +42,9 @@ namespace metaldb {
     static uint8_t BaseColumnSize(ColumnType type) {
         switch (type) {
         case String:
+        case String_opt:
+        case Float_opt:
+        case Integer_opt:
             return 0;
         case Float:
             return sizeof(types::FloatType);
@@ -50,10 +59,13 @@ namespace metaldb {
     static std::string columnTypeToString(ColumnType type) {
         switch (type) {
         case String:
+        case String_opt:
             return "String";
         case Float:
+        case Float_opt:
             return "Float";
         case Integer:
+        case Integer_opt:
             return "Integer";
         case Unknown:
             return "Unknown";

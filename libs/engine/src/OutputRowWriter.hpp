@@ -72,6 +72,7 @@ namespace metaldb {
         template<typename Container>
         void copyRow(const OutputRowReader<Container>& reader, std::size_t row) {
             if (!this->_hasCopiedHeader) {
+                // The num bytes also includes the size of the header, but that's left to when we retreive.
                 this->_sizeOfHeader = OutputRow::ColumnTypeOffset;
 
                 // Write types of columns
@@ -79,6 +80,11 @@ namespace metaldb {
                 this->_sizeOfHeader += sizeof(ColumnType) * this->NumColumns();
                 assert(this->NumColumns() == reader.NumColumns());
                 this->_hasCopiedHeader = true;
+            }
+
+            for (const auto& c : reader.VariableLengthColumns()) {
+                // Write in the variable length colunns for the row.
+                this->appendToData(reader.SizeOfColumn(c, row));
             }
 
             for (auto c = 0; c < reader.NumColumns(); ++c) {
@@ -91,12 +97,14 @@ namespace metaldb {
             this->_numRows++;
         }
 
+        OutputRow::SizeOfHeaderType SizeOfHeader() const {
+            constexpr decltype(this->_sizeOfHeader) sizeOfHeaderBase = OutputRow::ColumnTypeOffset;
+            return sizeOfHeaderBase + (sizeof(ColumnType) * this->NumColumns());
+        }
+
         void write(std::vector<char>& buffer) {
             // Write the header
-            constexpr decltype(this->_sizeOfHeader) sizeOfHeaderBase = OutputRow::ColumnTypeOffset;
-            const decltype(this->_sizeOfHeader) sizeOfHeader =
-                sizeOfHeaderBase +
-                (sizeof(ColumnType) * this->NumColumns());
+            const auto sizeOfHeader = this->SizeOfHeader();
 
             // Insert padding
             this->addPaddingUntilIndex(OutputRow::SizeOfHeaderOffset, buffer);
@@ -120,6 +128,12 @@ namespace metaldb {
         }
 
         OutputRow::NumBytesType NumBytes() const {
+            // NumBytes should include the size of the header.
+            return this->NumBytesData() + this->SizeOfHeader();
+        }
+
+        OutputRow::NumBytesType NumBytesData() const {
+            // This is only the size of the data, without the header.
             return (OutputRow::NumBytesType) this->_data.size();
         }
 
@@ -146,14 +160,7 @@ namespace metaldb {
 
         template<typename T, typename V>
         void appendGeneric(T val, std::vector<V>& buf) {
-            if constexpr(sizeof(T) == 1) {
-                buf.push_back(val);
-            } else {
-                for (size_t n = 0; n < sizeof(T); ++n) {
-                    const auto valByte = (int8_t) (val >> (8 * n)) & 0xff;
-                    this->appendGeneric<int8_t>(valByte, buf);
-                }
-            }
+            WriteBytesStartingAt(buf, val);
         }
     };
 }
