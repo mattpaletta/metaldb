@@ -31,8 +31,9 @@ namespace metaldb {
             }
 
             for (const auto& stage : plan.stages) {
+                auto placeholder = taskflow.emplace([]{}).name("Do Stage");
                 auto buffer = MakeBufferPtr();
-                Scheduler::registerStage(stage, &taskflow, manager, buffer);
+                Scheduler::registerStage(placeholder, stage, &taskflow, manager, buffer);
             }
 
             return taskflow;
@@ -57,28 +58,29 @@ namespace metaldb {
         // Takes in a rawTable, and splits it into a list of pairs with `MaxNumRows` serialized rows, and the number of rows in the chunk.
         static std::vector<std::pair<IntermediateBufferTypePtr, std::size_t>> SerializeRawTable(const metaldb::reader::RawTable& rawTable, std::size_t maxNumRows);
 
-        static void registerStage(const std::shared_ptr<QueryEngine::Stage>& stage, tf::Taskflow* _Nonnull taskflow, std::shared_ptr<MetalManager> manager, IntermediateBufferTypePtr outputBuffer) {
-
+        static tf::Task registerStage(tf::Task& taskDoWork, const std::shared_ptr<QueryEngine::Stage>& stage, tf::Taskflow* _Nonnull taskflow, std::shared_ptr<MetalManager> manager, IntermediateBufferTypePtr outputBuffer) {
             // First register all children
             std::vector<IntermediateBufferTypePtr> childOutputBuffers;
             childOutputBuffers.reserve(stage->children.size() + 1);
             for (auto& child : stage->children) {
                 auto childBuffer = MakeBufferPtr();
-                Scheduler::registerStage(child, taskflow, manager, childBuffer);
+                auto childDoWork = Scheduler::registerStage(taskDoWork, child, taskflow, manager, childBuffer);
+                childDoWork.precede(taskDoWork);
                 childOutputBuffers.push_back(childBuffer);
             }
 
-            Scheduler::registerBaseStage(stage, taskflow, manager, std::move(childOutputBuffers), outputBuffer);
+            Scheduler::registerBaseStage(taskDoWork, stage, taskflow, manager, std::move(childOutputBuffers), outputBuffer);
+            return taskDoWork;
         }
 
-        static tf::Task registerBaseStage(const std::shared_ptr<QueryEngine::Stage>& stage, tf::Taskflow* _Nonnull taskflow, std::shared_ptr<MetalManager> manager, std::vector<IntermediateBufferTypePtr>&& childOutputBuffers, IntermediateBufferTypePtr outputBuffer) {
+        static tf::Task registerBaseStage(tf::Task& taskDoWork, const std::shared_ptr<QueryEngine::Stage>& stage, tf::Taskflow* _Nonnull taskflow, std::shared_ptr<MetalManager> manager, std::vector<IntermediateBufferTypePtr>&& childOutputBuffers, IntermediateBufferTypePtr outputBuffer) {
             // Create the substeps within the graph for this particular stage.
             auto encoder = std::make_shared<engine::Encoder>();
             auto serializedData = MakeBufferPtr();
-            auto taskDoWork = taskflow->placeholder();
             auto encodeWorkTask = Scheduler::registerBasePartial(stage->partial, taskflow, encoder, taskDoWork, manager, serializedData, childOutputBuffers, outputBuffer);
 
             if (taskDoWork.has_work()) {
+                taskDoWork.succeed(encodeWorkTask);
                 return taskDoWork;
             }
 
@@ -155,16 +157,15 @@ namespace metaldb {
                     writer.write(*outputBuffer);
                 }).name("Merge subtasks");
             })
-                .name("Do Work")
+                .name("Do GPU Work")
                 .succeed(encodeWorkTask);
 
             return taskDoWork;
         }
 
         template<typename... Args>
-        static tf::Task registerBasePartial(const std::shared_ptr<QueryEngine::StagePartial>& partial, tf::Taskflow* _Nonnull taskflow, Args... args) {
+        static tf::Task registerBasePartial(const std::shared_ptr<QueryEngine::StagePartial>& partial, tf::Taskflow* _Nonnull taskflow, Args&... args) {
             // Each partial returns the task to encode the instructions.
-
             auto registerChildPartials = [&](auto& task) {
                 for (auto& childPartial : partial->children) {
                     auto childTask = Scheduler::registerBasePartial(childPartial, taskflow, args...);
@@ -185,9 +186,7 @@ namespace metaldb {
             } else if (auto output = std::dynamic_pointer_cast<QueryEngine::ShuffleOutputPartial>(partial)) {
                 task = Scheduler::registerShufflePartial(output, taskflow, args...);
             } else {
-                task = taskflow->emplace([]{
-                    std::cout << "Empty task" << std::endl;
-                });
+                task = taskflow->emplace([]{ /* empty task */});
             }
 
             registerChildPartials(task);
@@ -215,20 +214,22 @@ namespace metaldb {
                 options.stripQuotesFromHeader = true;
                 auto rawTable = reader.read(options);
                 *rawTablePtr = std::move(rawTable);
-            })
-                .name("Read Raw Table Task: " + filename);
+            }).name("Read Raw Table Task: " + filename);
 
             // This reads in a file (1 chunk) and splits it into serialized sub-chunks each with a max
             // row count of `maxNumRows` (metal/implementation defined).
             // The GPU is guaranteed to always return `OutputRow` buffers, so we can merge them together.
             auto maxNumRows = manager->MaxNumRows();
-            doWorkTask.work([=](tf::Subflow& subflow) {
+            doWorkTask.work([=](tf::Subflow& subflow) mutable {
                 // Chunk the work out.
                 DebugTask();
                 std::vector<decltype(MakeOutputBufferPtr())> subtaskOutputBuffers;
                 auto mergeSubtasks = subflow.placeholder();
 
                 auto subtaskBuffers = Scheduler::SerializeRawTable(*rawTablePtr, maxNumRows);
+
+                // We can free the rawTable
+                rawTablePtr.reset();
 
                 for (auto& [childBufferPtr, numRows] : subtaskBuffers) {
                     auto localCurrentInputBuffer = childBufferPtr;
@@ -246,7 +247,7 @@ namespace metaldb {
                     subtaskOutputBuffers.emplace_back(std::move(subtaskNewBuffer));
                 }
 
-                mergeSubtasks.work([=]{
+                mergeSubtasks.work([=]() mutable {
                     DebugTask();
 
                     OutputRowWriter writer;
@@ -257,15 +258,15 @@ namespace metaldb {
                         }
                     }
 
-                    writer.write(*outputBuffer);
+                     writer.write(*outputBuffer);
 
                     std::cout << "Writing output -- Num Columns: " << (int) writer.NumColumns() << " -- Num Bytes: " << (int) writer.NumBytes() << " -- Num Rows: " << (int) writer.CurrentNumRows() << std::endl;
                     auto reader = OutputRowReader(*outputBuffer);
                     std::cout << "Reading -- Num Columns: " << (int) reader.NumColumns() << " -- Num Bytes: " << (int) reader.NumBytes() << " -- Num Rows: " << (int) reader.NumRows() << std::endl;
-
                 }).name("Merge subtasks");
             })
-            .name("Do Work");
+            .name("Do Parse Row Work: " + filename)
+            .succeed(readRawTableTask);
 
             return taskflow->emplace([=]() {
                 // Encode the commands
@@ -273,15 +274,21 @@ namespace metaldb {
                 auto columnTypes = [&]{
                     std::vector<ColumnType> columnTypes;
                     std::transform(definition->columns.begin(), definition->columns.end(), std::back_inserter(columnTypes), [](auto col) {
-                        return col.type;
+                        // The nullable type is always one more.
+                        if (col.type == Unknown) {
+                            return col.type;
+                        } else if (col.nullable) {
+                            return (metaldb::ColumnType) (col.type + 1);
+                        } else {
+                            return col.type;
+                        }
                     });
                     return columnTypes;
                 }();
                 engine::ParseRow parseRow(method, columnTypes, /* skipHeader */ false);
                 encoder->encode(parseRow);
             })
-                .name("Encode Parse Row Instruction: " + filename)
-                .precede(doWorkTask);
+            .name("Encode Parse Row Instruction: " + filename);
         }
 
         static tf::Task registerProjectionPartial(std::shared_ptr<QueryEngine::ProjectionPartial> projection, tf::Taskflow* _Nonnull taskflow, std::shared_ptr<engine::Encoder> encoder, tf::Task& doWorkTask, std::shared_ptr<MetalManager> manager, std::shared_ptr<std::vector<char>> serializedData, const std::vector<IntermediateBufferTypePtr>& childOutputBuffers, IntermediateBufferTypePtr outputBuffer) {
@@ -292,7 +299,8 @@ namespace metaldb {
 
                 engine::Projection projectionInstr(projection->columnIndexes);
                 encoder->encode(projectionInstr);
-            });
+            })
+            .name("Encode Projection Task");
         }
 
         static tf::Task registerShufflePartial(std::shared_ptr<QueryEngine::ShuffleOutputPartial> output, tf::Taskflow* _Nonnull taskflow, std::shared_ptr<engine::Encoder> encoder, tf::Task& doWorkTask, std::shared_ptr<MetalManager> manager, std::shared_ptr<std::vector<char>> serializedData, const std::vector<IntermediateBufferTypePtr>& childOutputBuffers, IntermediateBufferTypePtr outputBuffer) {
@@ -303,13 +311,14 @@ namespace metaldb {
 
                 engine::Output outputInst;
                 encoder->encode(outputInst);
-            });
+            })
+            .name("Encode Shuffle Partial");
         }
 
         static tf::Task registerWritePartial(std::shared_ptr<QueryEngine::WritePartial> write, tf::Taskflow* _Nonnull taskflow, std::shared_ptr<engine::Encoder> encoder, tf::Task& doWorkTask, std::shared_ptr<MetalManager> manager, std::shared_ptr<std::vector<char>> serializedData, const std::vector<IntermediateBufferTypePtr>& childOutputBuffers, IntermediateBufferTypePtr outputBuffer) {
             std::cout << "Registering Write partial" << write->id() << std::endl;
 
-            doWorkTask.work([=]() {
+            taskflow->emplace([=]() {
                 // Merge child buffers
                 OutputRowWriter writer;
                 for (auto& childBuffer : childOutputBuffers) {
@@ -320,15 +329,14 @@ namespace metaldb {
                 }
 
                 std::cout << "Writing output -- Num Columns: " << (int) writer.NumColumns() << " -- Num Bytes: " << (int) writer.NumBytes() << " -- Num Rows: " << (int) writer.CurrentNumRows() << std::endl;
-            });
+            }).name("Do Output Shuffle Work")
+                .succeed(doWorkTask);
 
             return taskflow->emplace([=]() {
                 // This can just happen after the 'doWorkTask' because it must be the last thing.
 
                 DebugTask();
-            })
-                .name("Write output")
-                .succeed(doWorkTask);
+            }).name("Write output");
         }
 
         static void DebugTask() {

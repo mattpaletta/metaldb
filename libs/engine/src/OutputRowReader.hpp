@@ -33,14 +33,15 @@ namespace metaldb {
 
                 switch (columnType) {
                 case String:
+                case String_opt:
+                case Float_opt:
+                case Integer_opt:
                     this->_columnSizes.at(i) = 0;
                     this->_variableLengthColumns.push_back(i);
                     break;
                 case Float:
-                    this->_columnSizes.at(i) = sizeof(metaldb::types::FloatType);
-                    break;
                 case Integer:
-                    this->_columnSizes.at(i) = sizeof(metaldb::types::IntegerType);
+                    this->_columnSizes.at(i) = metaldb::BaseColumnSize(columnType);
                     break;
                 case Unknown:
                     assert(false);
@@ -65,6 +66,14 @@ namespace metaldb {
                     i += columnSize;
                 }
             }
+        }
+
+        std::vector<OutputRow::ColumnSizeType> VariableLengthColumns() const {
+            return this->_variableLengthColumns;
+        }
+
+        bool ColumnIsVariableLength(size_t column) const {
+            return this->_variableLengthColumns.find(column) != this->_variableLengthColumns.end();
         }
 
         OutputRow::ColumnSizeType SizeOfColumn(size_t column, size_t row) const {
@@ -134,6 +143,11 @@ namespace metaldb {
         
         OutputRow::NumBytesType StartOfColumn(OutputRow::NumColumnsType column, OutputRow::NumRowsType row, const std::vector<OutputRow::ColumnSizeType>& columnSizes) const {
             auto offset = this->_rowStartOffset.at(row);
+
+            // Skip the variableLength sizes.
+            offset += this->_variableLengthColumns.size();
+
+            // Jump N columns.
             for (auto i = 0; i < column; ++i) {
                 offset += columnSizes.at(i);
             }

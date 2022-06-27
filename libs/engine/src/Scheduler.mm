@@ -33,9 +33,7 @@ auto metaldb::Scheduler::SerializeRawTable(const metaldb::reader::RawTable& rawT
 
         // Size of data
         {
-#ifdef DEBUG
-            assert(rawDataSerialized->size() == RawTable::SizeOfHeaderOffset);
-#endif
+            assert(rawDataSerialized->size() == RawTable::SizeOfDataOffset);
             WriteBytesStartingAt<SizeOfDataType>(*rawDataSerialized, 0);
             sizeOfHeader += sizeof(SizeOfDataType);
         }
@@ -43,23 +41,18 @@ auto metaldb::Scheduler::SerializeRawTable(const metaldb::reader::RawTable& rawT
         // num rows
         {
             const NumRowsType num = numRowsLocal;
-#ifdef DEBUG
             assert(rawDataSerialized->size() == RawTable::NumRowsOffset);
-#endif
             WriteBytesStartingAt(*rawDataSerialized, num);
             sizeOfHeader += sizeof(NumRowsType);
         }
 
         // Write the row indexes
         {
-#ifdef DEBUG
             assert(rawDataSerialized->size() == RawTable::RowIndexOffset);
-#endif
             for (auto row = startRow; row < endRow; ++row) {
                 // Last data access stores the highest index on the last iteration, which we offset
                 // because those rows are not in this batch.
                 RowIndexType index = rawTable.rowIndexes.at(row) - lastDataOffset;
-                std::cout << "Row: " << row << " Original index: " << (index+lastDataOffset) << " writing: " << index << std::endl;
                 WriteBytesStartingAt(*rawDataSerialized, index);
             }
             sizeOfHeader += (sizeof(RowIndexType) * numRowsLocal);
@@ -82,7 +75,6 @@ auto metaldb::Scheduler::SerializeRawTable(const metaldb::reader::RawTable& rawT
                     for (auto i = index; i < nextRow; ++i) {
                         rawDataSerialized->push_back(rawTable.data.at(i));
                     }
-                    std::cout << "Writing Bytes: (" << index << "," << (nextRow-1) << ")" << std::endl;
                     numBytes += (nextRow - index);
                     lastDataOffset = std::max(lastDataOffset, nextRow - 0UL);
                 }

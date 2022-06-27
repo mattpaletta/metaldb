@@ -60,11 +60,7 @@ namespace metaldb {
                     builder.columnTypes[i] = columnType;
 
                     // Set all column sizes, and they might get pruned
-                    if (columnType == String) {
-                        builder.columnSizes[i] = row.ColumnSize(columnToRead);
-                    } else {
-                        builder.columnSizes[i] = 0;
-                    }
+                    builder.columnSizes[i] = row.ColumnSize(columnToRead);
                 }
             }
             TempRow newRow = builder;

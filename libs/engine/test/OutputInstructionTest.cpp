@@ -123,5 +123,58 @@ NEW_TEST(OutputInstructionTest, MultipleWriters) {
     CPPTEST_ASSERT(writer2.CurrentNumRows() == reader0.NumRows() + reader1.NumRows());
 }
 
+NEW_TEST(OutputInstructionTest, ReadWriteRead) {
+    using namespace metaldb;
+    using namespace metaldb::engine;
+    OutputInstruction outputInst = nullptr;
+
+    std::array<metaldb::OutputSerializedValue, 100'000> output0{0};
+    auto generateReader = [&](std::size_t count, auto& output) {
+        std::array<metaldb::OutputRow::NumBytesType, 500> scratch{0};
+        metaldb::RawTable rawTable(nullptr);
+        metaldb::DbConstants constants{rawTable, output.data(), scratch.data()};
+
+        for (std::size_t i = 0; i < count; ++i) {
+            constants.thread_position_in_grid = i;
+            auto tempRow = GenerateTempRow(i);
+            outputInst.WriteRow(tempRow, constants);
+        }
+
+        auto reader = metaldb::OutputRowReader(output);
+        CPPTEST_ASSERT(reader.NumRows() == count);
+        CPPTEST_ASSERT(reader.NumColumns() == 3);
+        {
+            CPPTEST_ASSERT(reader.TypeOfColumn(0) == ColumnType::Integer);
+            CPPTEST_ASSERT(reader.TypeOfColumn(1) == ColumnType::Integer);
+            CPPTEST_ASSERT(reader.TypeOfColumn(2) == ColumnType::Integer);
+        }
+
+        return reader;
+    };
+
+    auto reader0 = generateReader(2000, output0);
+    metaldb::OutputRowWriter writer1;
+    for (std::size_t i = 0; i < reader0.NumRows(); ++i) {
+        writer1.copyRow(reader0, i);
+    }
+    std::vector<metaldb::OutputRowReader<>::value_type> instructions0;
+    writer1.write(instructions0);
+
+    CPPTEST_ASSERT(writer1.NumColumns() == reader0.NumColumns());
+    CPPTEST_ASSERT(writer1.CurrentNumRows() == reader0.NumRows());
+    CPPTEST_ASSERT(writer1.SizeOfHeader() == reader0.SizeOfHeader());
+    CPPTEST_ASSERT(writer1.NumBytes() == reader0.NumBytes());
+
+    auto reader1 = metaldb::OutputRowReader(instructions0);
+
+    CPPTEST_ASSERT(reader0.NumColumns() == reader1.NumColumns());
+    CPPTEST_ASSERT(reader0.NumRows() == reader1.NumRows());
+    CPPTEST_ASSERT(reader0.NumBytes() == reader1.NumBytes());
+
+    for (std::size_t i = 0; i < instructions0.size(); ++i) {
+        CPPTEST_ASSERT(instructions0.at(i) == output0.at(i));
+    }
+}
+
 
 CPPTEST_END_CLASS(OutputInstructionTest)

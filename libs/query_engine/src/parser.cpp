@@ -19,7 +19,7 @@ auto metaldb::QueryEngine::Parser::Parse(const std::string& query) const -> std:
      * SELECT colA, colB FROM mytable;
      */
     expr = std::make_shared<AST::Projection>(std::vector<std::string>{"lpep_pickup_datetime", "lpep_dropoff_datetime"},
-                                             std::make_shared<AST::Read>("taxi_sample"));
+                                             std::make_shared<AST::Read>("taxi"));
 
 
 //    expr = std::make_shared<AST::Projection>(std::vector<std::string>{"sepal.length", "petal.length"},
