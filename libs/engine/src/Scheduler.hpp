@@ -58,13 +58,26 @@ namespace metaldb {
         // Takes in a rawTable, and splits it into a list of pairs with `MaxNumRows` serialized rows, and the number of rows in the chunk.
         static std::vector<std::pair<IntermediateBufferTypePtr, std::size_t>> SerializeRawTable(const metaldb::reader::RawTable& rawTable, std::size_t maxNumRows);
 
+        struct Parameters final {
+            tf::Taskflow* _Nonnull taskflow;
+            std::shared_ptr<engine::Encoder> encoder;
+            tf::Task* _Nonnull doWorkTask;
+            std::shared_ptr<MetalManager> manager;
+            std::shared_ptr<std::vector<char>> serializedData;
+            const std::vector<IntermediateBufferTypePtr>& childOutputBuffers;
+            IntermediateBufferTypePtr outputBuffer;
+
+            Parameters(tf::Taskflow* _Nonnull taskflow_, std::shared_ptr<engine::Encoder> encoder_, tf::Task* _Nonnull doWorkTask_, std::shared_ptr<MetalManager> manager_, std::shared_ptr<std::vector<char>> serializedData_, const std::vector<IntermediateBufferTypePtr>& childOutputBuffers_, IntermediateBufferTypePtr outputBuffer_) : taskflow(taskflow_), encoder(encoder_), doWorkTask(doWorkTask_), manager(manager_), serializedData(serializedData_), childOutputBuffers(childOutputBuffers_), outputBuffer(outputBuffer_) {}
+        };
+
         static tf::Task registerStage(tf::Task& taskDoWork, const std::shared_ptr<QueryEngine::Stage>& stage, tf::Taskflow* _Nonnull taskflow, std::shared_ptr<MetalManager> manager, IntermediateBufferTypePtr outputBuffer) {
             // First register all children
             std::vector<IntermediateBufferTypePtr> childOutputBuffers;
             childOutputBuffers.reserve(stage->children.size() + 1);
             for (auto& child : stage->children) {
                 auto childBuffer = MakeBufferPtr();
-                auto childDoWork = Scheduler::registerStage(taskDoWork, child, taskflow, manager, childBuffer);
+                auto childDoWork = taskflow->placeholder();
+                Scheduler::registerStage(childDoWork, child, taskflow, manager, childBuffer);
                 childDoWork.precede(taskDoWork);
                 childOutputBuffers.push_back(childBuffer);
             }
@@ -73,11 +86,14 @@ namespace metaldb {
             return taskDoWork;
         }
 
-        static tf::Task registerBaseStage(tf::Task& taskDoWork, const std::shared_ptr<QueryEngine::Stage>& stage, tf::Taskflow* _Nonnull taskflow, std::shared_ptr<MetalManager> manager, std::vector<IntermediateBufferTypePtr>&& childOutputBuffers, IntermediateBufferTypePtr outputBuffer) {
+        static void registerBaseStage(tf::Task& taskDoWork, const std::shared_ptr<QueryEngine::Stage>& stage, tf::Taskflow* _Nonnull taskflow, std::shared_ptr<MetalManager> manager, std::vector<IntermediateBufferTypePtr>&& childOutputBuffers, IntermediateBufferTypePtr outputBuffer) {
             // Create the substeps within the graph for this particular stage.
             auto encoder = std::make_shared<engine::Encoder>();
             auto serializedData = MakeBufferPtr();
-            auto encodeWorkTask = Scheduler::registerBasePartial(stage->partial, taskflow, encoder, taskDoWork, manager, serializedData, childOutputBuffers, outputBuffer);
+            auto encodeWorkTask = [&]{
+                Parameters parameters{taskflow, encoder, &taskDoWork, manager, serializedData, childOutputBuffers, outputBuffer};
+                return Scheduler::registerBasePartial(stage->partial, parameters);
+            }();
 
             if (taskDoWork.has_work()) {
                 taskDoWork.succeed(encodeWorkTask);
@@ -163,45 +179,40 @@ namespace metaldb {
             return taskDoWork;
         }
 
-        template<typename... Args>
-        static tf::Task registerBasePartial(const std::shared_ptr<QueryEngine::StagePartial>& partial, tf::Taskflow* _Nonnull taskflow, Args&... args) {
+        static tf::Task registerBasePartial(const std::shared_ptr<QueryEngine::StagePartial>& partial, Parameters& parameters) {
             // Each partial returns the task to encode the instructions.
-            auto registerChildPartials = [&](auto& task) {
-                for (auto& childPartial : partial->children) {
-                    auto childTask = Scheduler::registerBasePartial(childPartial, taskflow, args...);
-                    childTask.precede(task);
-                }
-            };
-
             tf::Task task;
             if (auto read = std::dynamic_pointer_cast<QueryEngine::ReadPartial>(partial)) {
-                task = Scheduler::registerReadPartial(read, taskflow, args...);
+                task = Scheduler::registerReadPartial(read, parameters);
 
             } else if (auto projection = std::dynamic_pointer_cast<QueryEngine::ProjectionPartial>(partial)) {
-                task = Scheduler::registerProjectionPartial(projection, taskflow, args...);
+                task = Scheduler::registerProjectionPartial(projection, parameters);
 
             } else if (auto write = std::dynamic_pointer_cast<QueryEngine::WritePartial>(partial)) {
-                task = Scheduler::registerWritePartial(write, taskflow, args...);
+                task = Scheduler::registerWritePartial(write, parameters);
 
             } else if (auto output = std::dynamic_pointer_cast<QueryEngine::ShuffleOutputPartial>(partial)) {
-                task = Scheduler::registerShufflePartial(output, taskflow, args...);
+                task = Scheduler::registerShufflePartial(output, parameters);
             } else {
-                task = taskflow->emplace([]{ /* empty task */});
+                task = parameters.taskflow->emplace([]{ /* empty task */});
             }
 
-            registerChildPartials(task);
+            for (auto& childPartial : partial->children) {
+                auto childTask = Scheduler::registerBasePartial(childPartial, parameters);
+                childTask.precede(task);
+            }
             return task;
         }
 
-        static tf::Task registerReadPartial(std::shared_ptr<QueryEngine::ReadPartial> read, tf::Taskflow* _Nonnull taskflow, std::shared_ptr<engine::Encoder> encoder, tf::Task& doWorkTask, std::shared_ptr<MetalManager> manager, std::shared_ptr<std::vector<char>> serializedData, const std::vector<IntermediateBufferTypePtr>& childOutputBuffers, IntermediateBufferTypePtr outputBuffer) {
-            std::cout << "Registering Read partial" << read->id() << std::endl;
+        static tf::Task registerReadPartial(std::shared_ptr<QueryEngine::ReadPartial> read, Parameters& parameters) {
+            std::cout << "Registering Read partial" << read->id() << " " << read->filepath <<  std::endl;
 
             auto filename = read->filepath;
             auto method = read->method;
             auto definition = read->definition;
 
             auto rawTablePtr = reader::RawTable::placeholder();
-            auto readRawTableTask = taskflow->emplace([=]() {
+            auto readRawTableTask = parameters.taskflow->emplace([=]() {
                 DebugTask();
                 std::cout << "Running read command for file: " << filename << std::endl;
                 std::filesystem::path path;
@@ -219,8 +230,12 @@ namespace metaldb {
             // This reads in a file (1 chunk) and splits it into serialized sub-chunks each with a max
             // row count of `maxNumRows` (metal/implementation defined).
             // The GPU is guaranteed to always return `OutputRow` buffers, so we can merge them together.
+            auto manager = parameters.manager;
+            auto encoder = parameters.encoder;
+            auto outputBuffer = parameters.outputBuffer;
             auto maxNumRows = manager->MaxNumRows();
-            doWorkTask.work([=](tf::Subflow& subflow) mutable {
+            assert(!parameters.doWorkTask->has_work());
+            parameters.doWorkTask->work([=](tf::Subflow& subflow) mutable {
                 // Chunk the work out.
                 DebugTask();
                 std::vector<decltype(MakeOutputBufferPtr())> subtaskOutputBuffers;
@@ -268,7 +283,7 @@ namespace metaldb {
             .name("Do Parse Row Work: " + filename)
             .succeed(readRawTableTask);
 
-            return taskflow->emplace([=]() {
+            return parameters.taskflow->emplace([=]() {
                 // Encode the commands
                 DebugTask();
                 auto columnTypes = [&]{
@@ -291,10 +306,11 @@ namespace metaldb {
             .name("Encode Parse Row Instruction: " + filename);
         }
 
-        static tf::Task registerProjectionPartial(std::shared_ptr<QueryEngine::ProjectionPartial> projection, tf::Taskflow* _Nonnull taskflow, std::shared_ptr<engine::Encoder> encoder, tf::Task& doWorkTask, std::shared_ptr<MetalManager> manager, std::shared_ptr<std::vector<char>> serializedData, const std::vector<IntermediateBufferTypePtr>& childOutputBuffers, IntermediateBufferTypePtr outputBuffer) {
+        static tf::Task registerProjectionPartial(std::shared_ptr<QueryEngine::ProjectionPartial> projection, Parameters& parameters) {
             std::cout << "Registering Projection partial" << projection->id() << std::endl;
 
-            return taskflow->emplace([=]() {
+            auto encoder = parameters.encoder;
+            return parameters.taskflow->emplace([=]() {
                 DebugTask();
 
                 engine::Projection projectionInstr(projection->columnIndexes);
@@ -303,10 +319,11 @@ namespace metaldb {
             .name("Encode Projection Task");
         }
 
-        static tf::Task registerShufflePartial(std::shared_ptr<QueryEngine::ShuffleOutputPartial> output, tf::Taskflow* _Nonnull taskflow, std::shared_ptr<engine::Encoder> encoder, tf::Task& doWorkTask, std::shared_ptr<MetalManager> manager, std::shared_ptr<std::vector<char>> serializedData, const std::vector<IntermediateBufferTypePtr>& childOutputBuffers, IntermediateBufferTypePtr outputBuffer) {
+        static tf::Task registerShufflePartial(std::shared_ptr<QueryEngine::ShuffleOutputPartial> output, Parameters& parameters) {
             std::cout << "Registering Output partial" << output->id() << std::endl;
 
-            return taskflow->emplace([=]() {
+            auto encoder = parameters.encoder;
+            return parameters.taskflow->emplace([=]() {
                 DebugTask();
 
                 engine::Output outputInst;
@@ -315,10 +332,11 @@ namespace metaldb {
             .name("Encode Shuffle Partial");
         }
 
-        static tf::Task registerWritePartial(std::shared_ptr<QueryEngine::WritePartial> write, tf::Taskflow* _Nonnull taskflow, std::shared_ptr<engine::Encoder> encoder, tf::Task& doWorkTask, std::shared_ptr<MetalManager> manager, std::shared_ptr<std::vector<char>> serializedData, const std::vector<IntermediateBufferTypePtr>& childOutputBuffers, IntermediateBufferTypePtr outputBuffer) {
+        static tf::Task registerWritePartial(std::shared_ptr<QueryEngine::WritePartial> write, Parameters& parameters) {
             std::cout << "Registering Write partial" << write->id() << std::endl;
 
-            taskflow->emplace([=]() {
+            auto childOutputBuffers = parameters.childOutputBuffers;
+            parameters.doWorkTask->work([=]() {
                 // Merge child buffers
                 OutputRowWriter writer;
                 for (auto& childBuffer : childOutputBuffers) {
@@ -329,10 +347,9 @@ namespace metaldb {
                 }
 
                 std::cout << "Writing output -- Num Columns: " << (int) writer.NumColumns() << " -- Num Bytes: " << (int) writer.NumBytes() << " -- Num Rows: " << (int) writer.CurrentNumRows() << std::endl;
-            }).name("Do Output Shuffle Work")
-                .succeed(doWorkTask);
+            }).name("Do Output Shuffle Work");
 
-            return taskflow->emplace([=]() {
+            return parameters.taskflow->emplace([=]() {
                 // This can just happen after the 'doWorkTask' because it must be the last thing.
 
                 DebugTask();
