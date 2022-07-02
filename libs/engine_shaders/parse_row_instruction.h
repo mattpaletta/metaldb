@@ -63,45 +63,7 @@ namespace metaldb {
         }
 
         StringSection readCSVColumn(RawTable METAL_THREAD & rawTable, RowNumType row, NumColumnsType column) const {
-            auto rowIndex = rawTable.GetRowIndex(this->skipHeader() ? row+1 : row);
-
-            // Get the column by scanning
-            METAL_DEVICE char* startOfColumn = rawTable.data(rowIndex);
-
-            for (NumColumnsType i = 0; i < column && startOfColumn; ++i) {
-                startOfColumn = metal::strings::strchr(startOfColumn, ',');
-                if (startOfColumn) {
-                    startOfColumn++;
-                }
-            }
-
-            if (!startOfColumn) {
-                return StringSection(startOfColumn, 0);
-            }
-
-            ColumnSizeType length = 0;
-            if (row == rawTable.GetNumRows() - 1 && column == this->numColumns() - 1) {
-                length = ((ColumnSizeType) (rawTable.data(rawTable.GetSizeOfData() - 1) - startOfColumn)) + 1;
-            } else if (row < rawTable.GetNumRows()) {
-                // Only safe to calculate the end of the column if not the last row.
-                // Otherwise could read past the end of the buffer.
-                METAL_DEVICE char* endOfColumn = metal::strings::strchr(startOfColumn, ',');
-
-                // Unless it's the last row, read until the start of the next row.
-                auto startOfNextRowInd = rawTable.GetRowIndex(this->skipHeader() ? row+2 : row+1);
-                METAL_DEVICE char* startOfNextRow = rawTable.data(startOfNextRowInd);
-                auto lengthOfThisColumn = endOfColumn - startOfColumn;
-                auto lengthToNextRow = startOfNextRow - startOfColumn;
-                length = lengthOfThisColumn > lengthToNextRow ? lengthToNextRow : lengthOfThisColumn;
-            }
-
-            // TODO: Must be matching quotes.
-            if ((*startOfColumn == '"' || *startOfColumn == '\'') && (*(startOfColumn+length-1) == '"' || (*(startOfColumn+length-1) == '"'))) {
-                // Starts and ends with a quote, strip them.
-                return StringSection(startOfColumn + 1, length - 2);
-            }
-
-            return StringSection(startOfColumn, length);
+            return this->readCSVColumnImpl(rawTable, row, column);
         }
 
         ColumnSizeType readCSVColumnLength(RawTable METAL_THREAD & rawTable, RowNumType row, NumColumnsType column) const {
@@ -179,5 +141,98 @@ namespace metaldb {
 
     private:
         InstSerializedValuePtr _instructions;
+
+        METAL_CONSTANT static constexpr int MAX_CACHED_COLUMNS = 16;
+        mutable METAL_DEVICE char* __cachedColumnStart[MAX_CACHED_COLUMNS];
+        mutable RowNumType __lastCachedRow = -1;
+        METAL_DEVICE char* GetStartOfColumn(RawTable METAL_THREAD & rawTable, RowNumType row, NumColumnsType column) const {
+            METAL_DEVICE char* startOfColumn = nullptr;
+
+            if (row != this->__lastCachedRow) {
+                // Null out the cache when we move to a different row
+                for (int i = 0; i < MAX_CACHED_COLUMNS; ++i) {
+                    this->__cachedColumnStart[i] = nullptr;
+                }
+                this->__lastCachedRow = row;
+            }
+
+            if (column > 0 && column < MAX_CACHED_COLUMNS) {
+                // Use the cached version
+                // Even if it's null, that's ok because we will fetch it again.
+                // Don't cache the first column, because we don't need to iterate through the row, so it's very fast.
+                startOfColumn = this->__cachedColumnStart[column];
+            }
+
+            if (!startOfColumn) {
+                // Didn't fetch it from cache, fetch it now by scanning.
+
+                // Find first cached column, within the range of the cache
+                NumColumnsType firstCached;
+                const auto maxCachedColumn = (column < MAX_CACHED_COLUMNS ? column : (MAX_CACHED_COLUMNS - 1));
+                for (firstCached = maxCachedColumn; firstCached > 0; --firstCached) {
+                    auto cachedStartOfColumn = this->__cachedColumnStart[firstCached - 1];
+                    if (cachedStartOfColumn) {
+                        startOfColumn = cachedStartOfColumn;
+                        break;
+                    }
+                }
+
+                // Cache all values from the last cached point.
+                NumColumnsType i;
+                for (i = firstCached; i <= maxCachedColumn; ++i) {
+                    // Fetch it raw.
+                    if (i == 0) {
+                        const auto rowIndex = rawTable.GetRowIndex(this->skipHeader() ? row+1 : row);
+                        startOfColumn = rawTable.data(rowIndex);
+                    } else {
+                        startOfColumn = metal::strings::strchr(startOfColumn, ',');
+                        if (startOfColumn) {
+                            startOfColumn++;
+                        }
+                    }
+                    this->__cachedColumnStart[i] = startOfColumn;
+                }
+
+                // Continue past the end of the cached point
+                for (; i <= column; ++i) {
+                    startOfColumn = metal::strings::strchr(startOfColumn, ',');
+                    if (startOfColumn) {
+                        startOfColumn++;
+                    }
+                }
+            }
+            return startOfColumn;
+        }
+        StringSection readCSVColumnImpl(RawTable METAL_THREAD & rawTable, RowNumType row, NumColumnsType column) const {
+            METAL_DEVICE char* startOfColumn = this->GetStartOfColumn(rawTable, row, column);
+
+            if (!startOfColumn) {
+                return StringSection(startOfColumn, 0);
+            }
+
+            ColumnSizeType length = 0;
+            if (row == rawTable.GetNumRows() - 1 && column == this->numColumns() - 1) {
+                length = ((ColumnSizeType) (rawTable.data(rawTable.GetSizeOfData() - 1) - startOfColumn)) + 1;
+            } else if (row < rawTable.GetNumRows()) {
+                // Only safe to calculate the end of the column if not the last row.
+                // Otherwise could read past the end of the buffer.
+                METAL_DEVICE char* endOfColumn = metal::strings::strchr(startOfColumn, ',');
+
+                // Unless it's the last row, read until the start of the next row.
+                auto startOfNextRowInd = rawTable.GetRowIndex(this->skipHeader() ? row+2 : row+1);
+                METAL_DEVICE char* startOfNextRow = rawTable.data(startOfNextRowInd);
+                auto lengthOfThisColumn = endOfColumn - startOfColumn;
+                auto lengthToNextRow = startOfNextRow - startOfColumn;
+                length = lengthOfThisColumn > lengthToNextRow ? lengthToNextRow : lengthOfThisColumn;
+            }
+
+            // TODO: Must be matching quotes.
+            if ((*startOfColumn == '"' || *startOfColumn == '\'') && (*(startOfColumn+length-1) == '"' || (*(startOfColumn+length-1) == '"'))) {
+                // Starts and ends with a quote, strip them.
+                return StringSection(startOfColumn + 1, length - 2);
+            }
+
+            return StringSection(startOfColumn, length);
+        }
     };
 }
