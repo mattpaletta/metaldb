@@ -100,6 +100,48 @@ NEW_TEST(ParseRowInstructionTest, ReadParseRowInstruction) {
     }
 }
 
+NEW_TEST(ParseRowInstructionTest, ReadParseRowInstructionReverseOrder) {
+    // Test that the random order cache works
+    using namespace metaldb;
+    using namespace metaldb::engine;
+    ParseRow parseRow(Method::CSV, {ColumnType::Integer, ColumnType::Integer, ColumnType::Integer, ColumnType::Integer}, /* skipHeader */ false);
+
+    Encoder encoder;
+    encoder.encode(parseRow);
+    auto buffer = encoder.data();
+
+    auto serialized = CreateMetalRawTable();
+    metaldb::RawTable rawTable(serialized.data());
+
+    CPPTEST_ASSERT(buffer.size() > 2);
+    CPPTEST_ASSERT(buffer.at(0) == 1); // Size.
+    CPPTEST_ASSERT((InstructionType) buffer.at(1) == InstructionType::PARSEROW);
+    ParseRowInstruction parseRowInst = &buffer.at(2);
+
+    std::array<metaldb::OutputSerializedValue, 10'000> output;
+    std::array<metaldb::OutputRow::NumBytesType, 10'000> scratch;
+    metaldb::DbConstants constants{rawTable, output.data(), scratch.data()};
+
+    {
+        constants.thread_position_in_grid = 0;
+        auto row = parseRowInst.GetRow(constants);
+
+        CPPTEST_ASSERT(row.ReadColumnInt(3) == 1);
+        CPPTEST_ASSERT(row.ReadColumnInt(2) == 2);
+        CPPTEST_ASSERT(row.ReadColumnInt(1) == 3);
+        CPPTEST_ASSERT(row.ReadColumnInt(0) == 4);
+    }
+    {
+        constants.thread_position_in_grid = 1;
+        auto row = parseRowInst.GetRow(constants);
+
+        CPPTEST_ASSERT(row.ReadColumnInt(3) == 8);
+        CPPTEST_ASSERT(row.ReadColumnInt(2) == 7);
+        CPPTEST_ASSERT(row.ReadColumnInt(1) == 6);
+        CPPTEST_ASSERT(row.ReadColumnInt(0) == 5);
+    }
+}
+
 NEW_TEST(ParseRowInstructionTest, ReadParseRowInstructionString) {
     using namespace metaldb;
     using namespace metaldb::engine;
