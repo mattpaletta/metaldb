@@ -145,6 +145,23 @@ namespace metaldb {
         METAL_CONSTANT static constexpr int MAX_CACHED_COLUMNS = 16;
         mutable METAL_DEVICE char* __cachedColumnStart[MAX_CACHED_COLUMNS];
         mutable RowNumType __lastCachedRow = -1;
+        mutable NumColumnsType __lastCachedColumn = -1;
+        mutable METAL_DEVICE char* __lastCachedColumnValue = nullptr;
+
+        void AdvanceColumn(METAL_DEVICE char** startOfColumn, RawTable METAL_THREAD & rawTable, RowNumType row, NumColumnsType column) const {
+            // Advances startOfColumn ahead by 1 column.
+            if (column == 0) {
+                // Fetch it raw.
+                const auto rowIndex = rawTable.GetRowIndex(this->skipHeader() ? row+1 : row);
+                *startOfColumn = rawTable.data(rowIndex);
+            } else {
+                *startOfColumn = metal::strings::strchr(*startOfColumn, ',');
+                if (*startOfColumn) {
+                    (*startOfColumn)++;
+                }
+            }
+        }
+
         METAL_DEVICE char* GetStartOfColumn(RawTable METAL_THREAD & rawTable, RowNumType row, NumColumnsType column) const {
             METAL_DEVICE char* startOfColumn = nullptr;
 
@@ -153,7 +170,23 @@ namespace metaldb {
                 for (int i = 0; i < MAX_CACHED_COLUMNS; ++i) {
                     this->__cachedColumnStart[i] = nullptr;
                 }
+                this->__lastCachedColumnValue = nullptr;
+                this->__lastCachedColumn = -1;
                 this->__lastCachedRow = row;
+            }
+
+            // Try sequential
+            if (column == this->__lastCachedColumn + 1) {
+                // This is a sequential read!
+                this->AdvanceColumn(&this->__lastCachedColumnValue, rawTable, row, column);
+
+                // Cache the result!
+                // We moved the lastCachedColumnValue, so don't need to update it.
+                this->__lastCachedColumn = column;
+                if (column < MAX_CACHED_COLUMNS) {
+                    this->__cachedColumnStart[column] = this->__lastCachedColumnValue;
+                }
+                return this->__lastCachedColumnValue;
             }
 
             if (column > 0 && column < MAX_CACHED_COLUMNS) {
@@ -181,28 +214,22 @@ namespace metaldb {
                 NumColumnsType i;
                 for (i = firstCached; i <= maxCachedColumn; ++i) {
                     // Fetch it raw.
-                    if (i == 0) {
-                        const auto rowIndex = rawTable.GetRowIndex(this->skipHeader() ? row+1 : row);
-                        startOfColumn = rawTable.data(rowIndex);
-                    } else {
-                        startOfColumn = metal::strings::strchr(startOfColumn, ',');
-                        if (startOfColumn) {
-                            startOfColumn++;
-                        }
-                    }
+                    this->AdvanceColumn(&startOfColumn, rawTable, row, i);
                     this->__cachedColumnStart[i] = startOfColumn;
                 }
 
                 // Continue past the end of the cached point
                 for (; i <= column; ++i) {
-                    startOfColumn = metal::strings::strchr(startOfColumn, ',');
-                    if (startOfColumn) {
-                        startOfColumn++;
-                    }
+                    this->AdvanceColumn(&startOfColumn, rawTable, row, i);
                 }
+
+                // Save for serial read
+                this->__lastCachedColumn = column;
+                this->__lastCachedColumnValue = startOfColumn;
             }
             return startOfColumn;
         }
+
         StringSection readCSVColumnImpl(RawTable METAL_THREAD & rawTable, RowNumType row, NumColumnsType column) const {
             METAL_DEVICE char* startOfColumn = this->GetStartOfColumn(rawTable, row, column);
 
