@@ -59,12 +59,12 @@ NEW_TEST(OutputInstructionTest, ReadOutputInstruction) {
     metaldb::DbConstants constants{rawTable, output.data(), scratch.data()};
 
     {
-        constants.thread_position_in_grid = 0;
+        constants.thread_position_in_threadgroup = 0;
         auto tempRow = GenerateTempRow(0);
         outputInst.WriteRow(tempRow, constants);
     }
     {
-        constants.thread_position_in_grid = 1;
+        constants.thread_position_in_threadgroup = 1;
         auto tempRow = GenerateTempRow(1);
         outputInst.WriteRow(tempRow, constants);
     }
@@ -92,7 +92,7 @@ NEW_TEST(OutputInstructionTest, MultipleWriters) {
         metaldb::DbConstants constants{rawTable, output.data(), scratch.data()};
 
         for (std::size_t i = 0; i < count; ++i) {
-            constants.thread_position_in_grid = i;
+            constants.thread_position_in_threadgroup = i;
             auto tempRow = GenerateTempRow(i);
             outputInst.WriteRow(tempRow, constants);
         }
@@ -135,7 +135,7 @@ NEW_TEST(OutputInstructionTest, ReadWriteRead) {
         metaldb::DbConstants constants{rawTable, output.data(), scratch.data()};
 
         for (std::size_t i = 0; i < count; ++i) {
-            constants.thread_position_in_grid = i;
+            constants.thread_position_in_threadgroup = i;
             auto tempRow = GenerateTempRow(i);
             outputInst.WriteRow(tempRow, constants);
         }

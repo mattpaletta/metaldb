@@ -78,7 +78,7 @@ NEW_TEST(ProjectionInstructionTest, ReadProjectionInstruction) {
     metaldb::DbConstants constants{rawTable, output.data(), scratch.data()};
 
     {
-        constants.thread_position_in_grid = 0;
+        constants.thread_position_in_threadgroup = 0;
         auto row = projectionInst.GetRow(tempRow, constants);
 
         CPPTEST_ASSERT(row.ReadColumnInt(0) == 40);

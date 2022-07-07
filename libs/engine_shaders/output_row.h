@@ -21,7 +21,6 @@ namespace metaldb {
 
     class OutputRow {
     public:
-
         using SizeOfHeaderType = uint16_t;
         METAL_CONSTANT static constexpr auto SizeOfHeaderOffset = 0;
 
@@ -40,5 +39,11 @@ namespace metaldb {
 
         // Only used by parsers.
         using NumRowsType = uint32_t;
+
+        static SizeOfHeaderType SizeOfHeader(NumColumnsType numColumns) {
+            auto sizeOfHeader = ColumnTypeOffset;
+            sizeOfHeader += sizeof(ColumnType) * numColumns;
+            return sizeOfHeader;
+        }
     };
 }

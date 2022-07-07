@@ -60,7 +60,7 @@ auto metaldb::engine::Engine::runImpl() -> Dataframe {
     }
     auto plan = query.compile(parseAst);
 
-    tf::Executor executor;
+    tf::Executor executor{1};
     auto taskflow = Scheduler::schedule(plan);
     auto future = executor.run(taskflow);
     future.wait();

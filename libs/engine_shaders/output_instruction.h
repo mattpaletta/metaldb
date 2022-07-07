@@ -42,15 +42,15 @@ namespace metaldb {
         void WriteRow(TempRow METAL_THREAD & row, DbConstants METAL_THREAD & constants) {
             // Write row into output.
 
-            const auto index = constants.thread_position_in_grid;
+            const auto index = constants.thread_position_in_threadgroup;
             const auto isFirstThread = index == 0;
 #ifdef __METAL__
             // Sync here
             threadgroup_barrier(metal::mem_flags::mem_threadgroup);
 
-            int8_t rowSize = row.SizeOfPartialRow();
+            NumBytesType rowSize = row.SizeOfPartialRow();
             if (isFirstThread) {
-                rowSize += row.LengthOfHeader();
+                rowSize += OutputRow::SizeOfHeader(row.NumColumns());
             }
 
             threadgroup_barrier(metal::mem_flags::mem_threadgroup);
@@ -99,10 +99,6 @@ namespace metaldb {
 
                 // Write the size of the header
                 WriteBytesStartingAt(&constants.outputBuffer[SizeOfHeaderOffset], lengthOfHeader);
-#ifdef __METAL__
-                // First thread starts after the header
-                startIndex += lengthOfHeader;
-#endif
             }
 #ifndef __METAL__
             // Start at the length of the buffer
@@ -134,6 +130,7 @@ namespace metaldb {
 
 #ifndef __METAL__
             // Update the size of the buffer
+            assert(nextAvailableSlot - startIndex == row.SizeOfPartialRow());
             WriteBytesStartingAt<NumBytesType>(&constants.outputBuffer[NumBytesOffset], nextAvailableSlot);
 #endif
         }

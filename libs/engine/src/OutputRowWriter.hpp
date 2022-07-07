@@ -73,11 +73,10 @@ namespace metaldb {
         void copyRow(const OutputRowReader<Container>& reader, std::size_t row) {
             if (!this->_hasCopiedHeader) {
                 // The num bytes also includes the size of the header, but that's left to when we retreive.
-                this->_sizeOfHeader = OutputRow::ColumnTypeOffset;
+                this->_sizeOfHeader = OutputRow::SizeOfHeader(this->NumColumns());
 
                 // Write types of columns
                 this->_columnTypes = reader.ColumnTypes();
-                this->_sizeOfHeader += sizeof(ColumnType) * this->NumColumns();
                 assert(this->NumColumns() == reader.NumColumns());
                 this->_hasCopiedHeader = true;
             }
@@ -98,8 +97,7 @@ namespace metaldb {
         }
 
         OutputRow::SizeOfHeaderType SizeOfHeader() const {
-            constexpr decltype(this->_sizeOfHeader) sizeOfHeaderBase = OutputRow::ColumnTypeOffset;
-            return sizeOfHeaderBase + (sizeof(ColumnType) * this->NumColumns());
+            return OutputRow::SizeOfHeader(this->NumColumns());
         }
 
         void write(std::vector<char>& buffer) {
