@@ -234,6 +234,7 @@ namespace metaldb {
             auto encoder = parameters.encoder;
             auto outputBuffer = parameters.outputBuffer;
             auto maxNumRows = manager->MaxNumRows();
+            auto maxNumBytes = manager->MaxMemory();
             assert(!parameters.doWorkTask->has_work());
             parameters.doWorkTask->work([=](tf::Subflow& subflow) mutable {
                 // Chunk the work out.
@@ -241,7 +242,28 @@ namespace metaldb {
                 std::vector<decltype(MakeOutputBufferPtr())> subtaskOutputBuffers;
                 auto mergeSubtasks = subflow.placeholder();
 
-                auto subtaskBuffers = Scheduler::SerializeRawTable(*rawTablePtr, maxNumRows);
+                auto subtaskBuffers = [&]() {
+                    auto currentMaxNumRows = maxNumRows;
+                    while (true) {
+                        auto subtaskBuffers = Scheduler::SerializeRawTable(*rawTablePtr, currentMaxNumRows);
+                        // Verify none exceed the max length
+                        bool allPassed = true;
+                        for (const auto& [childBufferPtr, numRows] : subtaskBuffers) {
+                            if (childBufferPtr->size() >= maxNumBytes) {
+                                // Re-serialize
+                                const double sizeOfRowApprox = childBufferPtr->size() / (double) numRows;
+                                std::size_t approxMaxNumRows = std::floor(maxNumBytes / sizeOfRowApprox);
+                                // Never make it larger
+                                currentMaxNumRows = std::min(currentMaxNumRows - 1, approxMaxNumRows);
+                                allPassed = false;
+                                break;
+                            }
+                        }
+                        if (allPassed)  {
+                            return subtaskBuffers;
+                        }
+                    }
+                }();
 
                 // We can free the rawTable
                 rawTablePtr.reset();

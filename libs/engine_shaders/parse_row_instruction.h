@@ -85,7 +85,7 @@ namespace metaldb {
 
                     // Set all column sizes, and they might get pruned
                     if (ColumnVariableSize(columnType)) {
-                        builder.columnSizes[i] = this->readCSVColumnLength(constants.rawTable, constants.thread_position_in_grid, i);
+                        builder.columnSizes[i] = this->readCSVColumnLength(constants.rawTable, constants.thread_position_in_threadgroup, i);
                     } else {
                         builder.columnSizes[i] = 0;
                     }
@@ -96,7 +96,7 @@ namespace metaldb {
             TempRow row = builder;
             for (auto i = 0; i < numCols; ++i) {
                 // Write the columns into the buffer
-                auto stringSection = this->readCSVColumn(constants.rawTable, constants.thread_position_in_grid, i);
+                auto stringSection = this->readCSVColumn(constants.rawTable, constants.thread_position_in_threadgroup, i);
 
                 switch (this->getColumnType(i)) {
                 case String:

@@ -51,6 +51,10 @@ public:
         return this->pipeline.maxTotalThreadsPerThreadgroup;
     }
 
+    std::size_t MaxMemory() const {
+        return this->pipeline.staticThreadgroupMemoryLength;
+    }
+
     void runCPU(const std::vector<char>& serializedData, const std::vector<metaldb::InstSerializedValue>& instructions, OutputBufferType& outputBuffer, size_t numRows) {
         // Mimic the GPU on the CPU
         // Force const cast the pointers (bad)
@@ -72,7 +76,7 @@ public:
         if (numRows == 0) {
             return;
         }
-        return this->runCPU(serializedData, instructions, outputBuffer, numRows);
+//        return this->runCPU(serializedData, instructions, outputBuffer, numRows);
 
         // Input buffer
         auto inputBuffer = [this->device newBufferWithLength:serializedData.size() * sizeof(serializedData.at(0))
@@ -104,16 +108,12 @@ public:
 //        }
 
         auto commandBuffer = [this->commandQueue commandBuffer];
+        NSUInteger threadGroupSize = std::min(this->MaxNumRows(), numRows);
 
-        MTLSize gridSize = MTLSizeMake(numRows, 1, 1);
-
-        NSUInteger threadGroupSize = this->MaxNumRows();
-        if (threadGroupSize > numRows) {
-            threadGroupSize = numRows;
-        }
+        auto threadWidth = this->pipeline.threadExecutionWidth;
+        MTLSize gridSize = MTLSizeMake(threadGroupSize, 1, 1);
 
         std::cout << "Executing with Grid Size (" << gridSize.width << "," << gridSize.height << "," << gridSize.depth << ")" << std::endl;
-        std::cout << "Executing with ThreadGroup Size (" << threadGroupSize << ",1,1)" << std::endl;
 
         {
             // Send commands to encoder
@@ -125,7 +125,7 @@ public:
             [computeEncoder setBuffer:instructionsBuffer offset:0 atIndex:1];
             [computeEncoder setBuffer:outputBufferMtl offset:0 atIndex:2];
 
-            [computeEncoder dispatchThreads:gridSize threadsPerThreadgroup:MTLSizeMake(threadGroupSize, 1, 1)];
+            [computeEncoder dispatchThreadgroups:MTLSizeMake(1, 1, 1) threadsPerThreadgroup:gridSize];
             [computeEncoder endEncoding];
         }
 

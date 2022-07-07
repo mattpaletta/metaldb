@@ -81,7 +81,7 @@ NEW_TEST(ParseRowInstructionTest, ReadParseRowInstruction) {
     metaldb::DbConstants constants{rawTable, output.data(), scratch.data()};
 
     {
-        constants.thread_position_in_grid = 0;
+        constants.thread_position_in_threadgroup = 0;
         auto row = parseRowInst.GetRow(constants);
 
         CPPTEST_ASSERT(row.ReadColumnInt(0) == 4);
@@ -90,7 +90,7 @@ NEW_TEST(ParseRowInstructionTest, ReadParseRowInstruction) {
         CPPTEST_ASSERT(row.ReadColumnInt(3) == 1);
     }
     {
-        constants.thread_position_in_grid = 1;
+        constants.thread_position_in_threadgroup = 1;
         auto row = parseRowInst.GetRow(constants);
 
         CPPTEST_ASSERT(row.ReadColumnInt(0) == 5);
@@ -123,7 +123,7 @@ NEW_TEST(ParseRowInstructionTest, ReadParseRowInstructionReverseOrder) {
     metaldb::DbConstants constants{rawTable, output.data(), scratch.data()};
 
     {
-        constants.thread_position_in_grid = 0;
+        constants.thread_position_in_threadgroup = 0;
         auto row = parseRowInst.GetRow(constants);
 
         CPPTEST_ASSERT(row.ReadColumnInt(3) == 1);
@@ -132,7 +132,7 @@ NEW_TEST(ParseRowInstructionTest, ReadParseRowInstructionReverseOrder) {
         CPPTEST_ASSERT(row.ReadColumnInt(0) == 4);
     }
     {
-        constants.thread_position_in_grid = 1;
+        constants.thread_position_in_threadgroup = 1;
         auto row = parseRowInst.GetRow(constants);
 
         CPPTEST_ASSERT(row.ReadColumnInt(3) == 8);
@@ -185,14 +185,14 @@ NEW_TEST(ParseRowInstructionTest, ReadParseRowInstructionString) {
     metaldb::DbConstants constants{rawTable, output.data(), scratch.data()};
 
     {
-        constants.thread_position_in_grid = 0;
+        constants.thread_position_in_threadgroup = 0;
         auto row = parseRowInst.GetRow(constants);
 
         CPPTEST_ASSERT(row.ReadColumnInt(0) == 4);
         CPPTEST_ASSERT(row.ReadColumnString(1).str() == "abc");
     }
     {
-        constants.thread_position_in_grid = 1;
+        constants.thread_position_in_threadgroup = 1;
         auto row = parseRowInst.GetRow(constants);
 
         CPPTEST_ASSERT(row.ReadColumnInt(0) == 5);
@@ -239,7 +239,7 @@ NEW_TEST(ParseRowInstructionTest, TaxiRowRegression) {
     metaldb::DbConstants constants{rawTable, output.data(), scratch.data()};
 
     {
-        constants.thread_position_in_grid = 0;
+        constants.thread_position_in_threadgroup = 0;
         auto row = parseRowInst.GetRow(constants);
 
         CPPTEST_ASSERT(row.ReadColumnInt(0) == 2);
@@ -264,7 +264,7 @@ NEW_TEST(ParseRowInstructionTest, TaxiRowRegression) {
         CPPTEST_ASSERT(ApproximatelyEqual(row.ReadColumnFloat(19), 0.0f));
     }
     {
-        constants.thread_position_in_grid = 1;
+        constants.thread_position_in_threadgroup = 1;
         auto row = parseRowInst.GetRow(constants);
 
         CPPTEST_ASSERT(row.ReadColumnInt(0) == 2);

@@ -230,15 +230,15 @@ NEW_TEST(OutputRowTest, CompareHeaderSizeInstructionWriter) {
         metaldb::DbConstants constants{rawTable, output.data(), scratch.data()};
 
         {
-            constants.thread_position_in_grid = 0;
+            constants.thread_position_in_threadgroup = 0;
             outputInst.WriteRow(row0, constants);
         }
         {
-            constants.thread_position_in_grid = 1;
+            constants.thread_position_in_threadgroup = 1;
             outputInst.WriteRow(row1, constants);
         }
         {
-            constants.thread_position_in_grid = 2;
+            constants.thread_position_in_threadgroup = 2;
             outputInst.WriteRow(row2, constants);
         }
         sizeFromInstruction = metaldb::OutputRowReader<decltype(output)>::SizeOfHeader(output);
