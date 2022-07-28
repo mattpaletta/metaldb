@@ -147,7 +147,7 @@ private:
 
     static id<MTLDevice> _Nullable GetDevice() {
         auto check = [](id<MTLDevice> device) {
-            return device.isLowPower;
+            return !device.isLowPower;
         };
 
         for (id<MTLDevice> device : MTLCopyAllDevices()) {
