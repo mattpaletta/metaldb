@@ -97,7 +97,7 @@ namespace metaldb {
 
             if (taskDoWork.has_work()) {
                 taskDoWork.succeed(encodeWorkTask);
-                return taskDoWork;
+                return;
             }
 
             childOutputBuffers.push_back(serializedData);
@@ -175,8 +175,6 @@ namespace metaldb {
             })
                 .name("Do GPU Work")
                 .succeed(encodeWorkTask);
-
-            return taskDoWork;
         }
 
         static tf::Task registerBasePartial(const std::shared_ptr<QueryEngine::StagePartial>& partial, Parameters& parameters) {
