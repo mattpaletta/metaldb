@@ -1,0 +1,12 @@
+tasks:
+  - name: CMake Configure
+    init: |
+      mkdir -p build
+      cd build && CXX=clang++ CC=clang cmake -GNinja ..
+    command: echo "Configured CMake in build/"
+
+vscode:
+  extensions:
+    - vadimcn/vscode-lldb
+    - https://gitlab.com/Normal_Gaussian/gitpod-workspace-full-with-neovim/-/raw/main/vscode-neovim.vsix
+    - eamodio.gitlens
