@@ -9,3 +9,4 @@ data
 **/*.air
 **/*.metallib
 **/*.DS_Store
+compile_commands.json

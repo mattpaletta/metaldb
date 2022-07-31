@@ -13,7 +13,7 @@ namespace metaldb::QueryEngine {
 
         ~QueryEngine() = default;
 
-        QueryPlan compile(std::shared_ptr<AST::Expr> expr);
+        QueryPlan compile(const std::shared_ptr<AST::Expr>& expr) const;
 
         Metadata metadata;
     };

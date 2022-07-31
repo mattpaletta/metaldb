@@ -94,7 +94,6 @@ void metaldb::MetalManager::run(const std::vector<char>& serializedData, const s
     auto commandBuffer = [this->commandQueue commandBuffer];
     NSUInteger threadGroupSize = std::min(this->MaxNumRows(), numRows);
 
-    auto threadWidth = this->pipeline.threadExecutionWidth;
     MTLSize gridSize = MTLSizeMake(threadGroupSize, 1, 1);
 
     std::cout << "Executing with Grid Size (" << gridSize.width << "," << gridSize.height << "," << gridSize.depth << ")" << std::endl;

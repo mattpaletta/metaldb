@@ -9,9 +9,9 @@
 #include <sstream>
 #include <algorithm>
 
-metaldb::reader::RawTable::RawTable(bool isValid) : data(), rowIndexes(), columns(), _isValid(isValid) {}
+metaldb::reader::RawTable::RawTable(bool isValid) : _isValid(isValid) {}
 
-metaldb::reader::RawTable::RawTable(std::vector<char>&& buffer, const std::vector<RowIndexType>& rowIndexes, const std::vector<std::string>& columns) : data(std::move(buffer)), rowIndexes(rowIndexes), columns(columns), _isValid(true) {}
+metaldb::reader::RawTable::RawTable(std::vector<char> buffer, std::vector<RowIndexType> rowIndexes, std::vector<std::string> columns) : data(std::move(buffer)), rowIndexes(std::move(rowIndexes)), columns(std::move(columns)), _isValid(true) {}
 
 auto metaldb::reader::RawTable::placeholder() -> std::shared_ptr<RawTable> {
     return std::make_shared<RawTable>(RawTable::invalid());
@@ -61,8 +61,8 @@ auto metaldb::reader::RawTable::debugStr() const -> std::string {
         sstream << this->data.at(i);
     }
     sstream << "\n";
-    sstream << "First " << std::min(3u, this->numRows()) << " rows:\n";
-    for (std::size_t i = 0; i < std::min(3u, this->numRows()); ++i) {
+    sstream << "First " << std::min(3U, this->numRows()) << " rows:\n";
+    for (std::size_t i = 0; i < std::min(3U, this->numRows()); ++i) {
         const auto row = this->readRow(i);
         sstream << row << "\n";
     }

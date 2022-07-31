@@ -13,10 +13,11 @@
 #include <string>
 #include <memory>
 #include <set>
+#include <cassert>
 
 namespace {
     using namespace metaldb::QueryEngine;
-    std::vector<std::shared_ptr<StagePartial>> DispatchAST(std::shared_ptr<AST::Expr> expr, Metadata* metadata);
+    auto DispatchAST(const std::shared_ptr<AST::Expr>& expr, const Metadata& metadata) -> std::vector<std::shared_ptr<StagePartial>>;
 
     auto listDir(const std::string& path) -> std::vector<std::filesystem::path> {
         std::vector<std::filesystem::path> output;
@@ -29,12 +30,12 @@ namespace {
         return output;
     }
 
-    auto ProcessReadAST(std::shared_ptr<AST::Read> expr, Metadata* metadata) -> std::vector<std::shared_ptr<StagePartial>> {
+    auto ProcessReadAST(const std::shared_ptr<AST::Read>& expr, const Metadata& metadata) -> std::vector<std::shared_ptr<StagePartial>> {
         // This has no children, so no recursive call
         std::vector<std::shared_ptr<StagePartial>> partials;
-        auto* tableDef = metadata->getTable(expr->tableName());
+        const auto* tableDef = metadata.getTable(expr->tableName());
 
-        if (!tableDef) {
+        if (tableDef == nullptr) {
             std::cout << "Failed to find table: " << expr->tableName() << std::endl;
             return partials;
         }
@@ -43,7 +44,7 @@ namespace {
         auto listOfFiles = listDir(tableDef->filePath);
         std::cout << "Reading " << listOfFiles.size() << " files" << std::endl;
         for (const auto& file : listOfFiles) {
-            metaldb::Method method;
+            metaldb::Method method = metaldb::CSV;
             const auto extension = file.extension();
             if (extension == ".csv") {
                 method = metaldb::CSV;
@@ -60,7 +61,7 @@ namespace {
         return partials;
     }
 
-    auto ProcessProjectionAST(std::shared_ptr<AST::Projection> expr, Metadata* metadata) -> std::vector<std::shared_ptr<StagePartial>> {
+    auto ProcessProjectionAST(const std::shared_ptr<AST::Projection>& expr, const Metadata& metadata) -> std::vector<std::shared_ptr<StagePartial>> {
         std::vector<std::shared_ptr<StagePartial>> partials;
         std::vector<std::shared_ptr<StagePartial>> childPartials;
         if (expr->hasChild()) {
@@ -102,7 +103,7 @@ namespace {
         return partials;
     }
 
-    auto ProcessWriteAST(std::shared_ptr<AST::Write> expr, Metadata* metadata) -> std::vector<std::shared_ptr<StagePartial>> {
+    auto ProcessWriteAST(const std::shared_ptr<AST::Write>& expr, const Metadata& metadata) -> std::vector<std::shared_ptr<StagePartial>> {
         auto children = DispatchAST(expr->child(), metadata);
         auto partial = std::make_shared<WritePartial>(expr->filepath(), expr->method());
         partial->columnNames = expr->columns();
@@ -111,18 +112,20 @@ namespace {
         return {partial};
     }
 
-    auto DispatchAST(std::shared_ptr<AST::Expr> expr, Metadata* metadata) -> std::vector<std::shared_ptr<StagePartial>> {
+    auto DispatchAST(const std::shared_ptr<AST::Expr>& expr, const Metadata& metadata) -> std::vector<std::shared_ptr<StagePartial>> {
         if (auto read = std::dynamic_pointer_cast<AST::Read>(expr)) {
             return ProcessReadAST(read, metadata);
-        } else if (auto proj = std::dynamic_pointer_cast<AST::Projection>(expr)) {
-            return ProcessProjectionAST(proj, metadata);
-        } else if (auto write = std::dynamic_pointer_cast<AST::Write>(expr)) {
-            return ProcessWriteAST(write, metadata);
-        } else {
-            assert(false);
-            return {};
         }
-    }
+        if (auto proj = std::dynamic_pointer_cast<AST::Projection>(expr)) {
+            return ProcessProjectionAST(proj, metadata);
+        }
+        if (auto write = std::dynamic_pointer_cast<AST::Write>(expr)) {
+            return ProcessWriteAST(write, metadata);
+        }
+
+        assert(false);
+        return {};
+     }
 
     auto CombinePartials(const std::vector<std::shared_ptr<StagePartial>>& partials) -> std::vector<std::shared_ptr<Stage>> {
         std::vector<std::shared_ptr<Stage>> stages;
@@ -157,8 +160,8 @@ namespace {
     }
 }
 
-auto metaldb::QueryEngine::QueryEngine::compile(std::shared_ptr<AST::Expr> expr) -> QueryPlan {
-    auto partials = DispatchAST(expr, &this->metadata);
+auto metaldb::QueryEngine::QueryEngine::compile(const std::shared_ptr<AST::Expr>& expr) const -> QueryPlan {
+    auto partials = DispatchAST(expr, this->metadata);
     auto stages = CombinePartials(partials);
 
     QueryPlan plan;

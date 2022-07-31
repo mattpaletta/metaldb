@@ -16,7 +16,7 @@ namespace metaldb::reader {
     public:
         using RowIndexType = uint32_t;
 
-        RawTable(std::vector<char>&& buffer, const std::vector<RowIndexType>& rowIndexes, const std::vector<std::string>& columns);
+        RawTable(std::vector<char> buffer, std::vector<RowIndexType> rowIndexes, std::vector<std::string> columns);
 
         static std::shared_ptr<RawTable> placeholder();
         static RawTable invalid();

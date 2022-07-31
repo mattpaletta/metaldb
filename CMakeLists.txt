@@ -1,5 +1,5 @@
 cmake_minimum_required (VERSION 3.16)
-project(metaldb LANGUAGES CXX)
+project(metaldb LANGUAGES CXX OBJCXX)
 
 set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
@@ -13,6 +13,36 @@ if (NOT TARGET cpptest)
 endif()
 if (NOT TARGET cppnotstdlib)
 	fetch_extern(cppnotstdlib https://github.com/mattpaletta/cppnotstdlib main)
+endif()
+
+option(METALDB_ENABLE_LWYU "Enable Link-What-You-Use" ON)
+option(METALDB_ENABLE_IWYU "Enable Include-What-You-Use" ON)
+option(METALDB_ENABLE_CLANG_TIDY "Enable Clang-Tidy" ON)
+
+set(CMAKE_EXPORT_COMPILE_COMMANDS ON )
+if (EXISTS "${CMAKE_CURRENT_BINARY_DIR}/compile_commands.json")
+  EXECUTE_PROCESS(COMMAND ${CMAKE_COMMAND} -E copy_if_different ${CMAKE_CURRENT_BINARY_DIR}/compile_commands.json ${CMAKE_CURRENT_SOURCE_DIR}/compile_commands.json)
+endif()
+
+if (METALDB_ENABLE_IWYU)
+	find_program(iwyu_path NAMES include-what-you-use iwyu REQUIRED)
+	message(STATUS "Include-What-You-Use Enabled: ${iwyu_path}")
+	set(iwhy_path_and_options "${iwyu_path} --mapping_file=${CMAKE_CURRENT_BINARY_DIR}/metaldb.imp")
+endif()
+
+if (METALDB_ENABLE_LWYU)
+	message(STATUS "Link-What-You-Use Enabled")
+	set(CMAKE_LINK_WHAT_YOU_USE CACHE BOOL ON)
+endif()
+
+if (METALDB_ENABLE_CLANG_TIDY)
+    find_program(clang_tidy_path clang-tidy REQUIRED)
+    if (${clang_tidy_path} STREQUAL "clang_tidy_path-NOTFOUND")
+        message(FATAL_ERROR "clang-tidy not found")
+    endif()
+    set(CMAKE_CXX_CLANG_TIDY "${clang_tidy_path}")
+    list(APPEND CMAKE_CXX_CLANG_TIDY "--fix")
+	message("Clang-Tidy Enabled: ${CMAKE_CXX_CLANG_TIDY}")
 endif()
 
 add_subdirectory(libs)

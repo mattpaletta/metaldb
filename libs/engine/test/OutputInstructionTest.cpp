@@ -3,6 +3,7 @@
 
 #include "RawTableCreator.hpp"
 #include "OutputRowReader.hpp"
+#include "OutputRowWriter.hpp"
 
 static metaldb::TempRow GenerateTempRow(std::size_t i) {
     metaldb::TempRow::TempRowBuilder builder;

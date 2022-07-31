@@ -12,6 +12,7 @@
 #define METAL_KERNEL kernel
 #define METAL_VISIBLE [[visible]]
 
+#define CPP_CONSTEXPR
 #define CPP_RESTRICT
 #define CPP_PURE_FUNC
 #define CPP_CONST_FUNC
@@ -23,6 +24,7 @@
 #define METAL_THREADGROUP
 #define METAL_KERNEL
 #define METAL_VISIBLE
+#define CPP_CONSTEXPR constexpr
 #define CPP_RESTRICT restrict
 #define CPP_PURE_FUNC __attribute__((pure))
 #define CPP_CONST_FUNC __attribute__((const))
@@ -31,6 +33,7 @@
 #ifndef __METAL__
 #include <cstdint>
 #include <vector>
+#include <cassert>
 #endif
 
 using InstructionPtr = uint64_t;
@@ -53,7 +56,7 @@ namespace metaldb {
 
     template<typename Val, typename T>
     static Val ReadBytesStartingAt(T METAL_DEVICE * ptr) {
-        if constexpr(sizeof(Val) == sizeof(T)) {
+        if CPP_CONSTEXPR(sizeof(Val) == sizeof(T)) {
             return (Val) *ptr;
         } else {
             return *((Val METAL_DEVICE *) ptr);
@@ -63,7 +66,7 @@ namespace metaldb {
 #ifdef __METAL__
     template<typename Val, typename T>
     static Val ReadBytesStartingAt(T METAL_THREAD * ptr) {
-        if constexpr(sizeof(Val) == sizeof(T)) {
+        if CPP_CONSTEXPR(sizeof(Val) == sizeof(T)) {
             return (Val) *ptr;
         } else {
             return *((Val METAL_THREAD *) ptr);
@@ -73,7 +76,7 @@ namespace metaldb {
 
     template<typename Val, typename T>
     static void WriteBytesStartingAt(T METAL_DEVICE * ptr, const Val METAL_THREAD & val) {
-        if constexpr(sizeof(T) == sizeof(Val)) {
+        if CPP_CONSTEXPR(sizeof(T) == sizeof(Val)) {
             *ptr = val;
         } else {
             for (size_t n = 0; n < (sizeof(Val) / sizeof(T)); ++n) {
@@ -85,7 +88,7 @@ namespace metaldb {
 #ifdef __METAL__
     template<typename Val, typename T>
     static void WriteBytesStartingAt(T METAL_THREAD * ptr, const Val METAL_THREAD & val) {
-        if constexpr(sizeof(T) == sizeof(Val)) {
+        if CPP_CONSTEXPR(sizeof(T) == sizeof(Val)) {
             *ptr = val;
         } else {
             for (size_t n = 0; n < (sizeof(Val) / sizeof(T)); ++n) {

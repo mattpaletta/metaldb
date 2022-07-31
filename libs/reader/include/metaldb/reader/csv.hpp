@@ -13,7 +13,7 @@ namespace metaldb::reader {
             bool stripQuotesFromHeader = false;
         };
 
-        CSVReader(const std::filesystem::path& path);
+        CSVReader(std::filesystem::path path);
 
         bool isValid() const;
 

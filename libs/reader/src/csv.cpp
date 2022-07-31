@@ -5,7 +5,7 @@
 #include <fstream>
 #include <sstream>
 
-metaldb::reader::CSVReader::CSVReader(const std::filesystem::path& path) : _path(path) {}
+metaldb::reader::CSVReader::CSVReader(std::filesystem::path path) : _path(std::move(path)) {}
 
 auto metaldb::reader::CSVReader::isValid() const -> bool {
     if (this->_path.extension().string() != ".csv") {
@@ -38,7 +38,7 @@ auto metaldb::reader::CSVReader::read(const CSVOptions& options) const -> RawTab
         std::stringstream firstRowBuffer;
         while (myfile.good()) {
             // Buffer the row
-            char nextChar = myfile.get();
+            char nextChar = static_cast<char>(myfile.get());
             if (nextChar != '\r' && nextChar != '\n') {
                 firstRowBuffer << nextChar;
             }
@@ -63,7 +63,7 @@ auto metaldb::reader::CSVReader::read(const CSVOptions& options) const -> RawTab
     rowIndex.push_back(charCount);
     bool lastWasNewLine = false;
     while (myfile.good()) {
-        char nextChar = myfile.get();
+        const auto nextChar = static_cast<char>(myfile.get());
         if (nextChar == '\n' || nextChar == '\r') {
             // Don't copy the newline, unneeded space.
             // Ignore consecutive empty lines

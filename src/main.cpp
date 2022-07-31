@@ -6,7 +6,7 @@
 
 using namespace metaldb;
 
-int main() {
+auto main() -> int {
     std::cout << "Starting MetalDB" << std::endl;
 
     engine::Engine engine;

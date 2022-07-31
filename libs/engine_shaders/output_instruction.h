@@ -13,10 +13,6 @@
 #include "strings.h"
 #include "PrefixSum.h"
 
-#ifndef __METAL__
-#include <iostream>
-#endif
-
 namespace metaldb {
     class OutputInstruction final {
     public:
