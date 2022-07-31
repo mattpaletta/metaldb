@@ -22,52 +22,15 @@ namespace metaldb {
         };
 
         OutputRowWriter() = default;
-        OutputRowWriter(const OutputRowBuilder& builder) {
-            this->_sizeOfHeader = OutputRow::ColumnTypeOffset;
-
-            this->_columnTypes = builder.columnTypes;
-            this->_sizeOfHeader += sizeof(ColumnType) * this->NumColumns();
-            this->_hasCopiedHeader = true;
-        }
+        OutputRowWriter(const OutputRowBuilder& builder);
 
         ~OutputRowWriter() = default;
 
-        OutputRow::NumRowsType CurrentNumRows() const {
-            return this->_numRows;
-        }
+        CPP_PURE_FUNC OutputRow::NumRowsType CurrentNumRows() const;
 
-        size_t size() const {
-            return
-                sizeof(this->_sizeOfHeader) + // Size of header size.
-                this->_sizeOfHeader +
-                this->_data.size();
-        }
+        CPP_PURE_FUNC size_t size() const;
 
-        void appendTempRow(const metaldb::TempRow& row) {
-            if (!this->_hasCopiedHeader) {
-                this->_sizeOfHeader = OutputRow::ColumnTypeOffset;
-
-                for (std::size_t col = 0; col < row.NumColumns(); ++col) {
-                    this->_columnTypes.push_back(row.ColumnType(col));
-                }
-                this->_sizeOfHeader += sizeof(ColumnType) * this->NumColumns();
-                this->_hasCopiedHeader = true;
-            }
-            assert(row.NumColumns() == this->NumColumns());
-
-            // Copy the variable row sizes and the data
-            for (std::size_t col = 0; col < row.NumColumns(); ++col) {
-                if (row.ColumnVariableSize(col)) {
-                    // Write the size of it.
-                    this->appendToData(row.ColumnSize(col));
-                }
-            }
-            for (std::size_t i = 0; i < row.size(); ++i) {
-                // Write the bytes to it.
-                this->appendToData(*row.data(i));
-            }
-            this->_numRows++;
-        }
+        void appendTempRow(const metaldb::TempRow& row);
 
         template<typename Container>
         void copyRow(const OutputRowReader<Container>& reader, std::size_t row) {
@@ -96,68 +59,33 @@ namespace metaldb {
             this->_numRows++;
         }
 
-        OutputRow::SizeOfHeaderType SizeOfHeader() const {
-            return OutputRow::SizeOfHeader(this->NumColumns());
-        }
+        CPP_PURE_FUNC OutputRow::SizeOfHeaderType SizeOfHeader() const;
 
-        void write(std::vector<char>& buffer) {
-            // Write the header
-            const auto sizeOfHeader = this->SizeOfHeader();
+        CPP_PURE_FUNC void write(std::vector<char>& buffer) const;
 
-            // Insert padding
-            this->addPaddingUntilIndex(OutputRow::SizeOfHeaderOffset, buffer);
-            this->appendGeneric(sizeOfHeader, buffer);
+        CPP_PURE_FUNC OutputRow::NumColumnsType NumColumns() const;
 
-            this->addPaddingUntilIndex(OutputRow::NumBytesOffset, buffer);
-            this->appendGeneric(this->NumBytes(), buffer);
+        CPP_PURE_FUNC OutputRow::NumBytesType NumBytes() const;
 
-            this->addPaddingUntilIndex(OutputRow::NumColumnsOffset, buffer);
-            this->appendGeneric(this->NumColumns(), buffer);
-
-            this->addPaddingUntilIndex(OutputRow::ColumnTypeOffset, buffer);
-            for (const auto& colType : this->_columnTypes) {
-                this->appendGeneric(colType, buffer);
-            }
-            std::copy(this->_data.cbegin(), this->_data.cend(), std::back_inserter(buffer));
-        }
-
-        OutputRow::NumColumnsType NumColumns() const {
-            return (OutputRow::NumColumnsType) this->_columnTypes.size();
-        }
-
-        OutputRow::NumBytesType NumBytes() const {
-            // NumBytes should include the size of the header.
-            return this->NumBytesData() + this->SizeOfHeader();
-        }
-
-        OutputRow::NumBytesType NumBytesData() const {
-            // This is only the size of the data, without the header.
-            return (OutputRow::NumBytesType) this->_data.size();
-        }
+        CPP_PURE_FUNC OutputRow::NumBytesType NumBytesData() const;
 
     private:
         bool _hasCopiedHeader = false;
         OutputRow::SizeOfHeaderType _sizeOfHeader = 0;
         OutputRow::NumRowsType _numRows = 0;
         std::vector<ColumnType> _columnTypes;
-
         std::vector<char> _data;
 
-        void addPaddingUntilIndex(size_t index, std::vector<char>& buffer) {
-            // Subract 1 for the last index, subtract 1 for the next index.
-            while (index > 0 && buffer.size() < index) {
-                this->appendGeneric((uint8_t) 0, buffer);
-            }
-        }
+        void addPaddingUntilIndex(size_t index, std::vector<char>& buffer) const;
 
         template<typename T>
-        void appendToData(T val) {
+        CPP_PURE_FUNC void appendToData(T val) {
             static_assert(sizeof(decltype(_data)::value_type) == 1);
             return this->appendGeneric(val, this->_data);
         }
 
         template<typename T, typename V>
-        void appendGeneric(T val, std::vector<V>& buf) {
+        CPP_PURE_FUNC void appendGeneric(T val, std::vector<V>& buf) const {
             WriteBytesStartingAt(buf, val);
         }
     };

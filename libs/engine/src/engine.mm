@@ -5,13 +5,9 @@
 #include "engine.h"
 #include "Scheduler.hpp"
 
-#include <iostream>
-#include <array>
-#include <vector>
-
 auto metaldb::engine::Engine::runImpl() -> Dataframe {
-    metaldb::QueryEngine::Parser parser;
-    metaldb::QueryEngine::QueryEngine query;
+    QueryEngine::Parser parser;
+    QueryEngine::QueryEngine query;
     auto parseAst = parser.Parse("eg query.");
     {
         QueryEngine::TableDefinition taxiTable;
@@ -60,42 +56,12 @@ auto metaldb::engine::Engine::runImpl() -> Dataframe {
     }
     auto plan = query.compile(parseAst);
 
+    // Use 1 thread for now
+    // Could easily expand to multiple in the future
     tf::Executor executor{1};
     auto taskflow = Scheduler::schedule(plan);
     auto future = executor.run(taskflow);
     future.wait();
 
-    return Dataframe();
-
-//    {
-//        std::filesystem::path path;
-//        path.append("../../datasets/iris/iris.csv");
-//        reader::CSVReader reader(path);
-//        std::cout << "Table Is Valid: " << (reader.isValid() ? "YES" : "NO") << std::endl;
-//
-//        reader::CSVReader::CSVOptions options;
-//        options.containsHeaderLine = true;
-//        options.stripQuotesFromHeader = true;
-//        auto rawTable = reader.read(options);
-//
-//        std::cout << rawTable.debugStr() << std::endl;
-//
-//        auto manager = MetalManager::Create();
-//        assert(manager);
-//
-//        auto rawDataSerialized = Scheduler::SerializeRawTable(rawTable, 1000000).at(0).first;
-//        MetalManager::OutputBufferType outputBuffer;
-//
-//        engine::ParseRow parseRow(Method::CSV, {ColumnType::Float, ColumnType::Float, ColumnType::Float, ColumnType::Float, ColumnType::String}, /* skipHeader */ false);
-//        engine::Projection projection({0, 1});
-//        engine::Output output;
-//
-//        Encoder encoder;
-//        encoder.encodeAll(parseRow, projection, output);
-//        manager->run(*rawDataSerialized, encoder.data(), outputBuffer, rawTable.numRows());
-//    }
-//
-//    // Read output buffer to Dataframe.
-//    Dataframe df;
     return Dataframe();
 }

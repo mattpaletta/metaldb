@@ -33,10 +33,10 @@ namespace metaldb {
         using ColumnSizeType = TempRow::ColumnSizeType;
         using RowNumType = uint16_t;
 
-        // Pointer points to beginning of ParseRow instruction.
 #ifndef __METAL__
         ParseRowInstruction() : _instructions(nullptr) {}
 #endif
+        // Pointer points to beginning of ParseRow instruction.
         ParseRowInstruction(InstSerializedValuePtr instructions) : _instructions(instructions) {}
 
         MethodType getMethod() const {

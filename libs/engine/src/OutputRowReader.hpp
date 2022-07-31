@@ -1,10 +1,3 @@
-//
-//  OutputRowReader.hpp
-//  metaldb
-//
-//  Created by Matthew Paletta on 2022-05-21.
-//
-
 #pragma once
 
 #include "column_type.h"
@@ -14,7 +7,7 @@
 
 namespace metaldb {
     template<typename Container = std::vector<char>>
-    class OutputRowReader {
+    class OutputRowReader final {
     public:
         using value_type = typename Container::value_type;
 
@@ -68,65 +61,67 @@ namespace metaldb {
             }
         }
 
-        std::vector<OutputRow::ColumnSizeType> VariableLengthColumns() const {
+        ~OutputRowReader() noexcept = default;
+
+        CPP_CONST_FUNC std::vector<OutputRow::ColumnSizeType> VariableLengthColumns() const noexcept {
             return this->_variableLengthColumns;
         }
 
-        bool ColumnIsVariableLength(size_t column) const {
+        CPP_CONST_FUNC bool ColumnIsVariableLength(size_t column) const noexcept {
             return this->_variableLengthColumns.find(column) != this->_variableLengthColumns.end();
         }
 
-        OutputRow::ColumnSizeType SizeOfColumn(size_t column, size_t row) const {
+        CPP_PURE_FUNC OutputRow::ColumnSizeType SizeOfColumn(size_t column, size_t row) const noexcept {
             return this->ColumnSizesForRow(row).at(column);
         }
 
-        ColumnType TypeOfColumn(size_t column) const {
+        CPP_CONST_FUNC ColumnType TypeOfColumn(size_t column) const noexcept {
             return this->_columnTypes.at(column);
         }
 
-        std::vector<ColumnType> ColumnTypes() const {
+        CPP_CONST_FUNC std::vector<ColumnType> ColumnTypes() const noexcept {
             return this->_columnTypes;
         }
 
-        OutputRow::NumBytesType StartOfColumn(size_t column, size_t row) const {
-            auto columnSizes = this->ColumnSizesForRow(row);
+        CPP_PURE_FUNC OutputRow::NumBytesType StartOfColumn(size_t column, size_t row) const noexcept {
+            const auto columnSizes = this->ColumnSizesForRow(row);
             return this->StartOfColumn(column, row, columnSizes);
         }
 
-        std::pair<OutputRow::NumBytesType, OutputRow::ColumnSizeType> ColumnIndexInfo(size_t column, size_t row) const {
+        CPP_PURE_FUNC std::pair<OutputRow::NumBytesType, OutputRow::ColumnSizeType> ColumnIndexInfo(size_t column, size_t row) const noexcept {
             auto columnSizes = this->ColumnSizesForRow(row);
             return std::make_pair(this->StartOfColumn(column, row, columnSizes), columnSizes.at(column));
         }
 
-        OutputRow::SizeOfHeaderType SizeOfHeader() const {
+        CPP_CONST_FUNC OutputRow::SizeOfHeaderType SizeOfHeader() const noexcept {
             return this->_sizeOfHeader;
         }
 
-        static OutputRow::SizeOfHeaderType SizeOfHeader(const Container& buffer) {
+        CPP_CONST_FUNC static OutputRow::SizeOfHeaderType SizeOfHeader(const Container& buffer) noexcept {
             return ReadBytesStartingAt<OutputRow::SizeOfHeaderType>(&buffer.at(OutputRow::SizeOfHeaderOffset));
         }
 
-        OutputRow::NumBytesType NumBytes() const {
+        CPP_CONST_FUNC OutputRow::NumBytesType NumBytes() const noexcept {
             return this->_numBytes;
         }
 
-        static OutputRow::NumBytesType NumBytes(const Container& buffer) {
+        CPP_CONST_FUNC static OutputRow::NumBytesType NumBytes(const Container& buffer) noexcept {
             return ReadBytesStartingAt<OutputRow::NumBytesType>(&buffer.at(OutputRow::NumBytesOffset));
         }
 
-        OutputRow::NumColumnsType NumColumns() const {
+        CPP_CONST_FUNC OutputRow::NumColumnsType NumColumns() const noexcept {
             return this->_numColumns;
         }
 
-        static OutputRow::NumColumnsType NumColumns(const Container& buffer) {
+        CPP_CONST_FUNC static OutputRow::NumColumnsType NumColumns(const Container& buffer) noexcept {
             return ReadBytesStartingAt<OutputRow::NumColumnsType>(&buffer.at(OutputRow::NumColumnsOffset));
         }
 
-        OutputRow::NumRowsType NumRows() const {
+        CPP_CONST_FUNC OutputRow::NumRowsType NumRows() const noexcept {
             return (OutputRow::NumRowsType) this->_rowStartOffset.size();
         }
 
-        const Container& Raw() const {
+        const Container& Raw() const noexcept {
             return this->_instructions;
         }
 
@@ -141,7 +136,7 @@ namespace metaldb {
         std::vector<OutputRow::ColumnSizeType> _variableLengthColumns;
         std::vector<OutputRow::NumBytesType> _rowStartOffset;
         
-        OutputRow::NumBytesType StartOfColumn(OutputRow::NumColumnsType column, OutputRow::NumRowsType row, const std::vector<OutputRow::ColumnSizeType>& columnSizes) const {
+        CPP_CONST_FUNC OutputRow::NumBytesType StartOfColumn(OutputRow::NumColumnsType column, OutputRow::NumRowsType row, const std::vector<OutputRow::ColumnSizeType>& columnSizes) const noexcept {
             auto offset = this->_rowStartOffset.at(row);
 
             // Skip the variableLength sizes.
@@ -154,7 +149,7 @@ namespace metaldb {
             return offset;
         }
 
-        std::vector<OutputRow::ColumnSizeType> ColumnSizesForRow(OutputRow::NumRowsType row) const {
+        CPP_PURE_FUNC std::vector<OutputRow::ColumnSizeType> ColumnSizesForRow(OutputRow::NumRowsType row) const noexcept {
             auto rowStart = this->_rowStartOffset.at(row);
 
             auto columnSizes = this->_columnSizes;

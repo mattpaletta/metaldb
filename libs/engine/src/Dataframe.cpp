@@ -1,10 +1,3 @@
-//
-//  Dataframe.cpp
-//  metaldb_engine
-//
-//  Created by Matthew Paletta on 2022-03-06.
-//
-
 #include <metaldb/engine/Dataframe.hpp>
 
 auto metaldb::engine::Dataframe::select(const std::vector<Column>& columns, const std::string& table) -> Dataframe& {

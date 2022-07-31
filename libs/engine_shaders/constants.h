@@ -13,6 +13,9 @@
 #define METAL_VISIBLE [[visible]]
 
 #define CPP_RESTRICT
+#define CPP_PURE_FUNC
+#define CPP_CONST_FUNC
+
 #else
 #define METAL_CONSTANT
 #define METAL_DEVICE
@@ -21,8 +24,9 @@
 #define METAL_KERNEL
 #define METAL_VISIBLE
 #define CPP_RESTRICT restrict
+#define CPP_PURE_FUNC __attribute__((pure))
+#define CPP_CONST_FUNC __attribute__((const))
 #endif
-
 
 #ifndef __METAL__
 #include <cstdint>
