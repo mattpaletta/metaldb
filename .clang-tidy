@@ -1,4 +1,4 @@
-Checks: 'clang-analyzer-*,modernize-*,clang-analyzer-*,cppcoreguidelines-*,cert-*,performance-*,portability-*,readability-*,-cppcoreguidelines-avoid-magic-numbers,-readability-magic-numbers'
+Checks: 'clang-analyzer-*,modernize-*,clang-analyzer-*,cppcoreguidelines-*,cert-*,performance-*,portability-*,readability-*,bugprone-*,-cppcoreguidelines-avoid-magic-numbers,-readability-magic-numbers'
 WarningsAsErrors: ''
 HeaderFilterRegex: ''
 FormatStyle: .clang-format

@@ -1,10 +1,3 @@
-//
-//  temp_row.h
-//  metaldb
-//
-//  Created by Matthew Paletta on 2022-04-02.
-//
-
 #pragma once
 
 #include "constants.h"
@@ -87,11 +80,11 @@ namespace metaldb {
 
         TempRow() = default;
 
-        SizeOfHeaderType LengthOfHeader() const {
+        CPP_PURE_FUNC SizeOfHeaderType LengthOfHeader() const {
             return ReadBytesStartingAt<SizeOfHeaderType>(&this->_data[SizeOfHeaderOffset]);
         }
 
-        SizeType SizeOfPartialRow() const {
+        CPP_PURE_FUNC SizeType SizeOfPartialRow() const {
             auto sum = this->size();
             for (auto i = 0; i < this->NumColumns(); ++i) {
                 if (this->ColumnVariableSize(i)) {
@@ -101,19 +94,19 @@ namespace metaldb {
             return sum;
         }
 
-        NumColumnsType NumColumns() const {
+        CPP_PURE_FUNC NumColumnsType NumColumns() const {
             return ReadBytesStartingAt<NumColumnsType>(&this->_data[NumColumnsOffset]);
         }
 
-        enum ColumnType ColumnType(NumColumnsType column) const {
+        CPP_PURE_FUNC enum ColumnType ColumnType(NumColumnsType column) const {
             return ReadBytesStartingAt<enum ColumnType>(&this->_data[ColumnTypeOffset + (column * sizeof(enum ColumnType))]);
         }
 
-        bool ColumnVariableSize(NumColumnsType column) const {
+        CPP_PURE_FUNC  bool ColumnVariableSize(NumColumnsType column) const {
             return metaldb::ColumnVariableSize(this->ColumnType(column));
         }
 
-        ColumnSizeType ColumnSize(NumColumnsType column) const {
+        CPP_PURE_FUNC ColumnSizeType ColumnSize(NumColumnsType column) const {
             // Calculate column size of variable sizes
             {
                 auto columnType = this->ColumnType(column);
@@ -144,7 +137,7 @@ namespace metaldb {
                 /* read into column size */ offsetOfVariableLength]);
         }
 
-        SizeType ColumnStartOffset(NumColumnsType column) const {
+        CPP_PURE_FUNC SizeType ColumnStartOffset(NumColumnsType column) const {
             SizeType sum = 0;
             for (SizeType i = 0; i < column; ++i) {
                 sum += this->ColumnSize(i);
@@ -156,7 +149,7 @@ namespace metaldb {
             return LocalStringSection(this->data(), this->_size);
         }
 
-        bool hasValue(NumColumnsType column) const {
+        CPP_PURE_FUNC bool hasValue(NumColumnsType column) const {
             if (this->isNullable(column)) {
                 return this->ColumnSize(column) > 0;
             } else {
@@ -164,7 +157,7 @@ namespace metaldb {
             }
         }
 
-        bool isNullable(NumColumnsType column) const {
+        CPP_PURE_FUNC bool isNullable(NumColumnsType column) const {
             switch(this->ColumnType(column)) {
             case String_opt:
             case Float_opt:
@@ -178,17 +171,17 @@ namespace metaldb {
             }
         }
 
-        types::FloatType ReadColumnFloat(NumColumnsType column) const {
+        CPP_PURE_FUNC types::FloatType ReadColumnFloat(NumColumnsType column) const {
             const auto startOffset = this->ColumnStartOffset(column);
             return ReadBytesStartingAt<types::FloatType>(this->data() + startOffset);
         }
 
-        types::IntegerType ReadColumnInt(NumColumnsType column) const {
+        CPP_PURE_FUNC types::IntegerType ReadColumnInt(NumColumnsType column) const {
             const auto startOffset = this->ColumnStartOffset(column);
             return ReadBytesStartingAt<types::IntegerType>(this->data() + startOffset);
         }
 
-        ConstLocalStringSection ReadColumnString(NumColumnsType column) const {
+        CPP_PURE_FUNC ConstLocalStringSection ReadColumnString(NumColumnsType column) const {
             const auto startOffset = this->ColumnStartOffset(column);
             const auto columnSize = this->ColumnSize(column);
             return ConstLocalStringSection(this->data(startOffset), columnSize);
@@ -202,11 +195,11 @@ namespace metaldb {
             return &this->_data[this->LengthOfHeader() + index];
         }
 
-        METAL_THREAD value_type* end() {
+        CPP_PURE_FUNC METAL_THREAD value_type* end() {
             return this->data(this->_size);
         }
 
-        SizeType size() const {
+        CPP_CONST_FUNC SizeType size() const {
             return this->_size;
         }
 

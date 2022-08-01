@@ -157,10 +157,10 @@ NEW_TEST(ParseRowInstructionTest, ReadParseRowInstructionString) {
         std::vector<std::string> columns{"colA", "colB"};
 
         metaldb::reader::RawTable rawTableCPU{std::move(rawData), rowIndexes, columns};
-        CPPTEST_ASSERT(rawTableCPU.numRows() == 2);
+        CPPTEST_ASSERT(rawTableCPU.NumRows() == 2);
 
         auto serialized = [&] {
-            auto serialized = metaldb::Scheduler::SerializeRawTable(rawTableCPU, rawTableCPU.numRows());
+            auto serialized = metaldb::Scheduler::SerializeRawTable(rawTableCPU, rawTableCPU.NumRows());
             CPPTEST_ASSERT(!serialized.empty());
             return *(serialized.at(0).first);
         }();
@@ -216,10 +216,10 @@ NEW_TEST(ParseRowInstructionTest, TaxiRowRegression) {
         std::vector<std::string> columns{"colA", "colB"};
 
         metaldb::reader::RawTable rawTableCPU{std::move(rawData), rowIndexes, columns};
-        CPPTEST_ASSERT(rawTableCPU.numRows() == 2);
+        CPPTEST_ASSERT(rawTableCPU.NumRows() == 2);
 
         auto serialized = [&] {
-            auto serialized = metaldb::Scheduler::SerializeRawTable(rawTableCPU, rawTableCPU.numRows());
+            auto serialized = metaldb::Scheduler::SerializeRawTable(rawTableCPU, rawTableCPU.NumRows());
             CPPTEST_ASSERT(!serialized.empty());
             return *(serialized.at(0).first);
         }();

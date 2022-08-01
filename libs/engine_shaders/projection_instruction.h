@@ -1,10 +1,3 @@
-//
-//  projection_instruction.h
-//  metaldb
-//
-//  Created by Matthew Paletta on 2022-03-23.
-//
-
 #pragma once
 
 #include "constants.h"
@@ -23,28 +16,28 @@ namespace metaldb {
         METAL_CONSTANT static constexpr auto ColumnIndexOffset = sizeof(NumColumnsType) + NumColumnsOffset;
 
 #ifndef __METAL__
-        ProjectionInstruction() : _instructions(nullptr) {}
+        ProjectionInstruction() CPP_NOEXCEPT : _instructions(nullptr) {}
 #endif
         // Pointer points to beginning of Projection instruction.
-        ProjectionInstruction(InstSerializedValuePtr instructions) : _instructions(instructions) {}
+        ProjectionInstruction(InstSerializedValuePtr instructions) CPP_NOEXCEPT : _instructions(instructions) {}
 
-        NumColumnsType numColumns() const {
+        CPP_PURE_FUNC NumColumnsType numColumns() const CPP_NOEXCEPT {
             return ReadBytesStartingAt<NumColumnsType>(&this->_instructions[NumColumnsOffset]);
         }
 
         // This returns the column to read from the row.
-        ColumnIndexType getColumnIndex(NumColumnsType index) const {
+        CPP_PURE_FUNC ColumnIndexType getColumnIndex(NumColumnsType index) const CPP_NOEXCEPT {
             return ReadBytesStartingAt<ColumnIndexType>(&this->_instructions[(index * sizeof(ColumnIndexType)) + ColumnIndexOffset]);
         }
 
-        InstSerializedValuePtr end() const {
+        CPP_PURE_FUNC InstSerializedValuePtr end() const CPP_NOEXCEPT {
             // Returns 1 past the end of the instruction
             const auto numColumns = this->numColumns();
             const uint8_t offset = ColumnIndexOffset + (numColumns * sizeof(ColumnIndexType));
             return &this->_instructions[offset];
         }
 
-        TempRow GetRow(TempRow METAL_THREAD & row, DbConstants METAL_THREAD & constants) {
+        CPP_PURE_FUNC TempRow GetRow(TempRow METAL_THREAD & row, DbConstants METAL_THREAD & constants) CPP_NOEXCEPT {
             // Do the projection
             TempRow::TempRowBuilder builder;
             auto numCols = this->numColumns();

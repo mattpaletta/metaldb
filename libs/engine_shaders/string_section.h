@@ -1,10 +1,3 @@
-//
-//  string_section.h
-//  metaldb
-//
-//  Created by Matthew Paletta on 2022-03-23.
-//
-
 #pragma once
 
 #include "constants.h"
@@ -22,16 +15,16 @@ namespace metaldb {
 
         GenericStringSection(T str, SizeType size) : _size(size), _str(str) {}
 
-        SizeType size() const {
+        CPP_CONST_FUNC SizeType size() const {
             return this->_size;
         }
 
-        T c_str() const {
+        CPP_PURE_FUNC T c_str() const {
             return this->_str;
         }
 
 #ifndef __METAL__
-        std::string str() const {
+        CPP_PURE_FUNC std::string str() const {
             return std::string(this->c_str(), this->size());
         }
 

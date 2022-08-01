@@ -1,10 +1,3 @@
-//
-//  raw_table.h
-//  metaldb
-//
-//  Created by Matthew Paletta on 2022-03-23.
-//
-
 #pragma once
 
 #include "constants.h"
@@ -28,29 +21,29 @@ namespace metaldb {
 
         RawTable(value_type rawData) : _rawData(rawData) {}
 
-        SizeOfHeaderType GetSizeOfHeader() const {
+        CPP_PURE_FUNC SizeOfHeaderType GetSizeOfHeader() const {
             return ReadBytesStartingAt<SizeOfHeaderType>(&_rawData[SizeOfHeaderOffset]);
         }
 
-        SizeOfDataType GetSizeOfData() const {
+        CPP_PURE_FUNC SizeOfDataType GetSizeOfData() const {
             return ReadBytesStartingAt<SizeOfDataType>(&_rawData[SizeOfDataOffset]);
         }
 
-        NumRowsType GetNumRows() const {
+        CPP_PURE_FUNC NumRowsType GetNumRows() const {
             return ReadBytesStartingAt<NumRowsType>(&_rawData[NumRowsOffset]);
         }
 
-        RowIndexType GetRowIndex(metaldb::types::SizeType index) const {
+        CPP_PURE_FUNC RowIndexType GetRowIndex(metaldb::types::SizeType index) const {
             // Start row index is immediately after the getNumRows field.
             const auto indexToRead = RowIndexOffset + (index * sizeof(RowIndexType));
             return ReadBytesStartingAt<RowIndexType>(&_rawData[indexToRead]);
         }
 
-        SizeOfDataType GetStartOfData() const {
+        CPP_PURE_FUNC SizeOfDataType GetStartOfData() const {
             return this->GetSizeOfHeader();
         }
 
-        value_type data(SizeOfDataType index = 0) {
+        CPP_PURE_FUNC value_type data(SizeOfDataType index = 0) {
             const auto dataStart = this->GetStartOfData();
             return &this->_rawData[dataStart + index];
         }

@@ -2,7 +2,6 @@
 
 #include "RawTable.hpp"
 
-#include <string>
 #include <filesystem>
 
 namespace metaldb::reader {
@@ -13,11 +12,11 @@ namespace metaldb::reader {
             bool stripQuotesFromHeader = false;
         };
 
-        CSVReader(std::filesystem::path path);
+        CSVReader(std::filesystem::path path) noexcept;
 
-        bool isValid() const;
+        bool IsValid() const noexcept;
 
-        RawTable read(const CSVOptions& options) const;
+        RawTable Read(const CSVOptions& options) const noexcept;
     private:
         std::filesystem::path _path;
     };

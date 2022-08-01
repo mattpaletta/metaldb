@@ -1,10 +1,3 @@
-//
-//  stack.h
-//  metaldb
-//
-//  Created by Matthew Paletta on 2022-03-23.
-//
-
 #pragma once
 
 #include "constants.h"
@@ -60,15 +53,15 @@ namespace metaldb {
             return magicThing.a;
         }
 
-        bool isEmpty() const {
+        CPP_CONST_FUNC bool isEmpty() const {
             return this->_size == 0;
         }
 
-        bool isFull() const {
+        CPP_CONST_FUNC bool isFull() const {
             return this->_size == N;
         }
 
-        types::SizeType size() const {
+        CPP_CONST_FUNC types::SizeType size() const {
             return this->_size;
         }
 

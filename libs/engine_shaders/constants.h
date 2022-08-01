@@ -12,6 +12,7 @@
 #define METAL_KERNEL kernel
 #define METAL_VISIBLE [[visible]]
 
+#define CPP_NOEXCEPT
 #define CPP_CONSTEXPR
 #define CPP_RESTRICT
 #define CPP_PURE_FUNC
@@ -24,6 +25,7 @@
 #define METAL_THREADGROUP
 #define METAL_KERNEL
 #define METAL_VISIBLE
+#define CPP_NOEXCEPT noexcept
 #define CPP_CONSTEXPR constexpr
 #define CPP_RESTRICT restrict
 #define CPP_PURE_FUNC __attribute__((pure))
@@ -33,7 +35,6 @@
 #ifndef __METAL__
 #include <cstdint>
 #include <vector>
-#include <cassert>
 #endif
 
 using InstructionPtr = uint64_t;
@@ -55,7 +56,7 @@ namespace metaldb {
     }
 
     template<typename Val, typename T>
-    static Val ReadBytesStartingAt(T METAL_DEVICE * ptr) {
+    CPP_PURE_FUNC static Val ReadBytesStartingAt(T METAL_DEVICE * ptr) CPP_NOEXCEPT {
         if CPP_CONSTEXPR(sizeof(Val) == sizeof(T)) {
             return (Val) *ptr;
         } else {
@@ -65,7 +66,7 @@ namespace metaldb {
 
 #ifdef __METAL__
     template<typename Val, typename T>
-    static Val ReadBytesStartingAt(T METAL_THREAD * ptr) {
+    CPP_PURE_FUNC static Val ReadBytesStartingAt(T METAL_THREAD * ptr) CPP_NOEXCEPT {
         if CPP_CONSTEXPR(sizeof(Val) == sizeof(T)) {
             return (Val) *ptr;
         } else {
@@ -75,7 +76,7 @@ namespace metaldb {
 #endif
 
     template<typename Val, typename T>
-    static void WriteBytesStartingAt(T METAL_DEVICE * ptr, const Val METAL_THREAD & val) {
+    CPP_PURE_FUNC static void WriteBytesStartingAt(T METAL_DEVICE * ptr, const Val METAL_THREAD & val) CPP_NOEXCEPT {
         if CPP_CONSTEXPR(sizeof(T) == sizeof(Val)) {
             *ptr = val;
         } else {
@@ -87,7 +88,7 @@ namespace metaldb {
 
 #ifdef __METAL__
     template<typename Val, typename T>
-    static void WriteBytesStartingAt(T METAL_THREAD * ptr, const Val METAL_THREAD & val) {
+    CPP_PURE_FUNC static void WriteBytesStartingAt(T METAL_THREAD * ptr, const Val METAL_THREAD & val) CPP_NOEXCEPT {
         if CPP_CONSTEXPR(sizeof(T) == sizeof(Val)) {
             *ptr = val;
         } else {
@@ -100,7 +101,7 @@ namespace metaldb {
 
 #ifndef __METAL__
     template<typename Val, typename T>
-    static void WriteBytesStartingAt(std::vector<T>& ptr, const Val& val) {
+    static void WriteBytesStartingAt(std::vector<T>& ptr, const Val& val) CPP_NOEXCEPT {
         union {
             Val a;
             T bytes[sizeof(Val)];

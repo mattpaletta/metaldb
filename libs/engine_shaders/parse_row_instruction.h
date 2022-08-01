@@ -1,10 +1,3 @@
-//
-//  parse_row_instruction.h
-//  metaldb
-//
-//  Created by Matthew Paletta on 2022-03-23.
-//
-
 #pragma once
 
 #include "constants.h"
@@ -34,44 +27,44 @@ namespace metaldb {
         using RowNumType = uint16_t;
 
 #ifndef __METAL__
-        ParseRowInstruction() : _instructions(nullptr) {}
+        ParseRowInstruction() CPP_NOEXCEPT : _instructions(nullptr) {}
 #endif
         // Pointer points to beginning of ParseRow instruction.
-        ParseRowInstruction(InstSerializedValuePtr instructions) : _instructions(instructions) {}
+        ParseRowInstruction(InstSerializedValuePtr instructions) CPP_NOEXCEPT : _instructions(instructions) {}
 
-        MethodType getMethod() const {
+        CPP_PURE_FUNC MethodType getMethod() const CPP_NOEXCEPT {
             return ReadBytesStartingAt<MethodType>(&this->_instructions[MethodOffset]);
         }
 
-        SkipHeaderType skipHeader() const {
+        CPP_PURE_FUNC SkipHeaderType skipHeader() const CPP_NOEXCEPT {
             return ReadBytesStartingAt<SkipHeaderType>(&this->_instructions[SkipHeaderOffset]);
         }
 
-        NumColumnsType numColumns() const {
+        CPP_PURE_FUNC NumColumnsType numColumns() const CPP_NOEXCEPT {
             return ReadBytesStartingAt<NumColumnsType>(&this->_instructions[NumColumnsOffset]);
         }
 
-        ColumnType getColumnType(NumColumnsType index) const {
+        CPP_PURE_FUNC ColumnType getColumnType(NumColumnsType index) const CPP_NOEXCEPT {
             return ReadBytesStartingAt<ColumnType>(&this->_instructions[(index * sizeof(ColumnType)) + ColumnTypeOffset]);
         }
 
-        InstSerializedValuePtr end() const {
+        CPP_PURE_FUNC InstSerializedValuePtr end() const CPP_NOEXCEPT {
             // Returns 1 past the end of the instruction
             const auto numColumns = this->numColumns();
             const auto offset = ColumnTypeOffset + (numColumns * sizeof(ColumnType));
             return &this->_instructions[offset];
         }
 
-        StringSection readCSVColumn(RawTable METAL_THREAD & rawTable, RowNumType row, NumColumnsType column) const {
+        CPP_PURE_FUNC StringSection readCSVColumn(RawTable METAL_THREAD & rawTable, RowNumType row, NumColumnsType column) const CPP_NOEXCEPT {
             return this->readCSVColumnImpl(rawTable, row, column);
         }
 
-        ColumnSizeType readCSVColumnLength(RawTable METAL_THREAD & rawTable, RowNumType row, NumColumnsType column) const {
+        CPP_PURE_FUNC ColumnSizeType readCSVColumnLength(RawTable METAL_THREAD & rawTable, RowNumType row, NumColumnsType column) const CPP_NOEXCEPT {
             // Do it this way for now to keep the code the same.
             return this->readCSVColumn(rawTable, row, column).size();
         }
 
-        TempRow GetRow(DbConstants METAL_THREAD & constants) {
+        CPP_PURE_FUNC TempRow GetRow(DbConstants METAL_THREAD & constants) CPP_NOEXCEPT {
             TempRow::TempRowBuilder builder;
             auto numCols = this->numColumns();
             {
@@ -148,7 +141,7 @@ namespace metaldb {
         mutable NumColumnsType __lastCachedColumn = -1;
         mutable METAL_DEVICE char* __lastCachedColumnValue = nullptr;
 
-        void AdvanceColumn(METAL_DEVICE char** startOfColumn, RawTable METAL_THREAD & rawTable, RowNumType row, NumColumnsType column) const {
+        CPP_PURE_FUNC void AdvanceColumn(METAL_DEVICE char** startOfColumn, RawTable METAL_THREAD & rawTable, RowNumType row, NumColumnsType column) const CPP_NOEXCEPT {
             // Advances startOfColumn ahead by 1 column.
             if (column == 0) {
                 // Fetch it raw.
@@ -162,7 +155,7 @@ namespace metaldb {
             }
         }
 
-        METAL_DEVICE char* GetStartOfColumn(RawTable METAL_THREAD & rawTable, RowNumType row, NumColumnsType column) const {
+        CPP_PURE_FUNC METAL_DEVICE char* GetStartOfColumn(RawTable METAL_THREAD & rawTable, RowNumType row, NumColumnsType column) const CPP_NOEXCEPT {
             METAL_DEVICE char* startOfColumn = nullptr;
 
             if (row != this->__lastCachedRow) {
@@ -230,7 +223,7 @@ namespace metaldb {
             return startOfColumn;
         }
 
-        StringSection readCSVColumnImpl(RawTable METAL_THREAD & rawTable, RowNumType row, NumColumnsType column) const {
+        CPP_PURE_FUNC StringSection readCSVColumnImpl(RawTable METAL_THREAD & rawTable, RowNumType row, NumColumnsType column) const CPP_NOEXCEPT {
             METAL_DEVICE char* startOfColumn = this->GetStartOfColumn(rawTable, row, column);
 
             if (!startOfColumn) {

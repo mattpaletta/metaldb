@@ -123,7 +123,6 @@ namespace {
             return ProcessWriteAST(write, metadata);
         }
 
-        assert(false);
         return {};
      }
 

@@ -33,10 +33,10 @@ static std::vector<char> CreateMetalRawTable() {
     std::vector<std::string> columns{"colA", "colB", "colC", "colD"};
 
     metaldb::reader::RawTable rawTableCPU{std::move(rawData), rowIndexes, columns};
-    CPPTEST_ASSERT(rawTableCPU.numRows() == 2);
+    CPPTEST_ASSERT(rawTableCPU.NumRows() == 2);
 
     auto serialized = [&] {
-        auto serialized = metaldb::Scheduler::SerializeRawTable(rawTableCPU, rawTableCPU.numRows());
+        auto serialized = metaldb::Scheduler::SerializeRawTable(rawTableCPU, rawTableCPU.NumRows());
         CPPTEST_ASSERT(!serialized.empty());
         return *(serialized.at(0).first);
     }();
@@ -50,7 +50,7 @@ static std::vector<char> CreateMetalRawTable() {
     CPPTEST_ASSERT(metalRawTable.GetStartOfData() > 0);
     CPPTEST_ASSERT(metalRawTable.GetStartOfData() < 1000);
     CPPTEST_ASSERT(metalRawTable.GetSizeOfData() == rawTableCPU.data.size());
-    CPPTEST_ASSERT(metalRawTable.GetNumRows() == rawTableCPU.numRows());
+    CPPTEST_ASSERT(metalRawTable.GetNumRows() == rawTableCPU.NumRows());
 
     CPPTEST_ASSERT(metalRawTable.GetRowIndex(0) == 0);
     CPPTEST_ASSERT(metalRawTable.GetRowIndex(1) == 7);

@@ -1,10 +1,3 @@
-//
-//  output_row.h
-//  metaldb
-//
-//  Created by Matthew Paletta on 2022-06-02.
-//
-
 #pragma once
 
 #include "constants.h"
@@ -40,7 +33,7 @@ namespace metaldb {
         // Only used by parsers.
         using NumRowsType = uint32_t;
 
-        static SizeOfHeaderType SizeOfHeader(NumColumnsType numColumns) {
+        CPP_CONST_FUNC static SizeOfHeaderType SizeOfHeader(NumColumnsType numColumns) CPP_NOEXCEPT {
             auto sizeOfHeader = ColumnTypeOffset;
             sizeOfHeader += sizeof(ColumnType) * numColumns;
             return sizeOfHeader;

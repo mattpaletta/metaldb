@@ -1,10 +1,3 @@
-//
-//  output_instruction.h
-//  metaldb
-//
-//  Created by Matthew Paletta on 2022-03-31.
-//
-
 #pragma once
 
 #include "constants.h"
@@ -12,6 +5,10 @@
 #include "output_row.h"
 #include "strings.h"
 #include "PrefixSum.h"
+
+#ifndef __METAL__
+#include <cassert>
+#endif
 
 namespace metaldb {
     class OutputInstruction final {
@@ -29,13 +26,13 @@ namespace metaldb {
 
         OutputInstruction(InstSerializedValuePtr instructions) : _instructions(instructions) {}
 
-        InstSerializedValuePtr end() const {
+        CPP_PURE_FUNC InstSerializedValuePtr end() const CPP_NOEXCEPT {
             // Returns 1 past the end of the instruction
             const int8_t offset = 1;
             return &this->_instructions[offset];
         }
 
-        void WriteRow(TempRow METAL_THREAD & row, DbConstants METAL_THREAD & constants) {
+        CPP_PURE_FUNC void WriteRow(TempRow METAL_THREAD & row, DbConstants METAL_THREAD & constants) const CPP_NOEXCEPT {
             // Write row into output.
 
             const auto index = constants.thread_position_in_threadgroup;

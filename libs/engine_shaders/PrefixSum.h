@@ -1,17 +1,8 @@
-//
-//  PrefixSum.h
-//  metaldb
-//
-//  Created by Matthew Paletta on 2022-04-16.
-//
-
 #pragma once
 
 #include "constants.h"
 
 #ifdef __METAL__
-
-#include <metal_stdlib>
 
 // Based on: https://kieber-emmons.medium.com/efficient-parallel-prefix-sum-in-metal-for-apple-m1-9e60b974d62
 
@@ -80,6 +71,5 @@ T ThreadGroupReduceCooperativeAlgorithm(threadgroup T* scratch, T value, uint32_
 
     return simdAdd;
 }
-
 
 #endif

@@ -3,12 +3,12 @@
 #include "constants.h"
 #include "memory.h"
 
-namespace metal{
+namespace metal {
     namespace strings {
         constexpr static METAL_CONSTANT char NULL_CHAR = '\0';
 
         template<typename T = METAL_DEVICE char*, typename V = METAL_DEVICE char*>
-        static int strcmp(const T str1, const T str2) {
+        CPP_PURE_FUNC static int strcmp(const T str1, const T str2) {
             const T currChar1 = str1;
             const V currChar2 = str2;
 
@@ -86,7 +86,7 @@ namespace metal{
         }
 
         template<typename T = METAL_DEVICE char*>
-        static size_t strlen(const T str) {
+        CPP_PURE_FUNC static size_t strlen(const T str) {
             size_t size = 0;
             const METAL_DEVICE char* strPtr = str;
             while (strPtr && *strPtr != NULL_CHAR) {
@@ -97,7 +97,7 @@ namespace metal{
         }
 
         template<typename T = METAL_DEVICE char*>
-        static T const strchr(T const str, int character) {
+        CPP_PURE_FUNC static T const strchr(T const str, int character) {
             const char charToFind = character;
             T strPtr = str;
             while (strPtr && *strPtr != NULL_CHAR) {
@@ -111,7 +111,7 @@ namespace metal{
         }
 
         template<typename T = METAL_DEVICE char*>
-        static T const strnchr(T const str, size_t length, int character) {
+        CPP_PURE_FUNC static T const strnchr(T const str, size_t length, int character) {
             const char charToFind = character;
             T strPtr = str;
             for (size_t i = 0; i < length; ++i) {
@@ -124,7 +124,7 @@ namespace metal{
             return nullptr;
         }
 
-        static int ctoi(char c) {
+        CPP_CONST_FUNC static int ctoi(char c) {
             if (c == '0') {
                 return 0;
             } else if (c == '1') {
@@ -154,7 +154,7 @@ namespace metal{
         }
 
         template<typename T = METAL_DEVICE char*>
-        static int64_t const stoi(T const str, size_t length) {
+        CPP_PURE_FUNC static int64_t const stoi(T const str, size_t length) {
             int64_t result = 0;
             for (size_t i = 0; i < length; ++i) {
                 if (i > 0) {
@@ -166,7 +166,7 @@ namespace metal{
         }
 
         template<typename T = METAL_DEVICE char*>
-        static float const stof(T const str, size_t length) {
+        CPP_PURE_FUNC static float const stof(T const str, size_t length) {
             // Find first part
             auto wholePart = strnchr(str, length, '.');
             if (wholePart) {

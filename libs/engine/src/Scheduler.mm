@@ -98,7 +98,7 @@ auto metaldb::Scheduler::SerializeRawTable(const metaldb::reader::RawTable& rawT
 
     // Chunk it into the max size appropriately.
     NumRowsType i = 0;
-    auto numRows = rawTable.numRows();
+    auto numRows = rawTable.NumRows();
     if (numRows > maxChunkSize) {
         for (; i < numRows - maxChunkSize; i += maxChunkSize) {
             prepareChunk(i, i + maxChunkSize);
@@ -274,19 +274,19 @@ auto metaldb::Scheduler::registerReadPartial(std::shared_ptr<QueryEngine::ReadPa
     auto method = read->method;
     auto definition = read->definition;
 
-    auto rawTablePtr = reader::RawTable::placeholder();
+    auto rawTablePtr = reader::RawTable::Placeholder();
     auto readRawTableTask = parameters.taskflow->emplace([=]() {
         DebugTask();
         std::cout << "Running read command for file: " << filename << std::endl;
         std::filesystem::path path;
         path.append(filename);
         reader::CSVReader reader(path);
-        std::cout << "Table Is Valid: " << (reader.isValid() ? "YES" : "NO") << std::endl;
+        std::cout << "Table Is Valid: " << (reader.IsValid() ? "YES" : "NO") << std::endl;
 
         reader::CSVReader::CSVOptions options;
         options.containsHeaderLine = true;
         options.stripQuotesFromHeader = true;
-        auto rawTable = reader.read(options);
+        auto rawTable = reader.Read(options);
         *rawTablePtr = std::move(rawTable);
     }).name("Read Raw Table Task: " + filename);
 

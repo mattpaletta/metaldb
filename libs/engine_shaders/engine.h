@@ -12,11 +12,11 @@
 #include "db_constants.h"
 
 namespace metaldb {
-    static InstructionType decodeType(InstSerializedValuePtr instruction) {
+    static InstructionType decodeType(InstSerializedValuePtr instruction) CPP_NOEXCEPT {
         return (InstructionType) *instruction;
     }
 
-    static void runInstructions(InstSerializedValuePtr instructions, size_t numInstructions, DbConstants METAL_THREAD & constants) {
+    static void runInstructions(InstSerializedValuePtr instructions, size_t numInstructions, DbConstants METAL_THREAD & constants) CPP_NOEXCEPT {
         // Combines decoding instructions and running them.
 
         TempRow row;

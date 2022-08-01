@@ -1,17 +1,10 @@
-//
-//  column_type.h
-//  metaldb
-//
-//  Created by Matthew Paletta on 2022-03-23.
-//
-
 #pragma once
 
 #include "instruction_type.h"
 #include "constants.h"
 
 #ifndef __METAL__
-#    include <string>
+#  include <string>
 #endif
 
 namespace metaldb {
@@ -25,7 +18,7 @@ namespace metaldb {
         Integer_opt,
     };
 
-    static bool ColumnVariableSize(ColumnType type) {
+    CPP_CONST_FUNC static bool ColumnVariableSize(ColumnType type) CPP_NOEXCEPT {
         switch (type) {
         case String:
         case String_opt:
@@ -39,7 +32,7 @@ namespace metaldb {
         }
     }
 
-    static uint8_t BaseColumnSize(ColumnType type) {
+    CPP_CONST_FUNC static uint8_t BaseColumnSize(ColumnType type) CPP_NOEXCEPT {
         switch (type) {
         case String:
         case String_opt:
@@ -56,7 +49,7 @@ namespace metaldb {
     }
 
 #ifndef __METAL__
-    static std::string columnTypeToString(ColumnType type) {
+    CPP_CONST_FUNC static std::string columnTypeToString(ColumnType type) CPP_NOEXCEPT {
         switch (type) {
         case String:
         case String_opt:

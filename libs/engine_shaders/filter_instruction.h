@@ -1,10 +1,3 @@
-//
-//  filter_instruction.h
-//  metaldb
-//
-//  Created by Matthew Paletta on 2022-04-18.
-//
-
 #pragma once
 
 #include "constants.h"
@@ -45,24 +38,24 @@ namespace metaldb {
         METAL_CONSTANT static constexpr auto OperationOffset = sizeof(NumOperationsType) + NumOperationsOffset;
 
         // Pointer points to beginning of Projection instruction.
-        FilterInstruction(InstSerializedValuePtr instructions) : _instructions(instructions) {}
+        FilterInstruction(InstSerializedValuePtr instructions) CPP_NOEXCEPT : _instructions(instructions) {}
 
-        NumOperationsType NumOperations() const {
+        CPP_PURE_FUNC NumOperationsType NumOperations() const CPP_NOEXCEPT {
             return ReadBytesStartingAt<NumOperationsType>(&this->_instructions[NumOperationsOffset]);
         }
 
-        OperationsType GetOperation(NumOperationsType op) const {
+        CPP_PURE_FUNC OperationsType GetOperation(NumOperationsType op) const CPP_NOEXCEPT {
             const auto index = OperationOffset + (op * sizeof(NumOperationsType));
             return ReadBytesStartingAt<OperationsType>(&this->_instructions[index]);
         }
 
-        InstSerializedValuePtr end() const {
+        CPP_PURE_FUNC InstSerializedValuePtr end() const CPP_NOEXCEPT {
             // Returns 1 past the end of the instruction
             const auto index = OperationOffset + sizeof(OperationsType) * this->NumOperations();
             return &this->_instructions[index];
         }
 
-        TempRow GetRow(TempRow METAL_THREAD & row, DbConstants METAL_THREAD & constants) const {
+        CPP_PURE_FUNC TempRow GetRow(TempRow METAL_THREAD & row, DbConstants METAL_THREAD & constants) const CPP_NOEXCEPT {
             if (this->ShouldIncludeRow(row, constants)) {
                 return row;
             } else {
@@ -77,17 +70,17 @@ namespace metaldb {
 
         InstSerializedValuePtr _instructions;
 
-        size_t IndexOfValue(size_t i) const {
+        CPP_PURE_FUNC size_t IndexOfValue(size_t i) const CPP_NOEXCEPT {
             return sizeof(this->NumOperations()) + (i * sizeof(InstSerializedValue));
         }
 
-        InstSerializedValue GetValue(size_t i) const {
+        CPP_PURE_FUNC InstSerializedValue GetValue(size_t i) const CPP_NOEXCEPT {
             const auto index = this->IndexOfValue(i);
             return *((InstSerializedValue METAL_DEVICE *) &this->_instructions[index]);
         }
 
         template<typename T>
-        T GetTypeStartingAtByte(size_t i) const {
+        CPP_PURE_FUNC T GetTypeStartingAtByte(size_t i) const CPP_NOEXCEPT {
             union {
                 T a;
                 InstSerializedValue bytes[sizeof(T)];
@@ -100,21 +93,21 @@ namespace metaldb {
             return thing.a;
         }
 
-        types::FloatType GetFloatStartingAtByte(size_t i) const {
+        CPP_PURE_FUNC types::FloatType GetFloatStartingAtByte(size_t i) const CPP_NOEXCEPT {
             return this->GetTypeStartingAtByte<types::FloatType>(i);
         }
 
-        types::IntegerType GetIntStartingAtByte(size_t i) const {
+        CPP_PURE_FUNC types::IntegerType GetIntStartingAtByte(size_t i) const CPP_NOEXCEPT {
             return this->GetTypeStartingAtByte<types::IntegerType>(i);
         }
 
-        StringSection GetStringStartingAtByte(size_t i) const {
+        CPP_PURE_FUNC StringSection GetStringStartingAtByte(size_t i) const CPP_NOEXCEPT {
             const auto length = this->GetIntStartingAtByte(i);
             const auto startStringIndex = this->IndexOfValue(i + 1);
             return StringSection((char METAL_DEVICE *) &this->_instructions[startStringIndex], length);
         }
 
-        bool ShouldIncludeRow(TempRow METAL_THREAD & row, DbConstants METAL_THREAD & constants) const {
+        CPP_PURE_FUNC bool ShouldIncludeRow(TempRow METAL_THREAD & row, DbConstants METAL_THREAD & constants) const CPP_NOEXCEPT {
             Stack<MAX_VM_STACK_SIZE> stack;
 
             // TODO: Add support and operations for null.

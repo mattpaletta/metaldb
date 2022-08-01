@@ -5,9 +5,9 @@
 #include <fstream>
 #include <sstream>
 
-metaldb::reader::CSVReader::CSVReader(std::filesystem::path path) : _path(std::move(path)) {}
+metaldb::reader::CSVReader::CSVReader(std::filesystem::path path) noexcept : _path(std::move(path)) {}
 
-auto metaldb::reader::CSVReader::isValid() const -> bool {
+auto metaldb::reader::CSVReader::IsValid() const noexcept -> bool {
     if (this->_path.extension().string() != ".csv") {
         return false;
     }
@@ -23,10 +23,10 @@ auto metaldb::reader::CSVReader::isValid() const -> bool {
     return true;
 }
 
-auto metaldb::reader::CSVReader::read(const CSVOptions& options) const -> RawTable {
+auto metaldb::reader::CSVReader::Read(const CSVOptions& options) const noexcept -> RawTable {
     std::ifstream myfile(this->_path.string());
     if (!myfile.is_open()) {
-        return RawTable::invalid();
+        return RawTable::Invalid();
     }
 
     std::size_t charCount = 0;
@@ -38,7 +38,7 @@ auto metaldb::reader::CSVReader::read(const CSVOptions& options) const -> RawTab
         std::stringstream firstRowBuffer;
         while (myfile.good()) {
             // Buffer the row
-            char nextChar = static_cast<char>(myfile.get());
+            const auto nextChar = static_cast<char>(myfile.get());
             if (nextChar != '\r' && nextChar != '\n') {
                 firstRowBuffer << nextChar;
             }
@@ -49,11 +49,15 @@ auto metaldb::reader::CSVReader::read(const CSVOptions& options) const -> RawTab
 
         // Read out the columns
         {
-            std::string columnStr = firstRowBuffer.str();
-            if (options.stripQuotesFromHeader) {
-                columnStr = cppnotstdlib::replace(columnStr, "\"", "");
-                columnStr = cppnotstdlib::replace(columnStr, "'", "");
-            }
+            const auto columnStr = [&]{
+                auto str = firstRowBuffer.str();
+                if (options.stripQuotesFromHeader) {
+                    str = cppnotstdlib::replace(str, "\"", "");
+                    return cppnotstdlib::replace(str, "'", "");
+                }
+
+                return str;
+            }();
             auto splitColumns = cppnotstdlib::explode(columnStr, ',');
             columns = std::move(splitColumns);
         }
