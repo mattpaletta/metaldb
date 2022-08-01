@@ -1,4 +1,5 @@
 #pragma once
+
 #include <metaldb/query_engine/query_plan.hpp>
 #include <metaldb/engine/Instructions.hpp>
 #include <metaldb/query_engine/partials.hpp>
@@ -13,7 +14,7 @@ namespace metaldb {
     public:
         ~Scheduler() = default;
 
-        static tf::Taskflow schedule(const QueryEngine::QueryPlan& plan);
+        static tf::Taskflow schedule(const QueryEngine::QueryPlan& plan) noexcept;
 
     private:
         Scheduler() = default;
@@ -21,13 +22,13 @@ namespace metaldb {
         using IntermediateBufferType = std::vector<char>;
         using IntermediateBufferTypePtr = std::shared_ptr<IntermediateBufferType>;
 
-        static IntermediateBufferTypePtr MakeBufferPtr();
-        static std::shared_ptr<MetalManager::OutputBufferType> MakeOutputBufferPtr();
+        static IntermediateBufferTypePtr MakeBufferPtr() noexcept;
+        static std::shared_ptr<MetalManager::OutputBufferType> MakeOutputBufferPtr() noexcept;
 
     public:
         // Helper function.
         // Takes in a rawTable, and splits it into a list of pairs with `MaxNumRows` serialized rows, and the number of rows in the chunk.
-        static std::vector<std::pair<IntermediateBufferTypePtr, std::size_t>> SerializeRawTable(const metaldb::reader::RawTable& rawTable, std::size_t maxNumRows);
+        static std::vector<std::pair<IntermediateBufferTypePtr, std::size_t>> SerializeRawTable(const metaldb::reader::RawTable& rawTable, std::size_t maxNumRows) noexcept;
 
         struct Parameters final {
             tf::Taskflow* _Nonnull taskflow;
@@ -39,22 +40,22 @@ namespace metaldb {
             IntermediateBufferTypePtr outputBuffer;
 
             Parameters(tf::Taskflow* _Nonnull taskflow_, std::shared_ptr<engine::Encoder> encoder_, tf::Task* _Nonnull doWorkTask_, std::shared_ptr<MetalManager> manager_, std::shared_ptr<std::vector<char>> serializedData_, const std::vector<IntermediateBufferTypePtr>& childOutputBuffers_, IntermediateBufferTypePtr outputBuffer_) : taskflow(taskflow_), encoder(encoder_), doWorkTask(doWorkTask_), manager(manager_), serializedData(serializedData_), childOutputBuffers(childOutputBuffers_), outputBuffer(outputBuffer_) {}
+
+            ~Parameters() noexcept = default;
         };
 
-        static tf::Task registerStage(tf::Task& taskDoWork, const std::shared_ptr<QueryEngine::Stage>& stage, tf::Taskflow* _Nonnull taskflow, std::shared_ptr<MetalManager> manager, IntermediateBufferTypePtr outputBuffer);
+        static tf::Task registerStage(tf::Task& taskDoWork, const std::shared_ptr<QueryEngine::Stage>& stage, tf::Taskflow* _Nonnull taskflow, std::shared_ptr<MetalManager> manager, IntermediateBufferTypePtr outputBuffer) noexcept;
 
-        static void registerBaseStage(tf::Task& taskDoWork, const std::shared_ptr<QueryEngine::Stage>& stage, tf::Taskflow* _Nonnull taskflow, std::shared_ptr<MetalManager> manager, std::vector<IntermediateBufferTypePtr>&& childOutputBuffers, IntermediateBufferTypePtr outputBuffer);
+        static void registerBaseStage(tf::Task& taskDoWork, const std::shared_ptr<QueryEngine::Stage>& stage, tf::Taskflow* _Nonnull taskflow, std::shared_ptr<MetalManager> manager, std::vector<IntermediateBufferTypePtr>&& childOutputBuffers, IntermediateBufferTypePtr outputBuffer) noexcept;
 
-        static tf::Task registerBasePartial(const std::shared_ptr<QueryEngine::StagePartial>& partial, Parameters& parameters);
+        static tf::Task registerBasePartial(const std::shared_ptr<QueryEngine::StagePartial>& partial, Parameters& parameters) noexcept;
 
-        static tf::Task registerReadPartial(std::shared_ptr<QueryEngine::ReadPartial> read, Parameters& parameters);
+        static tf::Task registerReadPartial(std::shared_ptr<QueryEngine::ReadPartial> read, Parameters& parameters) noexcept;
 
-        static tf::Task registerProjectionPartial(std::shared_ptr<QueryEngine::ProjectionPartial> projection, Parameters& parameters);
+        static tf::Task registerProjectionPartial(std::shared_ptr<QueryEngine::ProjectionPartial> projection, Parameters& parameters) noexcept;
 
-        static tf::Task registerShufflePartial(std::shared_ptr<QueryEngine::ShuffleOutputPartial> output, Parameters& parameters);
+        static tf::Task registerShufflePartial(std::shared_ptr<QueryEngine::ShuffleOutputPartial> output, Parameters& parameters) noexcept;
 
-        static tf::Task registerWritePartial(std::shared_ptr<QueryEngine::WritePartial> write, Parameters& parameters);
-
-        static void DebugTask();
+        static tf::Task registerWritePartial(std::shared_ptr<QueryEngine::WritePartial> write, Parameters& parameters) noexcept;
     };
 }

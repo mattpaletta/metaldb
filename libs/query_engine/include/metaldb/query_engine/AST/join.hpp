@@ -14,8 +14,8 @@ namespace metaldb::QueryEngine::AST {
             NATURAL
         };
 
-        Join(JoinType joinType, std::shared_ptr<BaseFilterExpr> expr, std::shared_ptr<Expr> lhs, std::shared_ptr<Expr> rhs) : _type(joinType), _expr(expr), _lhs(lhs), _rhs(rhs) {}
-        ~Join() = default;
+        Join(JoinType joinType, std::shared_ptr<BaseFilterExpr> expr, std::shared_ptr<Expr> lhs, std::shared_ptr<Expr> rhs) : _type(joinType), _expr(std::move(expr)), _lhs(std::move(lhs)), _rhs(std::move(rhs)) {}
+        ~Join() noexcept = default;
 
     private:
         JoinType _type;

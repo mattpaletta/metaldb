@@ -12,7 +12,7 @@ namespace metaldb::QueryEngine {
 
     class ColumnInfo {
     public:
-        ColumnInfo(const std::string& name_, ColumnType type_) : name(name_), type(type_) {}
+        ColumnInfo(std::string name_, ColumnType type_) : name(std::move(name_)), type(type_) {}
 
         std::string name;
         ColumnType type;
@@ -20,7 +20,7 @@ namespace metaldb::QueryEngine {
 
     class QueryInfo final {
     public:
-        QueryInfo(const std::vector<ColumnInfo>& columns_, const std::string& tableLocation) : columns(columns_) {}
+        QueryInfo(std::vector<ColumnInfo> columns_, std::string tableLocation) : columns(std::move(columns_)) {}
         ~QueryInfo() = default;
 
         std::vector<ColumnInfo> columns;

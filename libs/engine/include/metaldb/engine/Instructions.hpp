@@ -1,10 +1,3 @@
-//
-//  Instructions.hpp
-//  metaldb
-//
-//  Created by Matthew Paletta on 2022-03-13.
-//
-
 #pragma once
 
 #include "engine.h"

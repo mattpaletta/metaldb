@@ -4,6 +4,7 @@
 #include "output_row.h"
 
 #include <vector>
+#include <cassert>
 
 namespace metaldb {
     template<typename Container = std::vector<char>>

@@ -9,18 +9,18 @@
 namespace metaldb::QueryEngine::AST {
     class Projection final : public Expr {
     public:
-        Projection(const std::vector<std::string>& columns, std::shared_ptr<Expr> child) : _columns(columns), _child(child) {}
-        ~Projection() = default;
+        Projection(std::vector<std::string> columns, std::shared_ptr<Expr> child) : _columns(std::move(columns)), _child(std::move(child)) {}
+        ~Projection() noexcept = default;
 
-        bool hasChild() const {
+        bool hasChild() const noexcept {
             return this->child().operator bool();
         }
 
-        std::shared_ptr<Expr> child() const {
+        std::shared_ptr<Expr> child() const noexcept {
             return this->_child;
         }
 
-        std::vector<std::string> columns() const {
+        std::vector<std::string> columns() const noexcept {
             return this->_columns;
         }
 
@@ -28,7 +28,7 @@ namespace metaldb::QueryEngine::AST {
             return this->_columns.at(i);
         }
 
-        std::size_t numColumns() const {
+        std::size_t numColumns() const noexcept {
             return this->_columns.size();
         }
 

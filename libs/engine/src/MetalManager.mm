@@ -1,6 +1,6 @@
 #import "MetalManager.hpp"
 
-auto metaldb::MetalManager::Create() -> std::shared_ptr<MetalManager> {
+auto metaldb::MetalManager::Create() noexcept -> std::shared_ptr<MetalManager> {
     MetalManager manager;
     manager.constants = [[MTLFunctionConstantValues alloc] init];
 
@@ -31,15 +31,15 @@ auto metaldb::MetalManager::Create() -> std::shared_ptr<MetalManager> {
     return std::make_shared<MetalManager>(std::move(manager));
 }
 
-auto metaldb::MetalManager::MaxNumRows() const -> std::size_t {
+auto metaldb::MetalManager::MaxNumRows() const noexcept -> std::size_t {
     return this->pipeline.maxTotalThreadsPerThreadgroup;
 }
 
-auto metaldb::MetalManager::MaxMemory() const -> std::size_t {
+auto metaldb::MetalManager::MaxMemory() const noexcept -> std::size_t {
     return this->pipeline.staticThreadgroupMemoryLength;
 }
 
-void metaldb::MetalManager::runCPU(const std::vector<char>& serializedData, const std::vector<metaldb::InstSerializedValue>& instructions, OutputBufferType& outputBuffer, size_t numRows) {
+void metaldb::MetalManager::runCPU(const std::vector<char>& serializedData, const std::vector<metaldb::InstSerializedValue>& instructions, OutputBufferType& outputBuffer, size_t numRows) noexcept {
     // Mimic the GPU on the CPU
     // Force const cast the pointers (bad)
     const auto numInstructions = instructions.at(0);
@@ -56,7 +56,7 @@ void metaldb::MetalManager::runCPU(const std::vector<char>& serializedData, cons
     }
 }
 
-void metaldb::MetalManager::run(const std::vector<char>& serializedData, const std::vector<metaldb::InstSerializedValue>& instructions, OutputBufferType& outputBuffer, size_t numRows) {
+void metaldb::MetalManager::run(const std::vector<char>& serializedData, const std::vector<metaldb::InstSerializedValue>& instructions, OutputBufferType& outputBuffer, size_t numRows) noexcept {
     if (numRows == 0) {
         return;
     }
@@ -121,7 +121,7 @@ void metaldb::MetalManager::run(const std::vector<char>& serializedData, const s
     }
 }
 
-auto metaldb::MetalManager::GetDevice() -> id<MTLDevice> _Nullable {
+auto metaldb::MetalManager::GetDevice() noexcept -> id<MTLDevice> _Nullable {
     auto check = [](id<MTLDevice> device) {
         return !device.isLowPower;
     };
@@ -135,7 +135,7 @@ auto metaldb::MetalManager::GetDevice() -> id<MTLDevice> _Nullable {
     return MTLCreateSystemDefaultDevice();
 }
 
-auto metaldb::MetalManager::GetLibrary(id<MTLDevice> _Nonnull device) -> id<MTLLibrary> _Nullable {
+auto metaldb::MetalManager::GetLibrary(id<MTLDevice> _Nonnull device) noexcept -> id<MTLLibrary> _Nullable {
     NSError* error = nullptr;
     auto library = [device newLibraryWithFile:@"../libs/engine_shaders/MetalDbEngine.metallib" error:&error];
 
@@ -147,7 +147,7 @@ auto metaldb::MetalManager::GetLibrary(id<MTLDevice> _Nonnull device) -> id<MTLL
     return library;
 }
 
-auto metaldb::MetalManager::GetFunction(NSString* _Nonnull funcName, id<MTLLibrary> _Nonnull library, MTLFunctionConstantValues* _Nonnull constants) -> id<MTLFunction> _Nullable {
+auto metaldb::MetalManager::GetFunction(NSString* _Nonnull funcName, id<MTLLibrary> _Nonnull library, MTLFunctionConstantValues* _Nonnull constants) noexcept -> id<MTLFunction> _Nullable {
     NSError* error = nullptr;
     auto function = [library newFunctionWithName:funcName constantValues:constants error:&error];
     if (error) {
@@ -158,11 +158,11 @@ auto metaldb::MetalManager::GetFunction(NSString* _Nonnull funcName, id<MTLLibra
     return function;
 }
 
-auto metaldb::MetalManager::GetEntryFunction(id<MTLLibrary> _Nonnull library, MTLFunctionConstantValues* _Nonnull constants) -> id<MTLFunction> _Nullable {
+auto metaldb::MetalManager::GetEntryFunction(id<MTLLibrary> _Nonnull library, MTLFunctionConstantValues* _Nonnull constants) noexcept -> id<MTLFunction> _Nullable {
     return MetalManager::GetFunction(@"runQueryKernel", library, constants);
 }
 
-auto metaldb::MetalManager::GetInternalBinaryFunction(NSString* _Nonnull funcName, id<MTLLibrary> _Nonnull library) -> id<MTLFunction> _Nullable {
+auto metaldb::MetalManager::GetInternalBinaryFunction(NSString* _Nonnull funcName, id<MTLLibrary> _Nonnull library) noexcept -> id<MTLFunction> _Nullable {
     auto functionDescriptor = [MTLFunctionDescriptor new];
     functionDescriptor.name = funcName;
     functionDescriptor.options = MTLFunctionOptionCompileToBinary;
@@ -176,7 +176,7 @@ auto metaldb::MetalManager::GetInternalBinaryFunction(NSString* _Nonnull funcNam
     return function;
 }
 
-auto metaldb::MetalManager::GetComputePipeline(id<MTLLibrary> _Nonnull library, MTLFunctionConstantValues* _Nonnull constants) -> id<MTLComputePipelineState> _Nullable {
+auto metaldb::MetalManager::GetComputePipeline(id<MTLLibrary> _Nonnull library, MTLFunctionConstantValues* _Nonnull constants) noexcept -> id<MTLComputePipelineState> _Nullable {
     auto computeDescriptor = [MTLComputePipelineDescriptor new];
     computeDescriptor.supportAddingBinaryFunctions = true;
 

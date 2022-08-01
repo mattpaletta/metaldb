@@ -8,8 +8,8 @@
 namespace metaldb::QueryEngine::AST {
     class Rho : public Expr {
     public:
-        Rho(const std::string& originalName, const std::string& renamedName, std::shared_ptr<Expr> parent) : _originalName(originalName), _renamedName(renamedName), _parent(parent) {}
-        ~Rho() = default;
+        Rho(std::string originalName, std::string renamedName, std::shared_ptr<Expr> parent) : _originalName(std::move(originalName)), _renamedName(std::move(renamedName)), _parent(std::move(parent)) {}
+        ~Rho() noexcept = default;
 
     private:
         std::string _originalName;

@@ -11,7 +11,7 @@ namespace metaldb::QueryEngine {
     public:
         QueryEngine() = default;
 
-        ~QueryEngine() = default;
+        ~QueryEngine() noexcept = default;
 
         QueryPlan compile(const std::shared_ptr<AST::Expr>& expr) const;
 

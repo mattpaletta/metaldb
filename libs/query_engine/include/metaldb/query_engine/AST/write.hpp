@@ -1,10 +1,3 @@
-//
-//  write.hpp
-//  metaldb
-//
-//  Created by Matthew Paletta on 2022-06-03.
-//
-
 #pragma once
 
 #include "expr.hpp"
@@ -17,26 +10,26 @@
 namespace metaldb::QueryEngine::AST {
     class Write final : public Expr {
     public:
-        Write(const std::string& filepath, const std::vector<std::string>& columns, Method method, std::shared_ptr<Expr> child) : _filepath(filepath), _columns(columns), _method(method), _child(child) {}
-        ~Write() = default;
+        Write(std::string filepath, std::vector<std::string> columns, Method method, std::shared_ptr<Expr> child) : _filepath(std::move(filepath)), _columns(std::move(columns)), _method(method), _child(std::move(child)) {}
+        ~Write() noexcept = default;
 
-        std::string filepath() const {
+        std::string filepath() const noexcept {
             return this->_filepath;
         }
 
-        Method method() const {
+        Method method() const noexcept {
             return this->_method;
         }
 
-        bool hasChild() const {
+        bool hasChild() const noexcept {
             return this->child().operator bool();
         }
 
-        std::shared_ptr<Expr> child() const {
+        std::shared_ptr<Expr> child() const noexcept {
             return this->_child;
         }
 
-        std::vector<std::string> columns() const {
+        std::vector<std::string> columns() const noexcept {
             return this->_columns;
         }
 
@@ -44,7 +37,7 @@ namespace metaldb::QueryEngine::AST {
             return this->_columns.at(i);
         }
 
-        std::size_t numColumns() const {
+        std::size_t numColumns() const noexcept {
             return this->_columns.size();
         }
 

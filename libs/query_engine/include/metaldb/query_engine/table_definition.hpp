@@ -1,10 +1,3 @@
-//
-//  table_definition.hpp
-//  metaldb
-//
-//  Created by Matthew Paletta on 2022-05-07.
-//
-
 #pragma once
 
 #include "column_definition.hpp"
@@ -15,7 +8,7 @@
 
 namespace metaldb::QueryEngine {
     struct TableDefinition {
-        std::optional<std::size_t> getColumnIndex(const std::string& column) const {
+        std::optional<std::size_t> getColumnIndex(const std::string& column) const noexcept {
             for (std::size_t i = 0; i < this->columns.size(); ++i) {
                 if (this->columns.at(i).name == column) {
                     return i;
@@ -24,7 +17,7 @@ namespace metaldb::QueryEngine {
             return std::nullopt;
         }
 
-        const ColumnDefinition* getColumnDefinition(const std::string& column) const {
+        const ColumnDefinition* getColumnDefinition(const std::string& column) const noexcept {
             for (auto& c : this->columns) {
                 if (c.name == column) {
                     return &c;

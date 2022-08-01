@@ -21,14 +21,14 @@ namespace metaldb::QueryEngine {
             this->_id = counter.i++;
         }
 
-        virtual ~StagePartial() = default;
+        virtual ~StagePartial() noexcept = default;
 
         std::shared_ptr<TableDefinition> definition;
         // Children are the stage partial this stage depends on.
         // This will usually be 1, except for a join where multiple feeds into a single one.
         std::vector<std::shared_ptr<StagePartial>> children;
 
-        std::size_t id() const {
+        std::size_t id() const noexcept {
             return this->_id;
         }
         Execution execution = GPU;
@@ -41,7 +41,7 @@ namespace metaldb::QueryEngine {
     };
 
     struct ReadPartial : public StagePartial {
-        ReadPartial(const std::string& filepath_, metaldb::Method method_) : filepath(filepath_), method(method_) {}
+        ReadPartial(std::string filepath_, metaldb::Method method_) : filepath(std::move(filepath_)), method(method_) {}
 
         std::string filepath;
         metaldb::Method method;
@@ -49,7 +49,7 @@ namespace metaldb::QueryEngine {
 
     struct ProjectionPartial : public StagePartial {
         using ColumnIndexType = uint8_t;
-        ProjectionPartial(const std::vector<ColumnIndexType>& columnIndexes_) : columnIndexes(columnIndexes_) {}
+        ProjectionPartial(std::vector<ColumnIndexType> columnIndexes_) : columnIndexes(std::move(columnIndexes_)) {}
 
         std::vector<ColumnIndexType> columnIndexes;
     };
@@ -61,9 +61,10 @@ namespace metaldb::QueryEngine {
     };
 
     struct WritePartial : public StagePartial {
-        WritePartial(const std::string& filepath_, metaldb::Method method_, const std::vector<std::string>& columnNames_ = {}) : filepath(filepath_), method(method_), columnNames(columnNames_) {
+        WritePartial(std::string filepath_, metaldb::Method method_, std::vector<std::string> columnNames_ = {}) : filepath(std::move(filepath_)), method(method_), columnNames(std::move(columnNames_)) {
             this->execution = CPU;
         }
+
         std::string filepath;
         metaldb::Method method;
         std::vector<std::string> columnNames;

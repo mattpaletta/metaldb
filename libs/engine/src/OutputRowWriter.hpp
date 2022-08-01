@@ -1,10 +1,3 @@
-//
-//  OutputRowWriter.hpp
-//  metaldb_engine
-//
-//  Created by Matthew Paletta on 2022-05-29.
-//
-
 #pragma once
 
 #include "OutputRowReader.hpp"
@@ -12,6 +5,7 @@
 #include "temp_row.h"
 
 #include <vector>
+#include <cassert>
 
 namespace metaldb {
     class OutputRowWriter final {
@@ -24,16 +18,16 @@ namespace metaldb {
         OutputRowWriter() = default;
         OutputRowWriter(const OutputRowBuilder& builder);
 
-        ~OutputRowWriter() = default;
+        ~OutputRowWriter() noexcept = default;
 
-        CPP_PURE_FUNC OutputRow::NumRowsType CurrentNumRows() const;
+        CPP_PURE_FUNC OutputRow::NumRowsType CurrentNumRows() const noexcept;
 
-        CPP_PURE_FUNC size_t size() const;
+        CPP_PURE_FUNC size_t size() const noexcept;
 
-        void appendTempRow(const metaldb::TempRow& row);
+        void appendTempRow(const metaldb::TempRow& row) noexcept;
 
         template<typename Container>
-        void copyRow(const OutputRowReader<Container>& reader, std::size_t row) {
+        void copyRow(const OutputRowReader<Container>& reader, std::size_t row) noexcept {
             if (!this->_hasCopiedHeader) {
                 // The num bytes also includes the size of the header, but that's left to when we retreive.
                 this->_sizeOfHeader = OutputRow::SizeOfHeader(this->NumColumns());
@@ -59,15 +53,15 @@ namespace metaldb {
             this->_numRows++;
         }
 
-        CPP_PURE_FUNC OutputRow::SizeOfHeaderType SizeOfHeader() const;
+        CPP_PURE_FUNC OutputRow::SizeOfHeaderType SizeOfHeader() const noexcept;
 
-        CPP_PURE_FUNC void write(std::vector<char>& buffer) const;
+        CPP_PURE_FUNC void write(std::vector<char>& buffer) const noexcept;
 
-        CPP_PURE_FUNC OutputRow::NumColumnsType NumColumns() const;
+        CPP_PURE_FUNC OutputRow::NumColumnsType NumColumns() const noexcept;
 
-        CPP_PURE_FUNC OutputRow::NumBytesType NumBytes() const;
+        CPP_PURE_FUNC OutputRow::NumBytesType NumBytes() const noexcept;
 
-        CPP_PURE_FUNC OutputRow::NumBytesType NumBytesData() const;
+        CPP_PURE_FUNC OutputRow::NumBytesType NumBytesData() const noexcept;
 
     private:
         bool _hasCopiedHeader = false;
@@ -76,16 +70,16 @@ namespace metaldb {
         std::vector<ColumnType> _columnTypes;
         std::vector<char> _data;
 
-        void addPaddingUntilIndex(size_t index, std::vector<char>& buffer) const;
+        void addPaddingUntilIndex(size_t index, std::vector<char>& buffer) const noexcept;
 
         template<typename T>
-        CPP_PURE_FUNC void appendToData(T val) {
+        CPP_PURE_FUNC void appendToData(T val) noexcept {
             static_assert(sizeof(decltype(_data)::value_type) == 1);
             return this->appendGeneric(val, this->_data);
         }
 
         template<typename T, typename V>
-        CPP_PURE_FUNC void appendGeneric(T val, std::vector<V>& buf) const {
+        CPP_PURE_FUNC void appendGeneric(T val, std::vector<V>& buf) const noexcept {
             WriteBytesStartingAt(buf, val);
         }
     };

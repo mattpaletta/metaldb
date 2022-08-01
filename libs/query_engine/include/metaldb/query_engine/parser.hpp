@@ -9,7 +9,7 @@ namespace metaldb::QueryEngine {
     class Parser final {
     public:
         Parser() = default;
-        ~Parser() = default;
+        ~Parser() noexcept = default;
 
         std::shared_ptr<AST::Expr> Parse(const std::string& query) const;
     };

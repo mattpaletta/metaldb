@@ -7,13 +7,13 @@ namespace metaldb::QueryEngine::AST {
     class BaseFilterExpr {
     public:
         BaseFilterExpr() = default;
-        virtual ~BaseFilterExpr() = default;
+        virtual ~BaseFilterExpr() noexcept = default;
     };
 
     class ConstantInt : public BaseFilterExpr {
     public:
         ConstantInt(int value) : _value(value) {}
-        ~ConstantInt() = default;
+        ~ConstantInt() noexcept = default;
 
     private:
         int _value;
@@ -22,7 +22,7 @@ namespace metaldb::QueryEngine::AST {
     class ConstantFloat : public BaseFilterExpr {
     public:
         ConstantFloat(float value) : _value(value) {}
-        ~ConstantFloat() = default;
+        ~ConstantFloat() noexcept = default;
 
     private:
         float _value;
@@ -30,8 +30,8 @@ namespace metaldb::QueryEngine::AST {
 
     class ConstantString : public BaseFilterExpr {
     public:
-        ConstantString(const std::string& value) : _value(value) {}
-        ~ConstantString() = default;
+        ConstantString(std::string value) : _value(std::move(value)) {}
+        ~ConstantString() noexcept = default;
 
     private:
         std::string _value;
@@ -39,9 +39,9 @@ namespace metaldb::QueryEngine::AST {
 
     class ReadColumn : public BaseFilterExpr {
     public:
-        ReadColumn(const std::string& table, const std::string& column) : _table(table), _column(column) {}
-        ReadColumn(const std::string& column) : _table(""), _column(column) {}
-        ~ReadColumn() = default;
+        ReadColumn(std::string table, std::string column) : _table(std::move(table)), _column(std::move(column)) {}
+        ReadColumn(std::string column) : _table(""), _column(std::move(column)) {}
+        ~ReadColumn() noexcept = default;
 
     private:
         std::string _table;
@@ -50,8 +50,8 @@ namespace metaldb::QueryEngine::AST {
 
     class LTOperator : public BaseFilterExpr {
     public:
-        LTOperator(std::shared_ptr<BaseFilterExpr> lhs, std::shared_ptr<BaseFilterExpr> rhs) : _lhs(lhs), _rhs(rhs) {}
-        ~LTOperator() = default;
+        LTOperator(std::shared_ptr<BaseFilterExpr> lhs, std::shared_ptr<BaseFilterExpr> rhs) : _lhs(std::move(lhs)), _rhs(std::move(rhs)) {}
+        ~LTOperator() noexcept = default;
 
     private:
         std::shared_ptr<BaseFilterExpr> _lhs;
@@ -60,8 +60,8 @@ namespace metaldb::QueryEngine::AST {
 
     class GTOperator : public BaseFilterExpr {
     public:
-        GTOperator(std::shared_ptr<BaseFilterExpr> lhs, std::shared_ptr<BaseFilterExpr> rhs) : _lhs(lhs), _rhs(rhs) {}
-        ~GTOperator() = default;
+        GTOperator(std::shared_ptr<BaseFilterExpr> lhs, std::shared_ptr<BaseFilterExpr> rhs) : _lhs(std::move(lhs)), _rhs(std::move(rhs)) {}
+        ~GTOperator() noexcept = default;
 
     private:
         std::shared_ptr<BaseFilterExpr> _lhs;
@@ -70,8 +70,8 @@ namespace metaldb::QueryEngine::AST {
 
     class AndOperator : public BaseFilterExpr {
     public:
-        AndOperator(std::shared_ptr<BaseFilterExpr> lhs, std::shared_ptr<BaseFilterExpr> rhs) : _lhs(lhs), _rhs(rhs) {}
-        ~AndOperator() = default;
+        AndOperator(std::shared_ptr<BaseFilterExpr> lhs, std::shared_ptr<BaseFilterExpr> rhs) : _lhs(std::move(lhs)), _rhs(std::move(rhs)) {}
+        ~AndOperator() noexcept = default;
 
     private:
         std::shared_ptr<BaseFilterExpr> _lhs;
@@ -80,8 +80,8 @@ namespace metaldb::QueryEngine::AST {
 
     class OrOperator : public BaseFilterExpr {
     public:
-        OrOperator(std::shared_ptr<BaseFilterExpr> lhs, std::shared_ptr<BaseFilterExpr> rhs) : _lhs(lhs), _rhs(rhs) {}
-        ~OrOperator() = default;
+        OrOperator(std::shared_ptr<BaseFilterExpr> lhs, std::shared_ptr<BaseFilterExpr> rhs) : _lhs(std::move(lhs)), _rhs(std::move(rhs)) {}
+        ~OrOperator() noexcept = default;
 
     private:
         std::shared_ptr<BaseFilterExpr> _lhs;
@@ -90,8 +90,8 @@ namespace metaldb::QueryEngine::AST {
 
     class EqOperator : public BaseFilterExpr {
     public:
-        EqOperator(std::shared_ptr<BaseFilterExpr> lhs, std::shared_ptr<BaseFilterExpr> rhs) : _lhs(lhs), _rhs(rhs) {}
-        ~EqOperator() = default;
+        EqOperator(std::shared_ptr<BaseFilterExpr> lhs, std::shared_ptr<BaseFilterExpr> rhs) : _lhs(std::move(lhs)), _rhs(std::move(rhs)) {}
+        ~EqOperator() noexcept = default;
 
     private:
         std::shared_ptr<BaseFilterExpr> _lhs;
