@@ -6,8 +6,6 @@
 
 // Based on: https://kieber-emmons.medium.com/efficient-parallel-prefix-sum-in-metal-for-apple-m1-9e60b974d62
 
-//------------------------------------------------------------------------------------------------//
-//  Cooperative threadgroup scan
 template<uint32_t BLOCK_SIZE, typename T>
 static T ThreadgroupCooperativePrefixExclusiveSum(T value, threadgroup T* sdata, const uint32_t lid, ushort simdWidth) {
     // first level of reduction in simdgroup
@@ -40,6 +38,9 @@ static T ThreadgroupCooperativePrefixExclusiveSum(T value, threadgroup T* sdata,
     return scan + prefix;
 }
 
+/**
+ * Performs prefix scan operation on an array
+ */
 template<uint32_t BLOCK_SIZE, typename T>
 void PrefixScanKernel(threadgroup T* scratch, T input, uint32_t local_id /*[[thread_position_in_threadgroup]]*/, ushort simdWidth /* [[ thread_execution_width ]]*/) {
     //  scan the aggregates
@@ -47,6 +48,9 @@ void PrefixScanKernel(threadgroup T* scratch, T input, uint32_t local_id /*[[thr
     scratch[local_id] = prefix;
 }
 
+/**
+ * Performs a reduce (sum) operation on an array.
+ */
 template<uint32_t BLOCK_SIZE, typename T>
 T ThreadGroupReduceCooperativeAlgorithm(threadgroup T* scratch, T value, uint32_t local_id /*[[thread_position_in_threadgroup]]*/, ushort simdWidth /* [[ thread_execution_width ]]*/) {
     // First level of reduction in simdgroup

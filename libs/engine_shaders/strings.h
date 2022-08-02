@@ -33,7 +33,7 @@ namespace metal {
         }
 
         template<typename T = METAL_DEVICE char*, typename V = METAL_DEVICE char*>
-        static T strncpy(T /* restrict */ destination, const V/* restrict */ source, size_t num) {
+        static T strncpy(T destination, const V source, size_t num) {
             V sourcePtr = source;
             T destinationCpy = destination;
 
@@ -48,7 +48,7 @@ namespace metal {
         }
 
         template<typename T = METAL_DEVICE char*, typename V = METAL_DEVICE char*>
-        static T strcpy(T /* restrict */ destination, const T /* restrict */ source) {
+        static T strcpy(T destination, const T source) {
             const V sourcePtr = source;
             T destinationCpy = destination;
 
@@ -64,7 +64,7 @@ namespace metal {
 
 
         template<typename T = METAL_DEVICE char*, typename V = METAL_DEVICE char*>
-        static T strncat(T /* restrict */ destination, const V/* restrict */ source, size_t num) {
+        static T strncat(T destination, const V source, size_t num) {
             T endOfDest = destination;
 
             // Move to the end of destination
@@ -75,7 +75,7 @@ namespace metal {
         }
 
         template<typename T = METAL_DEVICE char*, typename V = METAL_DEVICE char*>
-        static T strcat(T /* restrict */ destination, const V /* restrict */ source) {
+        static T strcat(T destination, const V source) {
             T endOfDest = destination;
 
             // Move to the end of destination

@@ -13,26 +13,31 @@ namespace metaldb {
     public:
         using SizeType = uint8_t;
 
+        /**
+         * Creates a @b GenericStringSection which stores a starting pointer and a length.
+         */
         GenericStringSection(T str, SizeType size) : _size(size), _str(str) {}
 
-        CPP_CONST_FUNC SizeType size() const {
+        /**
+         * Returns the length of the string.
+         */
+        CPP_CONST_FUNC SizeType Size() const {
             return this->_size;
         }
 
-        CPP_PURE_FUNC T c_str() const {
+        /**
+         * Returns the starting pointer as a C string.
+         */
+        CPP_PURE_FUNC T C_Str() const {
             return this->_str;
         }
 
 #ifndef __METAL__
-        CPP_PURE_FUNC std::string str() const {
-            return std::string(this->c_str(), this->size());
-        }
-
-        void print() const {
-            for (SizeType i = 0; i < this->size(); ++i) {
-                std::cout << this->str()[i];
-            }
-            std::cout << std::endl;
+        /**
+         * Returns the string as a C++ string.
+         */
+        CPP_PURE_FUNC std::string Str() const {
+            return std::string(this->C_Str(), this->Size());
         }
 #endif
 

@@ -36,17 +36,17 @@ NEW_TEST(ParseRowInstructionTest, SerializeParseRowInstruction) {
 
     ParseRowInstruction parseRowInst = &buffer.at(2);
 
-    CPPTEST_ASSERT(parseRowInst.getMethod() == Method::CSV);
-    CPPTEST_ASSERT(parseRowInst.numColumns() == 5);
+    CPPTEST_ASSERT(parseRowInst.GetMethod() == Method::CSV);
+    CPPTEST_ASSERT(parseRowInst.NumColumns() == 5);
     {
-        CPPTEST_ASSERT(parseRowInst.getColumnType(0) == ColumnType::Float);
-        CPPTEST_ASSERT(parseRowInst.getColumnType(1) == ColumnType::Float);
-        CPPTEST_ASSERT(parseRowInst.getColumnType(2) == ColumnType::Float);
-        CPPTEST_ASSERT(parseRowInst.getColumnType(3) == ColumnType::Float);
-        CPPTEST_ASSERT(parseRowInst.getColumnType(4) == ColumnType::String);
+        CPPTEST_ASSERT(parseRowInst.GetColumnType(0) == ColumnType::Float);
+        CPPTEST_ASSERT(parseRowInst.GetColumnType(1) == ColumnType::Float);
+        CPPTEST_ASSERT(parseRowInst.GetColumnType(2) == ColumnType::Float);
+        CPPTEST_ASSERT(parseRowInst.GetColumnType(3) == ColumnType::Float);
+        CPPTEST_ASSERT(parseRowInst.GetColumnType(4) == ColumnType::String);
     }
-    CPPTEST_ASSERT(parseRowInst.skipHeader() == false);
-    CPPTEST_ASSERT(parseRowInst.end() - &buffer.at(0) == buffer.size());
+    CPPTEST_ASSERT(parseRowInst.SkipHeader() == false);
+    CPPTEST_ASSERT(parseRowInst.End() - &buffer.at(0) == buffer.size());
 }
 
 NEW_TEST(ParseRowInstructionTest, ReadParseRowInstruction) {
@@ -65,15 +65,15 @@ NEW_TEST(ParseRowInstructionTest, ReadParseRowInstruction) {
     CPPTEST_ASSERT(buffer.at(0) == 1); // Size.
     CPPTEST_ASSERT((InstructionType) buffer.at(1) == InstructionType::PARSEROW);
     ParseRowInstruction parseRowInst = &buffer.at(2);
-    CPPTEST_ASSERT(parseRowInst.readCSVColumnLength(rawTable, 0, 0) == 1);
-    CPPTEST_ASSERT(parseRowInst.readCSVColumnLength(rawTable, 0, 1) == 1);
-    CPPTEST_ASSERT(parseRowInst.readCSVColumnLength(rawTable, 0, 2) == 1);
-    CPPTEST_ASSERT(parseRowInst.readCSVColumnLength(rawTable, 0, 3) == 1);
+    CPPTEST_ASSERT(parseRowInst.ReadCSVColumnLength(rawTable, 0, 0) == 1);
+    CPPTEST_ASSERT(parseRowInst.ReadCSVColumnLength(rawTable, 0, 1) == 1);
+    CPPTEST_ASSERT(parseRowInst.ReadCSVColumnLength(rawTable, 0, 2) == 1);
+    CPPTEST_ASSERT(parseRowInst.ReadCSVColumnLength(rawTable, 0, 3) == 1);
 
-    CPPTEST_ASSERT(parseRowInst.readCSVColumnLength(rawTable, 1, 0) == 1);
-    CPPTEST_ASSERT(parseRowInst.readCSVColumnLength(rawTable, 1, 1) == 1);
-    CPPTEST_ASSERT(parseRowInst.readCSVColumnLength(rawTable, 1, 2) == 1);
-    CPPTEST_ASSERT(parseRowInst.readCSVColumnLength(rawTable, 1, 3) == 1);
+    CPPTEST_ASSERT(parseRowInst.ReadCSVColumnLength(rawTable, 1, 0) == 1);
+    CPPTEST_ASSERT(parseRowInst.ReadCSVColumnLength(rawTable, 1, 1) == 1);
+    CPPTEST_ASSERT(parseRowInst.ReadCSVColumnLength(rawTable, 1, 2) == 1);
+    CPPTEST_ASSERT(parseRowInst.ReadCSVColumnLength(rawTable, 1, 3) == 1);
 
 
     std::array<metaldb::OutputSerializedValue, 10'000> output;
@@ -174,11 +174,11 @@ NEW_TEST(ParseRowInstructionTest, ReadParseRowInstructionString) {
     CPPTEST_ASSERT(buffer.at(0) == 1); // Size.
     CPPTEST_ASSERT((InstructionType) buffer.at(1) == InstructionType::PARSEROW);
     ParseRowInstruction parseRowInst = &buffer.at(2);
-    CPPTEST_ASSERT(parseRowInst.readCSVColumnLength(rawTable, 0, 0) == 1);
-    CPPTEST_ASSERT(parseRowInst.readCSVColumnLength(rawTable, 0, 1) == 3);
+    CPPTEST_ASSERT(parseRowInst.ReadCSVColumnLength(rawTable, 0, 0) == 1);
+    CPPTEST_ASSERT(parseRowInst.ReadCSVColumnLength(rawTable, 0, 1) == 3);
 
-    CPPTEST_ASSERT(parseRowInst.readCSVColumnLength(rawTable, 1, 0) == 1);
-    CPPTEST_ASSERT(parseRowInst.readCSVColumnLength(rawTable, 1, 1) == 3);
+    CPPTEST_ASSERT(parseRowInst.ReadCSVColumnLength(rawTable, 1, 0) == 1);
+    CPPTEST_ASSERT(parseRowInst.ReadCSVColumnLength(rawTable, 1, 1) == 3);
 
     std::array<metaldb::OutputSerializedValue, 10'000> output;
     std::array<metaldb::OutputRow::NumBytesType, 10'000> scratch;
@@ -189,14 +189,14 @@ NEW_TEST(ParseRowInstructionTest, ReadParseRowInstructionString) {
         auto row = parseRowInst.GetRow(constants);
 
         CPPTEST_ASSERT(row.ReadColumnInt(0) == 4);
-        CPPTEST_ASSERT(row.ReadColumnString(1).str() == "abc");
+        CPPTEST_ASSERT(row.ReadColumnString(1).Str() == "abc");
     }
     {
         constants.thread_position_in_threadgroup = 1;
         auto row = parseRowInst.GetRow(constants);
 
         CPPTEST_ASSERT(row.ReadColumnInt(0) == 5);
-        CPPTEST_ASSERT(row.ReadColumnString(1).str() == "def");
+        CPPTEST_ASSERT(row.ReadColumnString(1).Str() == "def");
     }
 }
 
@@ -243,9 +243,9 @@ NEW_TEST(ParseRowInstructionTest, TaxiRowRegression) {
         auto row = parseRowInst.GetRow(constants);
 
         CPPTEST_ASSERT(row.ReadColumnInt(0) == 2);
-        CPPTEST_ASSERT(row.ReadColumnString(1).str() == "2022-02-01 00:20:21");
-        CPPTEST_ASSERT(row.ReadColumnString(2).str() == "2022-02-01 00:24:30");
-        CPPTEST_ASSERT(row.ReadColumnString(3).str() == "N");
+        CPPTEST_ASSERT(row.ReadColumnString(1).Str() == "2022-02-01 00:20:21");
+        CPPTEST_ASSERT(row.ReadColumnString(2).Str() == "2022-02-01 00:24:30");
+        CPPTEST_ASSERT(row.ReadColumnString(3).Str() == "N");
         CPPTEST_ASSERT(row.ReadColumnFloat(4) == 1.0);
         CPPTEST_ASSERT(row.ReadColumnInt(5) == 43);
         CPPTEST_ASSERT(row.ReadColumnInt(6) == 238);
@@ -256,7 +256,7 @@ NEW_TEST(ParseRowInstructionTest, TaxiRowRegression) {
         CPPTEST_ASSERT(ApproximatelyEqual(row.ReadColumnFloat(11), 0.5f));
         CPPTEST_ASSERT(ApproximatelyEqual(row.ReadColumnFloat(12), 1.02f));
         CPPTEST_ASSERT(ApproximatelyEqual(row.ReadColumnFloat(13), 0.0f));
-        CPPTEST_ASSERT(parseRowInst.readCSVColumnLength(rawTable, 0, 14) == 0);
+        CPPTEST_ASSERT(parseRowInst.ReadCSVColumnLength(rawTable, 0, 14) == 0);
         CPPTEST_ASSERT(ApproximatelyEqual(row.ReadColumnFloat(15), 0.3f));
         CPPTEST_ASSERT(ApproximatelyEqual(row.ReadColumnFloat(16), 7.82f));
         CPPTEST_ASSERT(ApproximatelyEqual(row.ReadColumnFloat(17), 1.0f));
@@ -268,9 +268,9 @@ NEW_TEST(ParseRowInstructionTest, TaxiRowRegression) {
         auto row = parseRowInst.GetRow(constants);
 
         CPPTEST_ASSERT(row.ReadColumnInt(0) == 2);
-        CPPTEST_ASSERT(row.ReadColumnString(1).str() == "2022-02-01 00:32:26");
-        CPPTEST_ASSERT(row.ReadColumnString(2).str() == "2022-02-01 00:35:31");
-        CPPTEST_ASSERT(row.ReadColumnString(3).str() == "N");
+        CPPTEST_ASSERT(row.ReadColumnString(1).Str() == "2022-02-01 00:32:26");
+        CPPTEST_ASSERT(row.ReadColumnString(2).Str() == "2022-02-01 00:35:31");
+        CPPTEST_ASSERT(row.ReadColumnString(3).Str() == "N");
         CPPTEST_ASSERT(row.ReadColumnFloat(4) == 1.0);
         CPPTEST_ASSERT(row.ReadColumnInt(5) == 166);
         CPPTEST_ASSERT(row.ReadColumnInt(6) == 24);
@@ -281,7 +281,7 @@ NEW_TEST(ParseRowInstructionTest, TaxiRowRegression) {
         CPPTEST_ASSERT(ApproximatelyEqual(row.ReadColumnFloat(11), 0.5f));
         CPPTEST_ASSERT(ApproximatelyEqual(row.ReadColumnFloat(12), 0.0f));
         CPPTEST_ASSERT(ApproximatelyEqual(row.ReadColumnFloat(13), 0.0f));
-        CPPTEST_ASSERT(parseRowInst.readCSVColumnLength(rawTable, 0, 14) == 0);
+        CPPTEST_ASSERT(parseRowInst.ReadCSVColumnLength(rawTable, 0, 14) == 0);
         CPPTEST_ASSERT(ApproximatelyEqual(row.ReadColumnFloat(15), 0.3f));
         CPPTEST_ASSERT(ApproximatelyEqual(row.ReadColumnFloat(16), 5.8f));
         CPPTEST_ASSERT(ApproximatelyEqual(row.ReadColumnFloat(17), 2.0f));

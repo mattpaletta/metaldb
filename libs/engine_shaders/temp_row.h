@@ -24,17 +24,44 @@ namespace metaldb {
     public:
         using value_type = char;
 
+        /**
+         * The type to store the size of the header.
+         */
         using SizeOfHeaderType = OutputRow::SizeOfHeaderType;
+
+        /**
+         * The starting offset for the size of the header.
+         */
         METAL_CONSTANT static constexpr auto SizeOfHeaderOffset = 0;
 
+        /**
+         * The type to store the number of columns.
+         */
         using NumColumnsType = OutputRow::NumColumnsType;
+
+        /**
+         * The starting offset for the number of columns.
+         */
         METAL_CONSTANT static constexpr auto NumColumnsOffset = sizeof(SizeOfHeaderType) + SizeOfHeaderOffset;
 
+        /**
+         * The starting offset for the types of each column.
+         */
         METAL_CONSTANT static constexpr auto ColumnTypeOffset = sizeof(NumColumnsType) + NumColumnsOffset;
 
+        /**
+         * The type to store the size of each column.
+         */
         using ColumnSizeType = OutputRow::ColumnSizeType;
+
+        /**
+         * The general type to use for sizes.
+         */
         using SizeType = types::SizeType;
 
+        /**
+         * A helper class to assist with building a TempRow object.
+         */
         class TempRowBuilder {
         public:
             constexpr METAL_CONSTANT static SizeType MAX_VALUE = 256;
@@ -45,6 +72,9 @@ namespace metaldb {
             NumColumnsType numColumns = 0;
         };
 
+        /**
+         * Constructs a new TempRow from a @b TempRowBuilder .
+         */
         TempRow(TempRowBuilder builder) {
             SizeOfHeaderType lengthOfHeader = sizeof(SizeOfHeaderType);
 
@@ -78,14 +108,26 @@ namespace metaldb {
             WriteBytesStartingAt(&this->_data[SizeOfHeaderOffset], lengthOfHeader);
         }
 
+        /**
+         * Constructs a blank TempRow
+         */
         TempRow() = default;
 
+        /**
+         * Returns the length of the header in bytes.
+         */
         CPP_PURE_FUNC SizeOfHeaderType LengthOfHeader() const {
             return ReadBytesStartingAt<SizeOfHeaderType>(&this->_data[SizeOfHeaderOffset]);
         }
 
+        /**
+         * Returns the size of the data portion of the TempRow plus storing the sizes of each variable column.
+         * This is intended for use when constructing an @b OutputRow .
+         *
+         * @see OutputInstruction::WriteRow
+         */
         CPP_PURE_FUNC SizeType SizeOfPartialRow() const {
-            auto sum = this->size();
+            auto sum = this->Size();
             for (auto i = 0; i < this->NumColumns(); ++i) {
                 if (this->ColumnVariableSize(i)) {
                     sum += sizeof(this->ColumnSize(i));
@@ -94,18 +136,30 @@ namespace metaldb {
             return sum;
         }
 
+        /**
+         * Returns the number of columns.
+         */
         CPP_PURE_FUNC NumColumnsType NumColumns() const {
             return ReadBytesStartingAt<NumColumnsType>(&this->_data[NumColumnsOffset]);
         }
 
+        /**
+         * Returns the type of the column at a particular index.
+         */
         CPP_PURE_FUNC enum ColumnType ColumnType(NumColumnsType column) const {
             return ReadBytesStartingAt<enum ColumnType>(&this->_data[ColumnTypeOffset + (column * sizeof(enum ColumnType))]);
         }
 
-        CPP_PURE_FUNC  bool ColumnVariableSize(NumColumnsType column) const {
+        /**
+         * Returns true if the column can be a variable size.
+         */
+        CPP_PURE_FUNC bool ColumnVariableSize(NumColumnsType column) const {
             return metaldb::ColumnVariableSize(this->ColumnType(column));
         }
 
+        /**
+         * Returns the actual size of a column, including columns with variable size.
+         */
         CPP_PURE_FUNC ColumnSizeType ColumnSize(NumColumnsType column) const {
             // Calculate column size of variable sizes
             {
@@ -137,6 +191,9 @@ namespace metaldb {
                 /* read into column size */ offsetOfVariableLength]);
         }
 
+        /**
+         * Returns the starting data offset for a column.
+         */
         CPP_PURE_FUNC SizeType ColumnStartOffset(NumColumnsType column) const {
             SizeType sum = 0;
             for (SizeType i = 0; i < column; ++i) {
@@ -145,19 +202,28 @@ namespace metaldb {
             return sum;
         }
 
-        LocalStringSection getString() {
-            return LocalStringSection(this->data(), this->_size);
+        /**
+         * Returns the @b TempRow as a string.
+         */
+        LocalStringSection GetString() {
+            return LocalStringSection(this->Data(), this->_size);
         }
 
-        CPP_PURE_FUNC bool hasValue(NumColumnsType column) const {
-            if (this->isNullable(column)) {
+        /**
+         * Returns true if the column is not nullable or if it is nullable, but has a value.
+         */
+        CPP_PURE_FUNC bool HasValue(NumColumnsType column) const {
+            if (this->IsNullable(column)) {
                 return this->ColumnSize(column) > 0;
             } else {
                 return true;
             }
         }
 
-        CPP_PURE_FUNC bool isNullable(NumColumnsType column) const {
+        /**
+         * Returns true if the column could be null.
+         */
+        CPP_PURE_FUNC bool IsNullable(NumColumnsType column) const {
             switch(this->ColumnType(column)) {
             case String_opt:
             case Float_opt:
@@ -171,55 +237,90 @@ namespace metaldb {
             }
         }
 
+        /**
+         * Reads a column as a float.
+         * It is up to the caller to ensure the @b ColumnType is a float.
+         */
         CPP_PURE_FUNC types::FloatType ReadColumnFloat(NumColumnsType column) const {
             const auto startOffset = this->ColumnStartOffset(column);
-            return ReadBytesStartingAt<types::FloatType>(this->data() + startOffset);
+            return ReadBytesStartingAt<types::FloatType>(this->Data() + startOffset);
         }
 
+        /**
+         * Reads a column as an integer.
+         * It is up to the caller to ensure the @b ColumnType is an integer.
+         */
         CPP_PURE_FUNC types::IntegerType ReadColumnInt(NumColumnsType column) const {
             const auto startOffset = this->ColumnStartOffset(column);
-            return ReadBytesStartingAt<types::IntegerType>(this->data() + startOffset);
+            return ReadBytesStartingAt<types::IntegerType>(this->Data() + startOffset);
         }
 
+        /**
+         * Reads a column as a string.
+         * It is up to the caller to ensure the @b ColumnType is a string.
+         */
         CPP_PURE_FUNC ConstLocalStringSection ReadColumnString(NumColumnsType column) const {
             const auto startOffset = this->ColumnStartOffset(column);
             const auto columnSize = this->ColumnSize(column);
-            return ConstLocalStringSection(this->data(startOffset), columnSize);
+            return ConstLocalStringSection(this->Data(startOffset), columnSize);
         }
 
-        METAL_THREAD value_type* data(SizeType index = 0) {
+        /**
+         * Returns a mutable pointer into the data section at a given offset.
+         */
+        METAL_THREAD value_type* Data(SizeType index = 0) {
             return &this->_data[this->LengthOfHeader() + index];
         }
 
-        const METAL_THREAD value_type* data(SizeType index = 0) const {
+        /**
+         * Returns a const pointer into the data section at a given offset.
+         */
+        const METAL_THREAD value_type* Data(SizeType index = 0) const {
             return &this->_data[this->LengthOfHeader() + index];
         }
 
-        CPP_PURE_FUNC METAL_THREAD value_type* end() {
-            return this->data(this->_size);
+        /**
+         * Returns a pointer one byte past the data section.
+         */
+        CPP_PURE_FUNC METAL_THREAD value_type* End() {
+            return this->Data(this->_size);
         }
 
-        CPP_CONST_FUNC SizeType size() const {
+        /**
+         * Returns the current size of the data section of the @b TempRow
+         */
+        CPP_CONST_FUNC SizeType Size() const {
             return this->_size;
         }
 
-        void append(METAL_THREAD char* str, SizeType len) {
-            metal::strings::strncpy(this->end(), str, len);
+        /**
+         * Appends a string to the data section.
+         */
+        void Append(METAL_THREAD char* str, SizeType len) {
+            metal::strings::strncpy(this->End(), str, len);
             this->_size += len;
         }
 
-        void append(types::IntegerType val) {
-            this->appendImpl(val);
+        /**
+         * Appends an integer to the data section.
+         */
+        void Append(types::IntegerType val) {
+            this->AppendImpl(val);
         }
 
-        void append(types::FloatType val) {
-            this->appendImpl(val);
+        /**
+         * Appends a float to the data section.
+         */
+        void Append(types::FloatType val) {
+            this->AppendImpl(val);
         }
 
 #ifdef __METAL__
-        // Supports copying from device to local storage
-        void append(METAL_DEVICE char* str, ColumnSizeType len) {
-            metal::strings::strncpy(this->end(), str, len);
+        /**
+         * Appends a string to the data section.
+         */
+        void Append(METAL_DEVICE char* str, ColumnSizeType len) {
+            metal::strings::strncpy(this->End(), str, len);
             this->_size += len;
         }
 #endif
@@ -229,8 +330,8 @@ namespace metaldb {
         SizeType _size = 0;
 
         template<typename T>
-        void appendImpl(T val) {
-            this->append((char METAL_THREAD *) &val, sizeof(T));
+        void AppendImpl(T val) {
+            this->Append((char METAL_THREAD *) &val, sizeof(T));
         }
     };
 }

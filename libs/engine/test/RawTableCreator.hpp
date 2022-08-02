@@ -56,7 +56,7 @@ static std::vector<char> CreateMetalRawTable() {
     CPPTEST_ASSERT(metalRawTable.GetRowIndex(1) == 7);
 
     {
-        auto* data = metalRawTable.data();
+        auto* data = metalRawTable.Data();
         for (std::size_t i = 0; i < metalRawTable.GetSizeOfData(); ++i) {
             CPPTEST_ASSERT(data[i] == rawTableCPU.data.at(i));
         }

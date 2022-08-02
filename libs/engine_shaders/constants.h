@@ -55,6 +55,12 @@ namespace metaldb {
         using SizeType = uint64_t;
     }
 
+    /**
+     * Reads `sizeof(Val)` bytes starting from @b ptr , and casts the return value as @b Val.
+     * @param ptr The starting pointer to read from.
+     *
+     * The caller should ensure that the bytes to read are in fact of type `Val` and the pointer is not null.
+     */
     template<typename Val, typename T>
     CPP_PURE_FUNC static Val ReadBytesStartingAt(T METAL_DEVICE * ptr) CPP_NOEXCEPT {
         if CPP_CONSTEXPR(sizeof(Val) == sizeof(T)) {
@@ -65,6 +71,12 @@ namespace metaldb {
     }
 
 #ifdef __METAL__
+    /**
+     * Reads `sizeof(Val)` bytes starting from @b ptr , and casts the return value as @b Val.
+     * @param ptr The starting pointer to read from.
+     *
+     * The caller should ensure that the bytes to read are in fact of type `Val` and the pointer is not null.
+     */
     template<typename Val, typename T>
     CPP_PURE_FUNC static Val ReadBytesStartingAt(T METAL_THREAD * ptr) CPP_NOEXCEPT {
         if CPP_CONSTEXPR(sizeof(Val) == sizeof(T)) {
@@ -75,6 +87,14 @@ namespace metaldb {
     }
 #endif
 
+    /**
+     * Writes a value into a pointer which may be of different size byte by byte.
+     * @param ptr The pointer to start writing bytes
+     * @param val The value to write to the pointer
+     *
+     * The caller should ensure the pointer is not null and the next N bytes are also available to write to.
+     * Where N is the `sizeof(Val)`
+     */
     template<typename Val, typename T>
     CPP_PURE_FUNC static void WriteBytesStartingAt(T METAL_DEVICE * ptr, const Val METAL_THREAD & val) CPP_NOEXCEPT {
         if CPP_CONSTEXPR(sizeof(T) == sizeof(Val)) {
@@ -87,6 +107,14 @@ namespace metaldb {
     }
 
 #ifdef __METAL__
+    /**
+     * Writes a value into a pointer which may be of different size byte by byte.
+     * @param ptr The pointer to start writing bytes
+     * @param val The value to write to the pointer
+     *
+     * The caller should ensure the pointer is not null and the next N bytes are also available to write to.
+     * Where N is the `sizeof(Val)`
+     */
     template<typename Val, typename T>
     CPP_PURE_FUNC static void WriteBytesStartingAt(T METAL_THREAD * ptr, const Val METAL_THREAD & val) CPP_NOEXCEPT {
         if CPP_CONSTEXPR(sizeof(T) == sizeof(Val)) {
@@ -100,6 +128,11 @@ namespace metaldb {
 #endif
 
 #ifndef __METAL__
+    /**
+     * Writes a value into a vector which may be of different size byte by byte.
+     * @param ptr The vector to start writing bytes
+     * @param val The value to write to the vector
+     */
     template<typename Val, typename T>
     static void WriteBytesStartingAt(std::vector<T>& ptr, const Val& val) CPP_NOEXCEPT {
         union {

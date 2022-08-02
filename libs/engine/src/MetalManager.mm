@@ -52,7 +52,7 @@ void metaldb::MetalManager::runCPU(const std::vector<char>& serializedData, cons
     for (std::size_t thread = 0; thread < numRows; ++thread) {
         constants.thread_position_in_grid = thread;
         constants.thread_position_in_threadgroup = thread;
-        metaldb::runInstructions((metaldb::InstSerializedValue*) &instructions.at(1), numInstructions, constants);
+        metaldb::RunInstructions((metaldb::InstSerializedValue*) &instructions.at(1), numInstructions, constants);
     }
 }
 

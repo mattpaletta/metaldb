@@ -38,9 +38,9 @@ void metaldb::OutputRowWriter::appendTempRow(const metaldb::TempRow& row) noexce
             this->appendToData(row.ColumnSize(col));
         }
     }
-    for (std::size_t i = 0; i < row.size(); ++i) {
+    for (std::size_t i = 0; i < row.Size(); ++i) {
         // Write the bytes to it.
-        this->appendToData(*row.data(i));
+        this->appendToData(*row.Data(i));
     }
     this->_numRows++;
 }

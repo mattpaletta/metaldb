@@ -17,5 +17,5 @@ kernel void runQueryKernel(device char* rawData [[ buffer(0) ]], metaldb::InstSe
     constants.thread_position_in_threadgroup = local_id;
     constants.thread_execution_width = simd_width;
 
-    metaldb::runInstructions(&instructions[1], numInstructions, constants);
+    metaldb::RunInstructions(&instructions[1], numInstructions, constants);
 }

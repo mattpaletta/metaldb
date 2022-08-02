@@ -24,6 +24,10 @@ auto metaldb::reader::CSVReader::IsValid() const noexcept -> bool {
 }
 
 auto metaldb::reader::CSVReader::Read(const CSVOptions& options) const noexcept -> RawTable {
+    if (!this->IsValid()) {
+        return RawTable::Invalid();
+    }
+    
     std::ifstream myfile(this->_path.string());
     if (!myfile.is_open()) {
         return RawTable::Invalid();

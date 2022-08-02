@@ -11,9 +11,9 @@ static metaldb::TempRow GenerateTempRow() {
     builder.columnTypes[2] = metaldb::ColumnType::Integer;
 
     metaldb::TempRow tempRow = builder;
-    tempRow.append((metaldb::types::IntegerType) 74);
-    tempRow.append((metaldb::types::IntegerType) 13);
-    tempRow.append((metaldb::types::IntegerType) 40);
+    tempRow.Append((metaldb::types::IntegerType) 74);
+    tempRow.Append((metaldb::types::IntegerType) 13);
+    tempRow.Append((metaldb::types::IntegerType) 40);
     return tempRow;
 }
 
@@ -47,12 +47,12 @@ NEW_TEST(ProjectionInstructionTest, SerializeProjectionInstruction) {
 
     auto tempRow = GenerateTempRow();
 
-    CPPTEST_ASSERT(projectionInst.numColumns() == 2);
+    CPPTEST_ASSERT(projectionInst.NumColumns() == 2);
     {
-        CPPTEST_ASSERT(projectionInst.getColumnIndex(0) == 2);
-        CPPTEST_ASSERT(projectionInst.getColumnIndex(1) == 0);
+        CPPTEST_ASSERT(projectionInst.GetColumnIndex(0) == 2);
+        CPPTEST_ASSERT(projectionInst.GetColumnIndex(1) == 0);
     }
-    CPPTEST_ASSERT(projectionInst.end() - &buffer.at(0) == buffer.size());
+    CPPTEST_ASSERT(projectionInst.End() - &buffer.at(0) == buffer.size());
 }
 
 NEW_TEST(ProjectionInstructionTest, ReadProjectionInstruction) {

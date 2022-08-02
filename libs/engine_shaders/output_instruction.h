@@ -11,6 +11,10 @@
 #endif
 
 namespace metaldb {
+    /**
+     * Assembles of the @b TempRow produced by each thread and assembles them into a single @b OutputRow which can then be copied
+     * back to the CPU for further processing.
+     */
     class OutputInstruction final {
     public:
         using SizeOfHeaderType = OutputRow::SizeOfHeaderType;
@@ -26,7 +30,11 @@ namespace metaldb {
 
         OutputInstruction(InstSerializedValuePtr instructions) : _instructions(instructions) {}
 
-        CPP_PURE_FUNC InstSerializedValuePtr end() const CPP_NOEXCEPT {
+        /**
+         * Returns a pointer 1 past the end of the output instruction.  This will either be an unknown if we exceed the end of the array or
+         * an encoded @b InstructionType .
+         */
+        CPP_PURE_FUNC InstSerializedValuePtr End() const CPP_NOEXCEPT {
             // Returns 1 past the end of the instruction
             const int8_t offset = 1;
             return &this->_instructions[offset];
@@ -116,8 +124,8 @@ namespace metaldb {
             }
 
             // Write the data for the row
-            for (size_t i = 0; i < row.size(); ++i) {
-                const auto value = row.data()[i];
+            for (size_t i = 0; i < row.Size(); ++i) {
+                const auto value = row.Data()[i];
                 constants.outputBuffer[nextAvailableSlot++] = value;
             }
 

@@ -1,7 +1,6 @@
 #pragma once
 
 #include "table_definition.hpp"
-
 #include "engine.h"
 
 #include <string>
@@ -24,10 +23,14 @@ namespace metaldb::QueryEngine {
         virtual ~StagePartial() noexcept = default;
 
         std::shared_ptr<TableDefinition> definition;
+
         // Children are the stage partial this stage depends on.
         // This will usually be 1, except for a join where multiple feeds into a single one.
         std::vector<std::shared_ptr<StagePartial>> children;
 
+        /**
+         * A unique indentifier for this @b StatePartial
+         */
         std::size_t id() const noexcept {
             return this->_id;
         }

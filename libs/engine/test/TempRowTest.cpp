@@ -26,9 +26,9 @@ NEW_TEST(TempRowTest, TempRowToOutputWriter) {
     builder.columnTypes[2] = ColumnType::Integer;
 
     TempRow tempRow = builder;
-    tempRow.append((types::IntegerType) 10);
-    tempRow.append((types::IntegerType) 11);
-    tempRow.append((types::IntegerType) 12);
+    tempRow.Append((types::IntegerType) 10);
+    tempRow.Append((types::IntegerType) 11);
+    tempRow.Append((types::IntegerType) 12);
 
     CPPTEST_ASSERT(tempRow.LengthOfHeader() > 0);
     CPPTEST_ASSERT(tempRow.LengthOfHeader() < 100);
@@ -57,7 +57,7 @@ NEW_TEST(TempRowTest, TempRowToOutputWriter) {
         CPPTEST_ASSERT(tempRow.ReadColumnInt(1) == 11);
         CPPTEST_ASSERT(tempRow.ReadColumnInt(2) == 12);
     }
-    CPPTEST_ASSERT(tempRow.size() >= 3);
+    CPPTEST_ASSERT(tempRow.Size() >= 3);
 }
 
 CPPTEST_END_CLASS(TempRowTest)

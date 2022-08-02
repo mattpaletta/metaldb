@@ -10,20 +10,54 @@
 #include "strings.h"
 
 namespace metaldb {
+    /**
+     * Parses an input buffer using a `Method` and then the Nth thread writes the Nth row as a @b TempRow .
+     */
     class ParseRowInstruction {
     public:
+        /**
+         * The type to store the method for parsing.
+         */
         using MethodType = Method;
+
+        /**
+         * The starting position of the method.
+         */
         METAL_CONSTANT static constexpr auto MethodOffset = 0;
 
+        /**
+         * The type to store if we should skip the header when parsing.
+         */
         using SkipHeaderType = bool;
+
+        /**
+         * The starting position of the skip header flag.
+         */
         METAL_CONSTANT static constexpr auto SkipHeaderOffset = sizeof(MethodType) + MethodOffset;
 
+        /**
+         * The type to store the number of columns to parse.
+         */
         using NumColumnsType = OutputRow::NumColumnsType;
+
+        /**
+         * The starting position for the number of columns to parse.
+         */
         METAL_CONSTANT static constexpr auto NumColumnsOffset = sizeof(SkipHeaderType) + SkipHeaderOffset;
 
+        /**
+         * The starting position for the column type of each column when parsing.
+         */
         METAL_CONSTANT static constexpr auto ColumnTypeOffset = sizeof(NumColumnsType) + NumColumnsOffset;
 
+        /**
+         * The type to store the size of each column.
+         */
         using ColumnSizeType = TempRow::ColumnSizeType;
+
+        /**
+         * The type to keep track of the current row number.
+         */
         using RowNumType = uint16_t;
 
 #ifndef __METAL__
@@ -32,53 +66,82 @@ namespace metaldb {
         // Pointer points to beginning of ParseRow instruction.
         ParseRowInstruction(InstSerializedValuePtr instructions) CPP_NOEXCEPT : _instructions(instructions) {}
 
-        CPP_PURE_FUNC MethodType getMethod() const CPP_NOEXCEPT {
+        CPP_PURE_FUNC MethodType GetMethod() const CPP_NOEXCEPT {
             return ReadBytesStartingAt<MethodType>(&this->_instructions[MethodOffset]);
         }
 
-        CPP_PURE_FUNC SkipHeaderType skipHeader() const CPP_NOEXCEPT {
+        CPP_PURE_FUNC SkipHeaderType SkipHeader() const CPP_NOEXCEPT {
             return ReadBytesStartingAt<SkipHeaderType>(&this->_instructions[SkipHeaderOffset]);
         }
 
-        CPP_PURE_FUNC NumColumnsType numColumns() const CPP_NOEXCEPT {
+        CPP_PURE_FUNC NumColumnsType NumColumns() const CPP_NOEXCEPT {
             return ReadBytesStartingAt<NumColumnsType>(&this->_instructions[NumColumnsOffset]);
         }
 
-        CPP_PURE_FUNC ColumnType getColumnType(NumColumnsType index) const CPP_NOEXCEPT {
+        CPP_PURE_FUNC ColumnType GetColumnType(NumColumnsType index) const CPP_NOEXCEPT {
             return ReadBytesStartingAt<ColumnType>(&this->_instructions[(index * sizeof(ColumnType)) + ColumnTypeOffset]);
         }
 
-        CPP_PURE_FUNC InstSerializedValuePtr end() const CPP_NOEXCEPT {
+        /**
+         * Returns a pointer 1 past the end of the parse instruction.  This will either be an unknown if we exceed the end of the array or
+         * an encoded @b InstructionType .
+         */
+        CPP_PURE_FUNC InstSerializedValuePtr End() const CPP_NOEXCEPT {
             // Returns 1 past the end of the instruction
-            const auto numColumns = this->numColumns();
+            const auto numColumns = this->NumColumns();
             const auto offset = ColumnTypeOffset + (numColumns * sizeof(ColumnType));
             return &this->_instructions[offset];
         }
 
-        CPP_PURE_FUNC StringSection readCSVColumn(RawTable METAL_THREAD & rawTable, RowNumType row, NumColumnsType column) const CPP_NOEXCEPT {
-            return this->readCSVColumnImpl(rawTable, row, column);
+        /**
+         * Parses the jth column from the nth row.
+         * If the column could not be read, an empty string is returned.
+         *
+         * @param rawTable The @b RawTable to read from.  This @b RawTable must be in CSV format.
+         * @param row The row to read.  This generally corresponds to the thread number, but does not have to.  It is up to the caller
+         *           to ensure that the row is a valid row in the @b rawTable .
+         * @param column The column to read from the row.  It is up to the caller to ensure that the column requested is less
+         *               than @b NumColumns .
+         *
+         * @note This class utilizes internal caching for significantly better performance on incrementing column numbers.
+         */
+        CPP_PURE_FUNC StringSection ReadCSVColumn(RawTable METAL_THREAD & rawTable, RowNumType row, NumColumnsType column) const CPP_NOEXCEPT {
+            return this->ReadCSVColumnImpl(rawTable, row, column);
         }
 
-        CPP_PURE_FUNC ColumnSizeType readCSVColumnLength(RawTable METAL_THREAD & rawTable, RowNumType row, NumColumnsType column) const CPP_NOEXCEPT {
+        /**
+         * Returns the length of the CSV column.
+         * If the column could not be read, 0 is returned.
+         *
+         * @see ParseRowInstruction::ReadCSVColumn
+         *
+         * @note This class utilizes internal caching for significantly better performance on incrementing column numbers.
+         */
+        CPP_PURE_FUNC ColumnSizeType ReadCSVColumnLength(RawTable METAL_THREAD & rawTable, RowNumType row, NumColumnsType column) const CPP_NOEXCEPT {
             // Do it this way for now to keep the code the same.
-            return this->readCSVColumn(rawTable, row, column).size();
+            return this->ReadCSVColumn(rawTable, row, column).Size();
         }
 
+        /**
+         * Returns the ith row, based on the the thread number in @b constants as a @b TempRow .
+         *
+         * @param constants The struct of constants to use as temporary storage.
+         */
         CPP_PURE_FUNC TempRow GetRow(DbConstants METAL_THREAD & constants) CPP_NOEXCEPT {
             TempRow::TempRowBuilder builder;
-            auto numCols = this->numColumns();
+            auto numCols = this->NumColumns();
             {
                 builder.numColumns = numCols;
 
                 // Read column types
                 for (auto i = 0; i < numCols; ++i) {
                     // Set all column types
-                    auto columnType = this->getColumnType(i);
+                    auto columnType = this->GetColumnType(i);
                     builder.columnTypes[i] = columnType;
 
                     // Set all column sizes, and they might get pruned
                     if (ColumnVariableSize(columnType)) {
-                        builder.columnSizes[i] = this->readCSVColumnLength(constants.rawTable, constants.thread_position_in_threadgroup, i);
+                        builder.columnSizes[i] = this->ReadCSVColumnLength(constants.rawTable, constants.thread_position_in_threadgroup, i);
                     } else {
                         builder.columnSizes[i] = 0;
                     }
@@ -89,38 +152,38 @@ namespace metaldb {
             TempRow row = builder;
             for (auto i = 0; i < numCols; ++i) {
                 // Write the columns into the buffer
-                auto stringSection = this->readCSVColumn(constants.rawTable, constants.thread_position_in_threadgroup, i);
+                auto stringSection = this->ReadCSVColumn(constants.rawTable, constants.thread_position_in_threadgroup, i);
 
-                switch (this->getColumnType(i)) {
+                switch (this->GetColumnType(i)) {
                 case String:
                 case String_opt: {
                     // Copy the string in directly.
-                    row.append(stringSection.c_str(), stringSection.size());
+                    row.Append(stringSection.C_Str(), stringSection.Size());
                     break;
                 }
                 case Integer: {
                     // Cast it to an integer
-                    types::IntegerType result = metal::strings::stoi(stringSection.c_str(), stringSection.size());
-                    row.append(result);
+                    types::IntegerType result = metal::strings::stoi(stringSection.C_Str(), stringSection.Size());
+                    row.Append(result);
                     break;
                 }
                 case Integer_opt: {
-                    if (stringSection.size() > 0) {
-                        types::IntegerType result = metal::strings::stoi(stringSection.c_str(), stringSection.size());
-                        row.append(result);
+                    if (stringSection.Size() > 0) {
+                        types::IntegerType result = metal::strings::stoi(stringSection.C_Str(), stringSection.Size());
+                        row.Append(result);
                     }
                     break;
                 }
                 case Float: {
                     // Cast it to a float.
-                    types::FloatType result = metal::strings::stof(stringSection.c_str(), stringSection.size());
-                    row.append(result);
+                    types::FloatType result = metal::strings::stof(stringSection.C_Str(), stringSection.Size());
+                    row.Append(result);
                     break;
                 }
                 case Float_opt: {
-                    if (stringSection.size() > 0) {
-                        types::FloatType result = metal::strings::stof(stringSection.c_str(), stringSection.size());
-                        row.append(result);
+                    if (stringSection.Size() > 0) {
+                        types::FloatType result = metal::strings::stof(stringSection.C_Str(), stringSection.Size());
+                        row.Append(result);
                     }
                     break;
                 }
@@ -141,12 +204,17 @@ namespace metaldb {
         mutable NumColumnsType __lastCachedColumn = -1;
         mutable METAL_DEVICE char* __lastCachedColumnValue = nullptr;
 
+        /**
+         * Sets the `startOfColumn` pointer to the beginning of the @b column for the @b row .
+         *
+         * @note This method does not utilize any caching and should not be called directly.
+         */
         CPP_PURE_FUNC void AdvanceColumn(METAL_DEVICE char** startOfColumn, RawTable METAL_THREAD & rawTable, RowNumType row, NumColumnsType column) const CPP_NOEXCEPT {
             // Advances startOfColumn ahead by 1 column.
             if (column == 0) {
                 // Fetch it raw.
-                const auto rowIndex = rawTable.GetRowIndex(this->skipHeader() ? row+1 : row);
-                *startOfColumn = rawTable.data(rowIndex);
+                const auto rowIndex = rawTable.GetRowIndex(this->SkipHeader() ? row+1 : row);
+                *startOfColumn = rawTable.Data(rowIndex);
             } else {
                 *startOfColumn = metal::strings::strchr(*startOfColumn, ',');
                 if (*startOfColumn) {
@@ -155,6 +223,25 @@ namespace metaldb {
             }
         }
 
+        /**
+         * Returns a pointer to the beginning of the @b column for the @b row .
+         * This method uses 2 levels of caching.  The first is block-based caching.
+         * The first @b MAX_CACHED_COLUMNS are stored in an array within the class as they are computed, so there is no
+         * wasted work.
+         * If any of those columns are re-requested, we fetch the value from the cache and return it.  If the value is not yet cached,
+         * we will jump to the last column we do have cached, and scan sequentially from there caching each value from there.
+         *
+         * The other type of caching is sequential caching.  In case the column is one more than the last column computed, we store the
+         * last column returned as a pointer.  This means we only have to read the one column to return a value.  If the colum is within the
+         * @b MAX_CACHED_COLUMNS , we also store the pointer in the block-based cache.  If the column requested is not one more
+         * than the last returned column, and the column is outside of the @b MAX_CACHED_COLUMNS , we start with the highest
+         * block-cached value, and scan sequentially for the value, storing the pointer to this last column before returning it.
+         *
+         * The combination of caches should ensure good performance in the most common use case, which is sequential reads,
+         * or random access where rows have less than @b MAX_CACHED_COLUMNS without taking too much space or time.
+         *
+         * When we move to a new row, we reset both cache.
+         */
         CPP_PURE_FUNC METAL_DEVICE char* GetStartOfColumn(RawTable METAL_THREAD & rawTable, RowNumType row, NumColumnsType column) const CPP_NOEXCEPT {
             METAL_DEVICE char* startOfColumn = nullptr;
 
@@ -223,7 +310,12 @@ namespace metaldb {
             return startOfColumn;
         }
 
-        CPP_PURE_FUNC StringSection readCSVColumnImpl(RawTable METAL_THREAD & rawTable, RowNumType row, NumColumnsType column) const CPP_NOEXCEPT {
+        /**
+         * Implements reading a row and column from a @b RawTable and returning the column in a @b StringSection .
+         *
+         * If the column could not be read, an empty string is returned.  If the column contains quotes, they will be stripped off.
+         */
+        CPP_PURE_FUNC StringSection ReadCSVColumnImpl(RawTable METAL_THREAD & rawTable, RowNumType row, NumColumnsType column) const CPP_NOEXCEPT {
             METAL_DEVICE char* startOfColumn = this->GetStartOfColumn(rawTable, row, column);
 
             if (!startOfColumn) {
@@ -231,23 +323,26 @@ namespace metaldb {
             }
 
             ColumnSizeType length = 0;
-            if (row == rawTable.GetNumRows() - 1 && column == this->numColumns() - 1) {
-                length = ((ColumnSizeType) (rawTable.data(rawTable.GetSizeOfData() - 1) - startOfColumn)) + 1;
+            if (row == rawTable.GetNumRows() - 1 && column == this->NumColumns() - 1) {
+                // The size of the last row/column is the start of the column
+                // until the end of the buffer, because there is no next row to fetch.
+                length = ((ColumnSizeType) (rawTable.Data(rawTable.GetSizeOfData() - 1) - startOfColumn)) + 1;
+
             } else if (row < rawTable.GetNumRows()) {
                 // Only safe to calculate the end of the column if not the last row.
                 // Otherwise could read past the end of the buffer.
                 METAL_DEVICE char* endOfColumn = metal::strings::strchr(startOfColumn, ',');
 
                 // Unless it's the last row, read until the start of the next row.
-                auto startOfNextRowInd = rawTable.GetRowIndex(this->skipHeader() ? row+2 : row+1);
-                METAL_DEVICE char* startOfNextRow = rawTable.data(startOfNextRowInd);
+                auto startOfNextRowInd = rawTable.GetRowIndex(this->SkipHeader() ? row+2 : row+1);
+                METAL_DEVICE char* startOfNextRow = rawTable.Data(startOfNextRowInd);
                 auto lengthOfThisColumn = endOfColumn - startOfColumn;
                 auto lengthToNextRow = startOfNextRow - startOfColumn;
                 length = lengthOfThisColumn > lengthToNextRow ? lengthToNextRow : lengthOfThisColumn;
             }
 
-            // TODO: Must be matching quotes.
-            if ((*startOfColumn == '"' || *startOfColumn == '\'') && (*(startOfColumn+length-1) == '"' || (*(startOfColumn+length-1) == '"'))) {
+            const auto endOfColumn = startOfColumn + length - 1;
+            if ((*startOfColumn == '"' && *endOfColumn == '"') || (*startOfColumn == '\'' && *endOfColumn == '\'')) {
                 // Starts and ends with a quote, strip them.
                 return StringSection(startOfColumn + 1, length - 2);
             }

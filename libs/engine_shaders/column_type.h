@@ -18,6 +18,9 @@ namespace metaldb {
         Integer_opt,
     };
 
+    /**
+     * Returns true if a column type is of variable size within a row.
+     */
     CPP_CONST_FUNC static bool ColumnVariableSize(ColumnType type) CPP_NOEXCEPT {
         switch (type) {
         case String:
@@ -32,6 +35,10 @@ namespace metaldb {
         }
     }
 
+    /**
+     * Returns the static column size for columns that are not a variable size.
+     * @see ColumnVariableSize
+     */
     CPP_CONST_FUNC static uint8_t BaseColumnSize(ColumnType type) CPP_NOEXCEPT {
         switch (type) {
         case String:
@@ -49,7 +56,10 @@ namespace metaldb {
     }
 
 #ifndef __METAL__
-    CPP_CONST_FUNC static std::string columnTypeToString(ColumnType type) CPP_NOEXCEPT {
+    /**
+     * Returns the `ColumnType`, represented as a string.  This is not available in Metal.
+     */
+    CPP_CONST_FUNC static std::string ColumnTypeToString(ColumnType type) CPP_NOEXCEPT {
         switch (type) {
         case String:
         case String_opt:

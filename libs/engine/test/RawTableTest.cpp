@@ -50,7 +50,7 @@ NEW_TEST(RawTableTest, NullColumnTableTest) {
     }
 
     {
-        auto* data = metalRawTable.data();
+        auto* data = metalRawTable.Data();
         for (std::size_t i = 0; i < metalRawTable.GetSizeOfData(); ++i) {
             CPPTEST_ASSERT(data[i] == rawTableCPU.data.at(i));
         }
@@ -113,7 +113,7 @@ NEW_TEST(RawTableTest, MultiGroupTest) {
         }
 
         {
-            auto* data = metalRawTable.data();
+            auto* data = metalRawTable.Data();
             for (std::size_t i = 0; i < metalRawTable.GetSizeOfData(); ++i) {
                 CPPTEST_ASSERT(data[i] == rawTableCPU.data.at(i + offset));
             }

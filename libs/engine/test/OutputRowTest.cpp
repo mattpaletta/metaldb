@@ -23,9 +23,9 @@ static metaldb::TempRow GenerateTempRow() {
     builder.columnTypes[2] = metaldb::ColumnType::Integer;
 
     metaldb::TempRow tempRow = builder;
-    tempRow.append((metaldb::types::IntegerType) rand() % 74);
-    tempRow.append((metaldb::types::FloatType) (rand() % 13) + .5f);
-    tempRow.append((metaldb::types::IntegerType) rand() % 40);
+    tempRow.Append((metaldb::types::IntegerType) rand() % 74);
+    tempRow.Append((metaldb::types::FloatType) (rand() % 13) + .5f);
+    tempRow.Append((metaldb::types::IntegerType) rand() % 40);
     return tempRow;
 }
 
@@ -41,9 +41,9 @@ static metaldb::TempRow GenerateNullTempRow() {
 
 
     metaldb::TempRow tempRow = builder;
-    tempRow.append((metaldb::types::IntegerType) rand() % 74);
+    tempRow.Append((metaldb::types::IntegerType) rand() % 74);
 //    tempRow.append((metaldb::types::FloatType) (rand() % 13) + .5f);
-    tempRow.append((metaldb::types::IntegerType) rand() % 40);
+    tempRow.Append((metaldb::types::IntegerType) rand() % 40);
     return tempRow;
 }
 
