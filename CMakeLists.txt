@@ -15,9 +15,9 @@ if (NOT TARGET cppnotstdlib)
 	fetch_extern(cppnotstdlib https://github.com/mattpaletta/cppnotstdlib main)
 endif()
 
-option(METALDB_ENABLE_LWYU "Enable Link-What-You-Use" ON)
-option(METALDB_ENABLE_IWYU "Enable Include-What-You-Use" ON)
-option(METALDB_ENABLE_CLANG_TIDY "Enable Clang-Tidy" ON)
+option(METALDB_ENABLE_LWYU "Enable Link-What-You-Use" OFF)
+option(METALDB_ENABLE_IWYU "Enable Include-What-You-Use" OFF)
+option(METALDB_ENABLE_CLANG_TIDY "Enable Clang-Tidy" OFF)
 
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON )
 if (EXISTS "${CMAKE_CURRENT_BINARY_DIR}/compile_commands.json")
