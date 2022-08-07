@@ -7,12 +7,12 @@ namespace metaldb {
     class Stack {
     public:
         using SizeType = types::SizeType;
-
+        
         /**
          * Constructs a stack with fixed memory space of N bytes.
          */
         Stack() : _data() {}
-
+        
         /**
          * Pushes an item of type T onto the stack.
          * Returns true if the item was successfully added.
@@ -22,12 +22,12 @@ namespace metaldb {
             if (!this->HasSpace<T>()) {
                 return false;
             }
-
+            
             union {
                 T a;
                 uint8_t bytes[sizeof(T)];
             } magicThing;
-
+            
             magicThing.a = item;
             for (auto n = 0UL; n < sizeof(T); ++n) {
                 // Insert them in reverse order
@@ -36,7 +36,7 @@ namespace metaldb {
             this->_numItems++;
             return true;
         }
-
+        
         /**
          * Retrieves, but does not remove the top item of type T from the stack.
          * The caller is responsible for passing in the right template type when fetching items from the stack.
@@ -48,13 +48,13 @@ namespace metaldb {
                 T a;
                 uint8_t bytes[sizeof(T)];
             } magicThing;
-
+            
             for (auto n = 0UL; n < sizeof(T); ++n) {
                 magicThing.bytes[n] = this->_data[this->_size - 1 - n];
             }
             return magicThing.a;
         }
-
+        
         /**
          * Retrieves, and removes the top item of type T from the stack.
          * The caller is responsible for passing in the right template type when fetching items from the stack.
@@ -66,57 +66,57 @@ namespace metaldb {
                 T a;
                 uint8_t bytes[sizeof(T)];
             } magicThing;
-
+            
             for (auto n = 0UL; n < sizeof(T); ++n) {
                 magicThing.bytes[n] = this->_data[this->_size-- - 1];
             }
             this->_numItems--;
             return magicThing.a;
         }
-
+        
         /**
          * Returns true if the stack is empty.
          */
-        CPP_CONST_FUNC bool IsEmpty() const {
+        bool IsEmpty() const {
             return this->_size == 0;
         }
-
+        
         /**
          * Returns true if the stack is full.
          */
-        CPP_CONST_FUNC bool IsFull() const {
+        bool IsFull() const {
             return this->_size == N;
         }
-
+        
         /**
          * Returns true if there is space for item of type T on the stack.
          */
         template<typename T>
-        CPP_CONST_FUNC bool HasSpace() const {
+        bool HasSpace() const {
             return this->_size + sizeof(T) < N;
         }
-
+        
         /**
          * Returns the current size of the stack in bytes.
          */
-        CPP_CONST_FUNC SizeType Size() const {
+        SizeType Size() const {
             return this->_size;
         }
-
+        
         /**
          * Returns the maximum capacity of the stack in bytes.
          */
-        CPP_CONST_FUNC SizeType Capacity() const {
+        SizeType Capacity() const {
             return N;
         }
-
+        
         /**
          * Returns the number of items on the stack.
          */
-        CPP_CONST_FUNC SizeType NumItems() const {
+        SizeType NumItems() const {
             return this->_numItems;
         }
-
+        
     private:
         SizeType _size = 0;
         SizeType _numItems = 0;

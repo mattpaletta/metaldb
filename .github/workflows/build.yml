@@ -39,4 +39,4 @@ jobs:
     - name: Run
       working-directory: ${{github.workspace}}/build
       shell: bash
-      run: ${BUILD_TYPE}/metaldb || true
+      run: xcodebuild -scheme metaldb_engineTests test

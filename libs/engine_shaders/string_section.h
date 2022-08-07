@@ -12,43 +12,43 @@ namespace metaldb {
     class GenericStringSection final {
     public:
         using SizeType = uint8_t;
-
+        
         /**
          * Creates a @b GenericStringSection which stores a starting pointer and a length.
          */
         GenericStringSection(T str, SizeType size) : _size(size), _str(str) {}
-
+        
         /**
          * Returns the length of the string.
          */
-        CPP_CONST_FUNC SizeType Size() const {
+        SizeType Size() const {
             return this->_size;
         }
-
+        
         /**
          * Returns the starting pointer as a C string.
          */
-        CPP_PURE_FUNC T C_Str() const {
+        T C_Str() const {
             return this->_str;
         }
-
+        
 #ifndef __METAL__
         /**
          * Returns the string as a C++ string.
          */
-        CPP_PURE_FUNC std::string Str() const {
+        std::string Str() const {
             return std::string(this->C_Str(), this->Size());
         }
 #endif
-
+        
     private:
         SizeType _size;
         T _str;
     };
-
+    
     using StringSection = GenericStringSection<METAL_DEVICE char*>;
     using ConstStringSection = GenericStringSection<const METAL_DEVICE char*>;
-
+    
     using LocalStringSection = GenericStringSection<METAL_THREAD char*>;
     using ConstLocalStringSection = GenericStringSection<const METAL_THREAD char*>;
 }
