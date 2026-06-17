@@ -3,7 +3,9 @@
 #ifdef __METAL_VERSION__
 #include <metal_stdlib>
 
+#ifndef __METAL__
 #define __METAL__
+#endif
 
 #define METAL_CONSTANT constant
 #define METAL_DEVICE device

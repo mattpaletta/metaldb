@@ -1,6 +1,7 @@
 #include "Scheduler.hpp"
 #include "OutputRowReader.hpp"
 #include "OutputRowWriter.hpp"
+#include "MetalManager.hpp"
 
 #include <iostream>
 #include <filesystem>

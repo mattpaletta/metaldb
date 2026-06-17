@@ -56,13 +56,13 @@ auto metaldb::reader::CSVReader::Read(const CSVOptions& options) const noexcept 
             const auto columnStr = [&]{
                 auto str = firstRowBuffer.str();
                 if (options.stripQuotesFromHeader) {
-                    str = cppnotstdlib::replace(str, "\"", "");
-                    return cppnotstdlib::replace(str, "'", "");
+                    str = cppnotstdlib::string::replace(str, "\"", "");
+                    return cppnotstdlib::string::replace(str, "'", "");
                 }
 
                 return str;
             }();
-            auto splitColumns = cppnotstdlib::explode(columnStr, ',');
+            auto splitColumns = cppnotstdlib::string::explode(columnStr, ',');
             columns = std::move(splitColumns);
         }
     }

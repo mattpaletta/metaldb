@@ -1,15 +1,17 @@
 #pragma once
 
-#include <metaldb/query_engine/query_plan.hpp>
-#include <metaldb/engine/Instructions.hpp>
-#include <metaldb/query_engine/partials.hpp>
-#include <metaldb/reader/csv.hpp>
+#include "metaldb/query_engine/query_plan.hpp"
+#include "metaldb/engine/Instructions.hpp"
+#include "metaldb/query_engine/partials.hpp"
+#include "metaldb/reader/csv.hpp"
 
-#include <taskflow/taskflow.hpp>
+#include "taskflow/taskflow.hpp"
 
-#include "MetalManager.hpp"
+#include "Constants.hpp"
 
 namespace metaldb {
+    class MetalManager;
+
     class Scheduler final {
     public:
         ~Scheduler() = default;
@@ -23,7 +25,7 @@ namespace metaldb {
         using IntermediateBufferTypePtr = std::shared_ptr<IntermediateBufferType>;
 
         static IntermediateBufferTypePtr MakeBufferPtr() noexcept;
-        static std::shared_ptr<MetalManager::OutputBufferType> MakeOutputBufferPtr() noexcept;
+        static std::shared_ptr<Constants::OutputBufferType> MakeOutputBufferPtr() noexcept;
 
     public:
         // Helper function.

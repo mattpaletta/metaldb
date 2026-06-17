@@ -1,0 +1,56 @@
+module(
+    name = "metaldb",
+    version = "1.0.0",
+)
+
+bazel_dep(name = "platforms", version = "1.0.0")
+bazel_dep(name = "rules_apple", version = "4.3.2")
+bazel_dep(name = "rules_swift", version = "3.3.0", repo_name = "build_bazel_rules_swift")
+bazel_dep(name = "rules_swift_package_manager", version = "1.12.0")
+
+bazel_dep(name = "cpptest")
+git_override(
+    module_name = "cpptest",
+    remote = "https://github.com/mratedca/cpptest.git",
+    commit = "b5ffa09fa12e719336b8acec905710cf5de1f2e4")
+
+bazel_dep(name = "coreservices")
+git_override(
+    module_name = "coreservices",
+    remote = "https://github.com/mratedca/coreservices",
+    commit = "2e301449ce9b6eaf3a0699c2afa09b8c913b86ac")
+
+bazel_dep(name = "cppnotstdlib")
+git_override(
+    module_name = "cppnotstdlib",
+    remote = "https://github.com/mratedca/cppnotstdlib",
+    commit = "606f05518e565bd47f9e57ce16f7676968944d60")
+
+bazel_dep(name = "rules_cc", version = "0.2.17")
+
+http_archive = use_repo_rule("@bazel_tools//tools/build_defs/repo:http.bzl", "http_archive")
+http_archive(
+    name = "taskflow",
+    urls = ["https://github.com/taskflow/taskflow/archive/refs/tags/v3.11.0.zip"],
+    strip_prefix = "taskflow-3.11.0",
+    build_file_content = """
+package(default_visibility = ["//visibility:public"])
+
+cc_library(
+    name = "taskflow",
+    hdrs = glob(["taskflow/**/*.hpp"]),
+    includes = ["."],
+)
+""",
+)
+
+bazel_dep(name = "toolchains_llvm", version = "1.7.0", dev_dependency = True)
+
+LLVM_VERSION = "21.1.8"
+
+llvm_toolchain_ext = use_extension("@toolchains_llvm//toolchain/extensions:llvm.bzl", "llvm", dev_dependency = True)
+llvm_toolchain_ext.toolchain(
+    name = "llvm_toolchain",
+    llvm_version = LLVM_VERSION,
+)
+use_repo(llvm_toolchain_ext, "llvm_toolchain", "llvm_toolchain_llvm")

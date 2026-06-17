@@ -1,7 +1,7 @@
-#include <cpptest/cpptest.hpp>
-#include <metaldb/engine/Instructions.hpp>
+#include "cpptest/cpptest.hpp"
+#include "metaldb/engine/Instructions.hpp"
 
-#include "RawTableCreator.hpp"
+#include "RawTableCreator.test.hpp"
 
 static metaldb::TempRow GenerateTempRow() {
     metaldb::TempRow::TempRowBuilder builder;

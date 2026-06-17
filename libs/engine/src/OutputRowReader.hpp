@@ -69,7 +69,9 @@ namespace metaldb {
         }
         
         bool ColumnIsVariableLength(size_t column) const noexcept {
-            return this->_variableLengthColumns.find(column) != this->_variableLengthColumns.end();
+            return std::any_of([column](const auto& col) {
+                return col == column;
+            });
         }
         
         OutputRow::ColumnSizeType SizeOfColumn(size_t column, size_t row) const noexcept {

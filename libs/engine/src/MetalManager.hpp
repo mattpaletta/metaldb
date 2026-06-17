@@ -2,6 +2,7 @@
 
 #include "instruction_type.h"
 #include "engine.h"
+#include "Constants.hpp"
 
 #import <Metal/Metal.h>
 #import <MetalKit/MetalKit.h>
@@ -16,8 +17,7 @@ namespace metaldb {
     public:
         static std::shared_ptr<MetalManager> Create() noexcept;
         
-        static constexpr auto MAX_OUTPUT_SIZE = 1'000'000;
-        using OutputBufferType = std::array<int8_t, MAX_OUTPUT_SIZE>;
+        using OutputBufferType = std::array<int8_t, metaldb::Constants::MAX_OUTPUT_SIZE>;
         
         std::size_t MaxNumRows() const noexcept;
         

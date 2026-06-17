@@ -1,7 +1,7 @@
-#include <cpptest/cpptest.hpp>
-#include <metaldb/engine/Instructions.hpp>
+#include "cpptest/cpptest.hpp"
+#include "metaldb/engine/Instructions.hpp"
 
-#include "RawTableCreator.hpp"
+#include "RawTableCreator.test.hpp"
 
 class FilterInstructionTest : public cpptest::BaseCppTest {
 public:
