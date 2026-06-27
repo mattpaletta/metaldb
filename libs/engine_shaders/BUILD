@@ -1,5 +1,5 @@
 load("@rules_apple//apple:resources.bzl", "apple_metal_library")
-load("@rules_cc//cc:defs.bzl", "cc_library")
+load("@coreservices//buildenv:cc_rules.bzl", "mratedca_cc_binary", "mratedca_cc_library", "mratedca_cc_test")
 
 apple_metal_library(
     name = "engine_shaders", 
@@ -9,7 +9,8 @@ apple_metal_library(
     visibility = ["//visibility:public"]
 )
 
-cc_library(
+mratedca_cc_library(
+    clang_tidy = False,
     name = "engine_shaders_headers",
     hdrs = glob(["*.h"]),
     includes = ["."],

@@ -18,7 +18,7 @@ bazel_dep(name = "coreservices")
 git_override(
     module_name = "coreservices",
     remote = "https://github.com/mratedca/coreservices",
-    commit = "2e301449ce9b6eaf3a0699c2afa09b8c913b86ac")
+    commit = "2a2c8f2f0a1c659caaa981b4507745a5c641d15c")
 
 bazel_dep(name = "cppnotstdlib")
 git_override(
@@ -27,6 +27,23 @@ git_override(
     commit = "606f05518e565bd47f9e57ce16f7676968944d60")
 
 bazel_dep(name = "rules_cc", version = "0.2.17")
+
+# rules_python is required so hedron's refresh_compile_commands (which uses
+# py_binary) resolves under Bazel's autoload. Matches mono/coreservices (8.5.1).
+bazel_dep(name = "rules_python", version = "1.8.3")
+
+python = use_extension("@rules_python//python/extensions:python.bzl", "python")
+python.toolchain(python_version = "3.11")
+
+# Compile commands for editor/clangd integration and `bazelisk run lint`.
+# https://github.com/hedronvision/bazel-compile-commands-extractor
+bazel_dep(name = "hedron_compile_commands", dev_dependency = False)
+git_override(
+    module_name = "hedron_compile_commands",
+    commit = "abb61a688167623088f8768cc9264798df6a9d10",
+    remote = "https://github.com/hedronvision/bazel-compile-commands-extractor.git",
+    # Replace the commit hash (above) with the latest (https://github.com/hedronvision/bazel-compile-commands-extractor/commits/main).
+)
 
 http_archive = use_repo_rule("@bazel_tools//tools/build_defs/repo:http.bzl", "http_archive")
 http_archive(
