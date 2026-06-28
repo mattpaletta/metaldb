@@ -12,7 +12,7 @@ bazel_dep(name = "cpptest")
 git_override(
     module_name = "cpptest",
     remote = "https://github.com/mratedca/cpptest.git",
-    commit = "b5ffa09fa12e719336b8acec905710cf5de1f2e4")
+    commit = "255ea79")
 
 bazel_dep(name = "coreservices")
 git_override(
@@ -24,7 +24,7 @@ bazel_dep(name = "cppnotstdlib")
 git_override(
     module_name = "cppnotstdlib",
     remote = "https://github.com/mratedca/cppnotstdlib",
-    commit = "606f05518e565bd47f9e57ce16f7676968944d60")
+    commit = "6910609")
 
 bazel_dep(name = "rules_cc", version = "0.2.17")
 
