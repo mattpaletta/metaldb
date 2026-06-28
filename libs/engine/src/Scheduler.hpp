@@ -1,13 +1,11 @@
 #pragma once
 
-#include "metaldb/query_engine/query_plan.hpp"
+#include "Constants.hpp"
 #include "metaldb/engine/Instructions.hpp"
 #include "metaldb/query_engine/partials.hpp"
+#include "metaldb/query_engine/query_plan.hpp"
 #include "metaldb/reader/csv.hpp"
-
 #include "taskflow/taskflow.hpp"
-
-#include "Constants.hpp"
 
 namespace metaldb {
     class MetalManager;
@@ -41,14 +39,17 @@ namespace metaldb {
             const std::vector<IntermediateBufferTypePtr>& childOutputBuffers;
             IntermediateBufferTypePtr outputBuffer;
 
-            Parameters(tf::Taskflow* _Nonnull taskflow_, std::shared_ptr<engine::Encoder> encoder_, tf::Task* _Nonnull doWorkTask_, std::shared_ptr<MetalManager> manager_, std::shared_ptr<std::vector<char>> serializedData_, const std::vector<IntermediateBufferTypePtr>& childOutputBuffers_, IntermediateBufferTypePtr outputBuffer_) : taskflow(taskflow_), encoder(encoder_), doWorkTask(doWorkTask_), manager(manager_), serializedData(serializedData_), childOutputBuffers(childOutputBuffers_), outputBuffer(outputBuffer_) {}
+            Parameters(tf::Taskflow* _Nonnull taskflow_, std::shared_ptr<engine::Encoder> encoder_, tf::Task* _Nonnull doWorkTask_, std::shared_ptr<MetalManager> manager_, std::shared_ptr<std::vector<char>> serializedData_,
+                       const std::vector<IntermediateBufferTypePtr>& childOutputBuffers_, IntermediateBufferTypePtr outputBuffer_)
+                : taskflow(taskflow_), encoder(encoder_), doWorkTask(doWorkTask_), manager(manager_), serializedData(serializedData_), childOutputBuffers(childOutputBuffers_), outputBuffer(outputBuffer_) {}
 
             ~Parameters() noexcept = default;
         };
 
         static tf::Task registerStage(tf::Task& taskDoWork, const std::shared_ptr<QueryEngine::Stage>& stage, tf::Taskflow* _Nonnull taskflow, std::shared_ptr<MetalManager> manager, IntermediateBufferTypePtr outputBuffer) noexcept;
 
-        static void registerBaseStage(tf::Task& taskDoWork, const std::shared_ptr<QueryEngine::Stage>& stage, tf::Taskflow* _Nonnull taskflow, std::shared_ptr<MetalManager> manager, std::vector<IntermediateBufferTypePtr>&& childOutputBuffers, IntermediateBufferTypePtr outputBuffer) noexcept;
+        static void registerBaseStage(tf::Task& taskDoWork, const std::shared_ptr<QueryEngine::Stage>& stage, tf::Taskflow* _Nonnull taskflow, std::shared_ptr<MetalManager> manager, std::vector<IntermediateBufferTypePtr>&& childOutputBuffers,
+                                      IntermediateBufferTypePtr outputBuffer) noexcept;
 
         static tf::Task registerBasePartial(const std::shared_ptr<QueryEngine::StagePartial>& partial, Parameters& parameters) noexcept;
 

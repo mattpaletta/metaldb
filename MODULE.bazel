@@ -18,7 +18,7 @@ bazel_dep(name = "coreservices")
 git_override(
     module_name = "coreservices",
     remote = "https://github.com/mratedca/coreservices",
-    commit = "2a2c8f2f0a1c659caaa981b4507745a5c641d15c")
+    commit = "c901fe9")
 
 bazel_dep(name = "cppnotstdlib")
 git_override(

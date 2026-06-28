@@ -1,8 +1,8 @@
 #pragma once
 
-#include "query_plan.hpp"
-#include "metadata.hpp"
 #include "AST/expr.hpp"
+#include "metadata.hpp"
+#include "query_plan.hpp"
 
 #include <memory>
 

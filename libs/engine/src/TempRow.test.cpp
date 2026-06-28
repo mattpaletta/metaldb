@@ -1,6 +1,6 @@
-#include <cpptest/cpptest.hpp>
-
 #include "temp_row.h"
+
+#include <cpptest/cpptest.hpp>
 
 #include <iostream>
 
@@ -26,9 +26,9 @@ NEW_TEST(TempRowTest, TempRowToOutputWriter) {
     builder.columnTypes[2] = ColumnType::Integer;
 
     TempRow tempRow = builder;
-    tempRow.Append((types::IntegerType) 10);
-    tempRow.Append((types::IntegerType) 11);
-    tempRow.Append((types::IntegerType) 12);
+    tempRow.Append((types::IntegerType)10);
+    tempRow.Append((types::IntegerType)11);
+    tempRow.Append((types::IntegerType)12);
 
     CPPTEST_ASSERT(tempRow.LengthOfHeader() > 0);
     CPPTEST_ASSERT(tempRow.LengthOfHeader() < 100);

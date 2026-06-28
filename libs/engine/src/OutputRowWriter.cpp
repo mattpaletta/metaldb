@@ -13,10 +13,8 @@ auto metaldb::OutputRowWriter::CurrentNumRows() const noexcept -> OutputRow::Num
 }
 
 auto metaldb::OutputRowWriter::size() const noexcept -> std::size_t {
-    return
-        sizeof(this->_sizeOfHeader) + // Size of header size.
-        this->_sizeOfHeader +
-        this->_data.size();
+    return sizeof(this->_sizeOfHeader) + // Size of header size.
+           this->_sizeOfHeader + this->_data.size();
 }
 
 void metaldb::OutputRowWriter::appendTempRow(const metaldb::TempRow& row) noexcept {
@@ -71,7 +69,7 @@ void metaldb::OutputRowWriter::write(std::vector<char>& buffer) const noexcept {
 }
 
 auto metaldb::OutputRowWriter::NumColumns() const noexcept -> OutputRow::NumColumnsType {
-    return (OutputRow::NumColumnsType) this->_columnTypes.size();
+    return (OutputRow::NumColumnsType)this->_columnTypes.size();
 }
 
 auto metaldb::OutputRowWriter::NumBytes() const noexcept -> OutputRow::NumBytesType {
@@ -81,12 +79,12 @@ auto metaldb::OutputRowWriter::NumBytes() const noexcept -> OutputRow::NumBytesT
 
 auto metaldb::OutputRowWriter::NumBytesData() const noexcept -> OutputRow::NumBytesType {
     // This is only the size of the data, without the header.
-    return (OutputRow::NumBytesType) this->_data.size();
+    return (OutputRow::NumBytesType)this->_data.size();
 }
 
 void metaldb::OutputRowWriter::addPaddingUntilIndex(size_t index, std::vector<char>& buffer) const noexcept {
     // Subract 1 for the last index, subtract 1 for the next index.
     while (index > 0 && buffer.size() < index) {
-        this->appendGeneric((uint8_t) 0, buffer);
+        this->appendGeneric((uint8_t)0, buffer);
     }
 }

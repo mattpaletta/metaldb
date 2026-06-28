@@ -1,10 +1,8 @@
+#include "RawTableCreator.test.hpp"
 #include "cpptest/cpptest.hpp"
 #include "metaldb/engine/Instructions.hpp"
 
-#include "RawTableCreator.test.hpp"
-
-template<typename T>
-bool ApproximatelyEqual(T a, T b) {
+template <typename T> bool ApproximatelyEqual(T a, T b) {
     return std::abs(a - b) < std::numeric_limits<T>::epsilon();
 }
 
@@ -32,7 +30,7 @@ NEW_TEST(ParseRowInstructionTest, SerializeParseRowInstruction) {
 
     CPPTEST_ASSERT(buffer.size() > 2);
     CPPTEST_ASSERT(buffer.at(0) == 1); // Size.
-    CPPTEST_ASSERT((InstructionType) buffer.at(1) == InstructionType::PARSEROW);
+    CPPTEST_ASSERT((InstructionType)buffer.at(1) == InstructionType::PARSEROW);
 
     ParseRowInstruction parseRowInst = &buffer.at(2);
 
@@ -63,7 +61,7 @@ NEW_TEST(ParseRowInstructionTest, ReadParseRowInstruction) {
 
     CPPTEST_ASSERT(buffer.size() > 2);
     CPPTEST_ASSERT(buffer.at(0) == 1); // Size.
-    CPPTEST_ASSERT((InstructionType) buffer.at(1) == InstructionType::PARSEROW);
+    CPPTEST_ASSERT((InstructionType)buffer.at(1) == InstructionType::PARSEROW);
     ParseRowInstruction parseRowInst = &buffer.at(2);
     CPPTEST_ASSERT(parseRowInst.ReadCSVColumnLength(rawTable, 0, 0) == 1);
     CPPTEST_ASSERT(parseRowInst.ReadCSVColumnLength(rawTable, 0, 1) == 1);
@@ -115,7 +113,7 @@ NEW_TEST(ParseRowInstructionTest, ReadParseRowInstructionReverseOrder) {
 
     CPPTEST_ASSERT(buffer.size() > 2);
     CPPTEST_ASSERT(buffer.at(0) == 1); // Size.
-    CPPTEST_ASSERT((InstructionType) buffer.at(1) == InstructionType::PARSEROW);
+    CPPTEST_ASSERT((InstructionType)buffer.at(1) == InstructionType::PARSEROW);
     ParseRowInstruction parseRowInst = &buffer.at(2);
 
     std::array<metaldb::OutputSerializedValue, 10'000> output;
@@ -171,7 +169,7 @@ NEW_TEST(ParseRowInstructionTest, ReadParseRowInstructionString) {
 
     CPPTEST_ASSERT(buffer.size() > 2);
     CPPTEST_ASSERT(buffer.at(0) == 1); // Size.
-    CPPTEST_ASSERT((InstructionType) buffer.at(1) == InstructionType::PARSEROW);
+    CPPTEST_ASSERT((InstructionType)buffer.at(1) == InstructionType::PARSEROW);
     ParseRowInstruction parseRowInst = &buffer.at(2);
     CPPTEST_ASSERT(parseRowInst.ReadCSVColumnLength(rawTable, 0, 0) == 1);
     CPPTEST_ASSERT(parseRowInst.ReadCSVColumnLength(rawTable, 0, 1) == 3);
@@ -202,7 +200,9 @@ NEW_TEST(ParseRowInstructionTest, ReadParseRowInstructionString) {
 NEW_TEST(ParseRowInstructionTest, TaxiRowRegression) {
     using namespace metaldb;
     using namespace metaldb::engine;
-    ParseRow parseRow(Method::CSV, {ColumnType::Integer, ColumnType::String, ColumnType::String, ColumnType::String, ColumnType::Float, ColumnType::Integer, ColumnType::Integer, ColumnType::Float, ColumnType::Float, ColumnType::Float, ColumnType::Float, ColumnType::Float, ColumnType::Float, ColumnType::Float, ColumnType::Float, ColumnType::Float, ColumnType::Float, ColumnType::Float, ColumnType::Float, ColumnType::Float}, /* skipHeader */ false);
+    ParseRow parseRow(Method::CSV, {ColumnType::Integer, ColumnType::String, ColumnType::String, ColumnType::String, ColumnType::Float, ColumnType::Integer, ColumnType::Integer, ColumnType::Float, ColumnType::Float, ColumnType::Float,
+                                    ColumnType::Float,   ColumnType::Float,  ColumnType::Float,  ColumnType::Float,  ColumnType::Float, ColumnType::Float,   ColumnType::Float,   ColumnType::Float, ColumnType::Float, ColumnType::Float},
+                      /* skipHeader */ false);
 
     Encoder encoder;
     encoder.encode(parseRow);
@@ -210,8 +210,8 @@ NEW_TEST(ParseRowInstructionTest, TaxiRowRegression) {
 
     auto serialized = [] {
         // Generate a csv and serialize it and read it with a RawTable object (CPU)
-        auto [rawData, rowIndexes] = StringsToRow("2,2022-02-01 00:20:21,2022-02-01 00:24:30,N,1.0,43,238,1.0,1.16,5.5,0.5,0.5,1.02,0.0,,0.3,7.82,1.0,1.0,0.0",
-            "2,2022-02-01 00:32:26,2022-02-01 00:35:31,N,1.0,166,24,1.0,0.57,4.5,0.5,0.5,0.0,0.0,,0.3,5.8,2.0,1.0,0.0");
+        auto [rawData, rowIndexes] =
+            StringsToRow("2,2022-02-01 00:20:21,2022-02-01 00:24:30,N,1.0,43,238,1.0,1.16,5.5,0.5,0.5,1.02,0.0,,0.3,7.82,1.0,1.0,0.0", "2,2022-02-01 00:32:26,2022-02-01 00:35:31,N,1.0,166,24,1.0,0.57,4.5,0.5,0.5,0.0,0.0,,0.3,5.8,2.0,1.0,0.0");
         std::vector<std::string> columns{"colA", "colB"};
 
         metaldb::reader::RawTable rawTableCPU{std::move(rawData), rowIndexes, columns};
@@ -230,7 +230,7 @@ NEW_TEST(ParseRowInstructionTest, TaxiRowRegression) {
 
     CPPTEST_ASSERT(buffer.size() > 2);
     CPPTEST_ASSERT(buffer.at(0) == 1); // Size.
-    CPPTEST_ASSERT((InstructionType) buffer.at(1) == InstructionType::PARSEROW);
+    CPPTEST_ASSERT((InstructionType)buffer.at(1) == InstructionType::PARSEROW);
     ParseRowInstruction parseRowInst = &buffer.at(2);
 
     std::array<metaldb::OutputSerializedValue, 10'000> output;

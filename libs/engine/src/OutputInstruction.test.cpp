@@ -1,9 +1,8 @@
-#include "cpptest/cpptest.hpp"
-#include "metaldb/engine/Instructions.hpp"
-
-#include "RawTableCreator.test.hpp"
 #include "OutputRowReader.hpp"
 #include "OutputRowWriter.hpp"
+#include "RawTableCreator.test.hpp"
+#include "cpptest/cpptest.hpp"
+#include "metaldb/engine/Instructions.hpp"
 
 static metaldb::TempRow GenerateTempRow(std::size_t i) {
     metaldb::TempRow::TempRowBuilder builder;
@@ -13,9 +12,9 @@ static metaldb::TempRow GenerateTempRow(std::size_t i) {
     builder.columnTypes[2] = metaldb::ColumnType::Integer;
 
     metaldb::TempRow tempRow = builder;
-    tempRow.Append((metaldb::types::IntegerType) (74 + i));
-    tempRow.Append((metaldb::types::IntegerType) (13 + i));
-    tempRow.Append((metaldb::types::IntegerType) (40 + i));
+    tempRow.Append((metaldb::types::IntegerType)(74 + i));
+    tempRow.Append((metaldb::types::IntegerType)(13 + i));
+    tempRow.Append((metaldb::types::IntegerType)(40 + i));
     return tempRow;
 }
 
@@ -43,7 +42,7 @@ NEW_TEST(OutputInstructionTest, SerializeOutputInstruction) {
 
     CPPTEST_ASSERT(buffer.size() > 1);
     CPPTEST_ASSERT(buffer.at(0) == 1); // Size.
-    CPPTEST_ASSERT((InstructionType) buffer.at(1) == InstructionType::OUTPUT);
+    CPPTEST_ASSERT((InstructionType)buffer.at(1) == InstructionType::OUTPUT);
 
     OutputInstruction outputInst = &buffer.at(1);
     CPPTEST_ASSERT(outputInst.End() - &buffer.at(0) == buffer.size());

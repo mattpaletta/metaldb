@@ -2,8 +2,8 @@
 
 #include "expr.hpp"
 
-#include <string>
 #include <memory>
+#include <string>
 
 namespace metaldb::QueryEngine::AST {
     class Rho : public Expr {

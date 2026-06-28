@@ -1,7 +1,6 @@
+#include "RawTableCreator.test.hpp"
 #include "cpptest/cpptest.hpp"
 #include "metaldb/engine/Instructions.hpp"
-
-#include "RawTableCreator.test.hpp"
 
 class FilterInstructionTest : public cpptest::BaseCppTest {
 public:

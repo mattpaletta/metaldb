@@ -26,6 +26,7 @@ namespace metaldb::reader {
          * If the CSV cannot be read, a `RawTable::invalid` object will be returned.
          */
         RawTable Read(const CSVOptions& options) const noexcept;
+
     private:
         std::filesystem::path _path;
     };

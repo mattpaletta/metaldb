@@ -1,17 +1,14 @@
 #pragma once
 
-#include "table_definition.hpp"
 #include "engine.h"
+#include "table_definition.hpp"
 
-#include <string>
-#include <memory>
 #include <atomic>
+#include <memory>
+#include <string>
 
 namespace metaldb::QueryEngine {
-    enum Execution {
-        GPU,
-        CPU
-    };
+    enum Execution { GPU, CPU };
 
     class StagePartial {
     public:

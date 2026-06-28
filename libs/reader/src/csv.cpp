@@ -1,6 +1,5 @@
-#include <metaldb/reader/csv.hpp>
-
 #include <cppnotstdlib/strings.hpp>
+#include <metaldb/reader/csv.hpp>
 
 #include <fstream>
 #include <sstream>
@@ -27,7 +26,7 @@ auto metaldb::reader::CSVReader::Read(const CSVOptions& options) const noexcept 
     if (!this->IsValid()) {
         return RawTable::Invalid();
     }
-    
+
     std::ifstream myfile(this->_path.string());
     if (!myfile.is_open()) {
         return RawTable::Invalid();
@@ -53,7 +52,7 @@ auto metaldb::reader::CSVReader::Read(const CSVOptions& options) const noexcept 
 
         // Read out the columns
         {
-            const auto columnStr = [&]{
+            const auto columnStr = [&] {
                 auto str = firstRowBuffer.str();
                 if (options.stripQuotesFromHeader) {
                     str = cppnotstdlib::string::replace(str, "\"", "");
@@ -85,7 +84,7 @@ auto metaldb::reader::CSVReader::Read(const CSVOptions& options) const noexcept 
             lastWasNewLine = false;
         }
     }
-    
+
     if (lastWasNewLine) {
         // The last newLine should not be included.
         rowIndex.pop_back();

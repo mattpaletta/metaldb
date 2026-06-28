@@ -2,9 +2,9 @@
 
 #include "expr.hpp"
 
+#include <memory>
 #include <string>
 #include <vector>
-#include <memory>
 
 namespace metaldb::QueryEngine::AST {
     class Projection final : public Expr {

@@ -1,8 +1,8 @@
 #pragma once
 
+#include <memory>
 #include <string>
 #include <vector>
-#include <memory>
 
 namespace metaldb::reader {
     class RawTable final {
@@ -69,6 +69,7 @@ namespace metaldb::reader {
          * A list of indexes indicating the start offset in `data` for the ith row.
          */
         std::vector<RowIndexType> rowIndexes;
+
     private:
         RawTable(bool isValid) noexcept;
         bool _isValid;

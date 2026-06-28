@@ -1,7 +1,6 @@
+#include "RawTableCreator.test.hpp"
 #include "cpptest/cpptest.hpp"
 #include "metaldb/engine/Instructions.hpp"
-
-#include "RawTableCreator.test.hpp"
 
 static metaldb::TempRow GenerateTempRow() {
     metaldb::TempRow::TempRowBuilder builder;
@@ -11,9 +10,9 @@ static metaldb::TempRow GenerateTempRow() {
     builder.columnTypes[2] = metaldb::ColumnType::Integer;
 
     metaldb::TempRow tempRow = builder;
-    tempRow.Append((metaldb::types::IntegerType) 74);
-    tempRow.Append((metaldb::types::IntegerType) 13);
-    tempRow.Append((metaldb::types::IntegerType) 40);
+    tempRow.Append((metaldb::types::IntegerType)74);
+    tempRow.Append((metaldb::types::IntegerType)13);
+    tempRow.Append((metaldb::types::IntegerType)40);
     return tempRow;
 }
 
@@ -41,7 +40,7 @@ NEW_TEST(ProjectionInstructionTest, SerializeProjectionInstruction) {
 
     CPPTEST_ASSERT(buffer.size() > 2);
     CPPTEST_ASSERT(buffer.at(0) == 1); // Size.
-    CPPTEST_ASSERT((InstructionType) buffer.at(1) == InstructionType::PROJECTION);
+    CPPTEST_ASSERT((InstructionType)buffer.at(1) == InstructionType::PROJECTION);
 
     ProjectionInstruction projectionInst = &buffer.at(2);
 
@@ -66,7 +65,7 @@ NEW_TEST(ProjectionInstructionTest, ReadProjectionInstruction) {
 
     CPPTEST_ASSERT(buffer.size() > 2);
     CPPTEST_ASSERT(buffer.at(0) == 1); // Size.
-    CPPTEST_ASSERT((InstructionType) buffer.at(1) == InstructionType::PROJECTION);
+    CPPTEST_ASSERT((InstructionType)buffer.at(1) == InstructionType::PROJECTION);
 
     ProjectionInstruction projectionInst = &buffer.at(2);
 

@@ -1,22 +1,22 @@
 #pragma once
 
 #include "constants.h"
-#include "raw_table.h"
+#include "db_constants.h"
+#include "filter_instruction.h"
 #include "instruction_type.h"
+#include "method.h"
+#include "output_instruction.h"
 #include "parse_row_instruction.h"
 #include "projection_instruction.h"
-#include "filter_instruction.h"
-#include "output_instruction.h"
-#include "method.h"
+#include "raw_table.h"
 #include "temp_row.h"
-#include "db_constants.h"
 
 namespace metaldb {
     /**
      * Dereferences a pointer as an @b InstructionType .
      */
     static InstructionType DecodeType(InstSerializedValuePtr instruction) CPP_NOEXCEPT {
-        return (InstructionType) *instruction;
+        return (InstructionType)*instruction;
     }
 
     /**
@@ -28,7 +28,7 @@ namespace metaldb {
      *
      * In metal, this will wait for all threads within the threadgroup before continuing onto the next instruction.
      */
-    static void RunInstructions(InstSerializedValuePtr instructions, size_t numInstructions, DbConstants METAL_THREAD & constants) CPP_NOEXCEPT {
+    static void RunInstructions(InstSerializedValuePtr instructions, size_t numInstructions, DbConstants METAL_THREAD& constants) CPP_NOEXCEPT {
         // Combines decoding instructions and running them.
 
         TempRow row;
