@@ -3,9 +3,9 @@
 #include "expr.hpp"
 #include "method.h"
 
-#include <vector>
-#include <string>
 #include <memory>
+#include <string>
+#include <vector>
 
 namespace metaldb::QueryEngine::AST {
     class Write final : public Expr {

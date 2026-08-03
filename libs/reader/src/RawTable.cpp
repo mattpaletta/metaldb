@@ -1,11 +1,12 @@
 #include <metaldb/reader/RawTable.hpp>
 
-#include <sstream>
 #include <algorithm>
+#include <sstream>
 
 metaldb::reader::RawTable::RawTable(bool isValid) noexcept : _isValid(isValid) {}
 
-metaldb::reader::RawTable::RawTable(std::vector<char> buffer, std::vector<RowIndexType> rowIndexes, std::vector<std::string> columns) noexcept : data(std::move(buffer)), rowIndexes(std::move(rowIndexes)), columns(std::move(columns)), _isValid(true) {}
+metaldb::reader::RawTable::RawTable(std::vector<char> buffer, std::vector<RowIndexType> rowIndexes, std::vector<std::string> columns) noexcept
+    : data(std::move(buffer)), rowIndexes(std::move(rowIndexes)), columns(std::move(columns)), _isValid(true) {}
 
 auto metaldb::reader::RawTable::Placeholder() noexcept -> std::shared_ptr<RawTable> {
     return std::make_shared<RawTable>(RawTable::Invalid());

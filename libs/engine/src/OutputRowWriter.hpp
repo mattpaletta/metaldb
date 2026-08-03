@@ -4,8 +4,8 @@
 #include "output_row.h"
 #include "temp_row.h"
 
-#include <vector>
 #include <cassert>
+#include <vector>
 
 namespace metaldb {
     class OutputRowWriter final {
@@ -14,35 +14,34 @@ namespace metaldb {
         public:
             std::vector<ColumnType> columnTypes;
         };
-        
+
         OutputRowWriter() = default;
         OutputRowWriter(const OutputRowBuilder& builder);
-        
+
         ~OutputRowWriter() noexcept = default;
-        
+
         OutputRow::NumRowsType CurrentNumRows() const noexcept;
-        
+
         size_t size() const noexcept;
-        
+
         void appendTempRow(const metaldb::TempRow& row) noexcept;
-        
-        template<typename Container>
-        void copyRow(const OutputRowReader<Container>& reader, std::size_t row) noexcept {
+
+        template <typename Container> void copyRow(const OutputRowReader<Container>& reader, std::size_t row) noexcept {
             if (!this->_hasCopiedHeader) {
                 // The num bytes also includes the size of the header, but that's left to when we retreive.
                 this->_sizeOfHeader = OutputRow::SizeOfHeader(this->NumColumns());
-                
+
                 // Write types of columns
                 this->_columnTypes = reader.ColumnTypes();
                 assert(this->NumColumns() == reader.NumColumns());
                 this->_hasCopiedHeader = true;
             }
-            
+
             for (const auto& c : reader.VariableLengthColumns()) {
                 // Write in the variable length colunns for the row.
                 this->appendToData(reader.SizeOfColumn(c, row));
             }
-            
+
             for (auto c = 0; c < reader.NumColumns(); ++c) {
                 auto [columnStart, columnSize] = reader.ColumnIndexInfo(c, row);
                 const auto columnEnd = columnStart + columnSize;
@@ -52,34 +51,32 @@ namespace metaldb {
             }
             this->_numRows++;
         }
-        
+
         OutputRow::SizeOfHeaderType SizeOfHeader() const noexcept;
-        
+
         void write(std::vector<char>& buffer) const noexcept;
-        
+
         OutputRow::NumColumnsType NumColumns() const noexcept;
-        
+
         OutputRow::NumBytesType NumBytes() const noexcept;
-        
+
         OutputRow::NumBytesType NumBytesData() const noexcept;
-        
+
     private:
         bool _hasCopiedHeader = false;
         OutputRow::SizeOfHeaderType _sizeOfHeader = 0;
         OutputRow::NumRowsType _numRows = 0;
         std::vector<ColumnType> _columnTypes;
         std::vector<char> _data;
-        
+
         void addPaddingUntilIndex(size_t index, std::vector<char>& buffer) const noexcept;
-        
-        template<typename T>
-        void appendToData(T val) noexcept {
+
+        template <typename T> void appendToData(T val) noexcept {
             static_assert(sizeof(decltype(_data)::value_type) == 1);
             return this->appendGeneric(val, this->_data);
         }
-        
-        template<typename T, typename V>
-        void appendGeneric(T val, std::vector<V>& buf) const noexcept {
+
+        template <typename T, typename V> void appendGeneric(T val, std::vector<V>& buf) const noexcept {
             WriteBytesStartingAt(buf, val);
         }
     };

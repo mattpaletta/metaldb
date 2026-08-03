@@ -1,6 +1,7 @@
-load("@rules_cc//cc:defs.bzl", "cc_library")
+load("@coreservices//buildenv:cc_rules.bzl", "mratedca_cc_binary", "mratedca_cc_library", "mratedca_cc_test")
 
-cc_library(
+mratedca_cc_library(
+    clang_tidy = False,
     name = "reader",
     srcs = glob(["src/**/*.cpp"]),
     hdrs = glob(["include/**/*.hpp"]),

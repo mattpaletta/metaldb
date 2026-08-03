@@ -1,5 +1,5 @@
-#include "cpptest/cpptest.hpp"
 #include "RawTableCreator.test.hpp"
+#include "cpptest/cpptest.hpp"
 
 #include <vector>
 
@@ -59,26 +59,7 @@ NEW_TEST(RawTableTest, NullColumnTableTest) {
 
 NEW_TEST(RawTableTest, MultiGroupTest) {
     // Generate a csv and serialize it and read it with a RawTable object (CPU)
-    auto [rawData, rowIndexes] = StringsToRow("a,b,c",
-                                              "d,e,f",
-                                              "g,h,i",
-                                              "j,k,l",
-                                              "m,n,o",
-                                              "p,q,r",
-                                              "s,t,u",
-                                              "v,w,x",
-                                              "y,z,0",
-                                              "a,b,c",
-                                              "d,e,f",
-                                              "g,h,i",
-                                              "j,k,l",
-                                              "m,n,o",
-                                              "p,q,r",
-                                              "s,t,u",
-                                              "v,w,x",
-                                              "y,z,0",
-                                              "a,b,c",
-                                              "d,e,f");
+    auto [rawData, rowIndexes] = StringsToRow("a,b,c", "d,e,f", "g,h,i", "j,k,l", "m,n,o", "p,q,r", "s,t,u", "v,w,x", "y,z,0", "a,b,c", "d,e,f", "g,h,i", "j,k,l", "m,n,o", "p,q,r", "s,t,u", "v,w,x", "y,z,0", "a,b,c", "d,e,f");
     std::vector<std::string> columns{"colA", "colB", "colC"};
 
     metaldb::reader::RawTable rawTableCPU{std::move(rawData), rowIndexes, columns};

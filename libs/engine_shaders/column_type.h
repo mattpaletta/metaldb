@@ -1,10 +1,10 @@
 #pragma once
 
-#include "instruction_type.h"
 #include "constants.h"
+#include "instruction_type.h"
 
 #ifndef __METAL__
-#  include <string>
+#include <string>
 #endif
 
 namespace metaldb {
@@ -17,7 +17,7 @@ namespace metaldb {
         Integer,
         Integer_opt,
     };
-    
+
     /**
      * Returns true if a column type is of variable size within a row.
      */
@@ -34,7 +34,7 @@ namespace metaldb {
             return false;
         }
     }
-    
+
     /**
      * Returns the static column size for columns that are not a variable size.
      * @see ColumnVariableSize
@@ -54,7 +54,7 @@ namespace metaldb {
             return 0;
         }
     }
-    
+
 #ifndef __METAL__
     /**
      * Returns the `ColumnType`, represented as a string.  This is not available in Metal.

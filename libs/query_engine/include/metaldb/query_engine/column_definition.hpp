@@ -2,8 +2,8 @@
 
 #include "column_type.h"
 
-#include <string>
 #include <limits>
+#include <string>
 
 namespace metaldb::QueryEngine {
     class ColumnDefinition {

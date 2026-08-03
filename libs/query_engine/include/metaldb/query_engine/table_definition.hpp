@@ -2,9 +2,9 @@
 
 #include "column_definition.hpp"
 
+#include <optional>
 #include <string>
 #include <vector>
-#include <optional>
 
 namespace metaldb::QueryEngine {
     struct TableDefinition {

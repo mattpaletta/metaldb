@@ -13,8 +13,7 @@ namespace metaldb::engine {
          * Encodes a vector of type T into a byte array.
          * The size is written first, followed by each value, converted to bytes and written as chars.
          */
-        template<typename T, typename Size>
-        void serializeVector(instruction_serialized_type* output, const std::vector<T>& input, const Size& size) noexcept {
+        template <typename T, typename Size> void serializeVector(instruction_serialized_type* output, const std::vector<T>& input, const Size& size) noexcept {
             WriteBytesStartingAt(*output, size);
             for (const auto& c : input) {
                 WriteBytesStartingAt(*output, c);
@@ -25,16 +24,15 @@ namespace metaldb::engine {
          * Decodes a serialized pointer back into a vector of type T.
          * The number of elements is first read, followed by each value, reinterpreted as type T.
          */
-        template<typename T>
-        std::vector<T> deserializeVector(InstSerializedValue** input) noexcept {
+        template <typename T> std::vector<T> deserializeVector(InstSerializedValue** input) noexcept {
             using count_type = std::int8_t;
             static_assert(sizeof(count_type) == sizeof(InstSerializedValue), "Unsafe to statically cast values of different sizes.");
-            const auto size = (count_type) **input;
+            const auto size = (count_type) * *input;
             (*input)++;
 
             std::vector<T> input_values(size);
             for (count_type i = 0; i < size; ++i) {
-                input_values.at(i) = (T) **input;
+                input_values.at(i) = (T) * *input;
                 (*input) += sizeof(T);
             }
 
@@ -94,7 +92,7 @@ namespace metaldb::engine {
             instruction_serialized_type output;
             WriteBytesStartingAt(output, this->_method);
             WriteBytesStartingAt(output, this->_skipHeader);
-            detail::serializeVector(&output, this->_columnTypes, (NumColumnsType) this->_columnTypes.size());
+            detail::serializeVector(&output, this->_columnTypes, (NumColumnsType)this->_columnTypes.size());
             return output;
         }
 
@@ -138,7 +136,7 @@ namespace metaldb::engine {
 
         instruction_serialized_type serialize() const noexcept {
             instruction_serialized_type output;
-            detail::serializeVector(&output, this->_indexes, (NumColumnsType) this->_indexes.size());
+            detail::serializeVector(&output, this->_indexes, (NumColumnsType)this->_indexes.size());
             return output;
         }
 
@@ -189,8 +187,7 @@ namespace metaldb::engine {
             return this->encodeImpl(output, OUTPUT);
         }
 
-        template <class T, class... Ts>
-        void encodeAll(const T& first, const Ts&... rest) noexcept {
+        template <class T, class... Ts> void encodeAll(const T& first, const Ts&... rest) noexcept {
             this->encode(first);
 
             if constexpr (sizeof...(rest) > 0) {
@@ -207,8 +204,7 @@ namespace metaldb::engine {
 
         Encoder(instruction_serialized_type&& data) : _data(std::move(data)) {}
 
-        template<typename T>
-        Encoder& encodeImpl(const T& instruction, InstructionType type) noexcept {
+        template <typename T> Encoder& encodeImpl(const T& instruction, InstructionType type) noexcept {
             // The first element stores the number of elements
             this->_data.at(0) += 1;
 
@@ -226,8 +222,7 @@ namespace metaldb::engine {
         Decoder(instruction_serialized_type& data) : _data(data) {}
         ~Decoder() noexcept = default;
 
-        template<typename T>
-        T decode() noexcept {
+        template <typename T> T decode() noexcept {
             auto* startPtr = &this->_data.at(this->index);
             auto* endPtr = startPtr;
             T value = T::deserialize(&endPtr);
@@ -238,7 +233,7 @@ namespace metaldb::engine {
         }
 
         InstructionType decodeType() noexcept {
-            return (InstructionType) this->_data.at(this->index++);
+            return (InstructionType)this->_data.at(this->index++);
         }
 
         bool hasNext() const noexcept {
@@ -246,7 +241,7 @@ namespace metaldb::engine {
         }
 
         std::size_t numInstructions() const noexcept {
-            return (std::size_t) this->_data.at(0);
+            return (std::size_t)this->_data.at(0);
         }
 
     private:

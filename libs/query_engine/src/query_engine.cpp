@@ -1,19 +1,18 @@
-#include <metaldb/query_engine/query_engine.hpp>
-#include <metaldb/query_engine/partials.hpp>
-
 #include <metaldb/query_engine/AST/filter.hpp>
-#include <metaldb/query_engine/AST/read.hpp>
-#include <metaldb/query_engine/AST/projection.hpp>
-#include <metaldb/query_engine/AST/limit.hpp>
 #include <metaldb/query_engine/AST/join.hpp>
+#include <metaldb/query_engine/AST/limit.hpp>
+#include <metaldb/query_engine/AST/projection.hpp>
+#include <metaldb/query_engine/AST/read.hpp>
 #include <metaldb/query_engine/AST/write.hpp>
+#include <metaldb/query_engine/partials.hpp>
+#include <metaldb/query_engine/query_engine.hpp>
 
+#include <cassert>
 #include <filesystem>
-#include <vector>
-#include <string>
 #include <memory>
 #include <set>
-#include <cassert>
+#include <string>
+#include <vector>
 
 namespace {
     using namespace metaldb::QueryEngine;
@@ -57,7 +56,7 @@ namespace {
             partial->definition = std::make_shared<TableDefinition>(*tableDef);
             partials.emplace_back(partial);
         }
-        
+
         return partials;
     }
 
@@ -124,7 +123,7 @@ namespace {
         }
 
         return {};
-     }
+    }
 
     auto CombinePartials(const std::vector<std::shared_ptr<StagePartial>>& partials) -> std::vector<std::shared_ptr<Stage>> {
         std::vector<std::shared_ptr<Stage>> stages;

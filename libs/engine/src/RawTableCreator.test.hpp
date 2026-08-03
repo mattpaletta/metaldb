@@ -7,15 +7,14 @@
 
 #pragma once
 
-#include <metaldb/reader/RawTable.hpp>
-
-#include "raw_table.h"
 #include "Scheduler.hpp"
+#include "raw_table.h"
+
+#include <metaldb/reader/RawTable.hpp>
 
 #include <vector>
 
-template<typename... Args>
-static std::pair<std::vector<char>, std::vector<metaldb::RawTable::RowIndexType>> StringsToRow(Args... input) {
+template <typename... Args> static std::pair<std::vector<char>, std::vector<metaldb::RawTable::RowIndexType>> StringsToRow(Args... input) {
     std::vector<char> output;
     std::vector<metaldb::RawTable::RowIndexType> rowIndexes;
     for (std::string str : {input...}) {

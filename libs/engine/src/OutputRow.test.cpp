@@ -1,17 +1,15 @@
-#include <cpptest/cpptest.hpp>
-
-#include <metaldb/engine/Instructions.hpp>
-
 #include "OutputRowReader.hpp"
 #include "OutputRowWriter.hpp"
-
 #include "output_instruction.h"
 #include "temp_row.h"
 
-#include <iostream>
-#include <time.h>
-#include <stdlib.h>
+#include <cpptest/cpptest.hpp>
+#include <metaldb/engine/Instructions.hpp>
+
 #include <array>
+#include <iostream>
+#include <stdlib.h>
+#include <time.h>
 
 static metaldb::TempRow GenerateTempRow() {
     srand(123);
@@ -23,9 +21,9 @@ static metaldb::TempRow GenerateTempRow() {
     builder.columnTypes[2] = metaldb::ColumnType::Integer;
 
     metaldb::TempRow tempRow = builder;
-    tempRow.Append((metaldb::types::IntegerType) rand() % 74);
-    tempRow.Append((metaldb::types::FloatType) (rand() % 13) + .5f);
-    tempRow.Append((metaldb::types::IntegerType) rand() % 40);
+    tempRow.Append((metaldb::types::IntegerType)rand() % 74);
+    tempRow.Append((metaldb::types::FloatType)(rand() % 13) + .5f);
+    tempRow.Append((metaldb::types::IntegerType)rand() % 40);
     return tempRow;
 }
 
@@ -41,9 +39,9 @@ static metaldb::TempRow GenerateNullTempRow() {
 
 
     metaldb::TempRow tempRow = builder;
-    tempRow.Append((metaldb::types::IntegerType) rand() % 74);
-//    tempRow.append((metaldb::types::FloatType) (rand() % 13) + .5f);
-    tempRow.Append((metaldb::types::IntegerType) rand() % 40);
+    tempRow.Append((metaldb::types::IntegerType)rand() % 74);
+    //    tempRow.append((metaldb::types::FloatType) (rand() % 13) + .5f);
+    tempRow.Append((metaldb::types::IntegerType)rand() % 40);
     return tempRow;
 }
 

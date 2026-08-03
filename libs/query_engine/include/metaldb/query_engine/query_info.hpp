@@ -1,14 +1,10 @@
 #pragma once
 
-#include <vector>
 #include <string>
+#include <vector>
 
 namespace metaldb::QueryEngine {
-    enum ColumnType {
-        STRING,
-        FLOAT,
-        INTEGER
-    };
+    enum ColumnType { STRING, FLOAT, INTEGER };
 
     class ColumnInfo {
     public:

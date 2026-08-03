@@ -2,6 +2,7 @@ build/
 build_make/
 build_ninja/
 build_xcode/
+bazel-*
 datasets/
 dataset/
 data
