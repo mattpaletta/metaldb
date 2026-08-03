@@ -1,5 +1,6 @@
 #pragma once
 
+#include "column_type.h"
 #include "constants.h"
 #include "string_section.h"
 

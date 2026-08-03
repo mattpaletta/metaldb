@@ -4,6 +4,7 @@
 #include "instruction_type.h"
 #include "stack.h"
 #include "string_section.h"
+#include "temp_row.h"
 
 namespace metaldb {
     /**

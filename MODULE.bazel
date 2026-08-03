@@ -7,6 +7,7 @@ bazel_dep(name = "platforms", version = "1.0.0")
 bazel_dep(name = "rules_apple", version = "4.3.2")
 bazel_dep(name = "rules_swift", version = "3.3.0", repo_name = "build_bazel_rules_swift")
 bazel_dep(name = "rules_swift_package_manager", version = "1.12.0")
+bazel_dep(name = "googletest", version = "1.17.0")
 
 bazel_dep(name = "cpptest")
 git_override(
@@ -18,7 +19,7 @@ bazel_dep(name = "coreservices")
 git_override(
     module_name = "coreservices",
     remote = "https://github.com/mratedca/coreservices",
-    commit = "8d59068")
+    commit = "8d59068d7e853dc16ca00f612a575480afd91593")
 
 bazel_dep(name = "cppnotstdlib")
 git_override(
@@ -50,6 +51,7 @@ http_archive(
     name = "taskflow",
     urls = ["https://github.com/taskflow/taskflow/archive/refs/tags/v3.11.0.zip"],
     strip_prefix = "taskflow-3.11.0",
+    sha256 = "cd7bea61c3c3a6ed7ba606add2f8dc9f981ddb1c36d76d8824e1ada0da63c634",
     build_file_content = """
 package(default_visibility = ["//visibility:public"])
 
