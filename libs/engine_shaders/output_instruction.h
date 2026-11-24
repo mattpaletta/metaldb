@@ -4,7 +4,7 @@
 #include "constants.h"
 #include "db_constants.h"
 #include "output_row.h"
-#include "strings.h"
+#include "shader_strings.h"
 
 #ifndef __METAL__
 #include <cassert>
