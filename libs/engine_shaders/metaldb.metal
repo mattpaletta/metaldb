@@ -1,4 +1,4 @@
-#include "strings.h"
+#include "shader_strings.h"
 #include "constants.h"
 #include "engine.h"
 

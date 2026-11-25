@@ -5,8 +5,8 @@
 #include "db_constants.h"
 #include "method.h"
 #include "raw_table.h"
+#include "shader_strings.h"
 #include "string_section.h"
-#include "strings.h"
 #include "temp_row.h"
 
 namespace metaldb {

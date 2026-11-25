@@ -3,8 +3,8 @@
 #include "column_type.h"
 #include "constants.h"
 #include "output_row.h"
+#include "shader_strings.h"
 #include "string_section.h"
-#include "strings.h"
 
 namespace metaldb {
     /**
