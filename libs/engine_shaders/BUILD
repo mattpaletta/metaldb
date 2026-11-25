@@ -13,7 +13,9 @@ apple_metal_library(
 )
 
 mratedca_cc_library(
+    # Not yet formatted to the central style (coreservices .clang-format).
     clang_tidy = False,
+    format = False,
     name = "engine_shaders_headers",
     hdrs = glob(["*.h"]),
     includes = ["."],
